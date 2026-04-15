@@ -691,6 +691,36 @@ const { error: updateError } = await supabase.from('building_members')
 
   return (
     <div className="min-h-screen bg-slate-900">
+      {/* Password Change Modal */}
+      {showPasswordChange && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-white mb-2">Cambia tu contraseña</h2>
+            <p className="text-slate-400 text-sm mb-4">Por seguridad, crea una contraseña personalizada.</p>
+            {passwordChangeMsg && (
+              <div className={`p-3 rounded-lg mb-4 text-sm ${passwordChangeMsg.includes('✅') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                {passwordChangeMsg}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="text-slate-400 text-xs mb-1 block">Nueva contraseña</label>
+                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="text-slate-400 text-xs mb-1 block">Confirmar contraseña</label>
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500" />
+              </div>
+              <button onClick={handlePasswordChange}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-colors">
+                Guardar nueva contraseña
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Demo mode banner */}
       {isDemo && (
         <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-center text-xs text-amber-400 font-medium">
