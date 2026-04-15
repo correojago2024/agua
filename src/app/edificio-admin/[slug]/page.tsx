@@ -170,7 +170,8 @@ export default function EdificioAdminPage() {
 
     const allMembers = members || [];
     setAllSubscribers(allMembers);
-    setJuntaMembers(allMembers.filter((s: any) => s.is_junta === true));
+    // All building_members are considered junta members for now
+    setJuntaMembers(allMembers);
   }, [building]);
 
   useEffect(() => { if (authed && building) loadData(); }, [authed, building, loadData]);
@@ -219,15 +220,13 @@ export default function EdificioAdminPage() {
         .eq('building_id', building.id);
       if (members) {
         setAllSubscribers(members);
-        setJuntaMembers(members.filter((s: any) => s.is_junta === true));
+        setJuntaMembers(members);
       }
     }
 
     // Try to find the user by email if provided
     if (inputEmail) {
-      const member = allSubscribers.find(s => 
-        s.is_junta === true && s.email.toLowerCase() === inputEmail
-      );
+      const member = allSubscribers.find(s => s.email.toLowerCase() === inputEmail);
       
       if (member) {
         const memberPassword = member.password || '';
@@ -376,8 +375,8 @@ export default function EdificioAdminPage() {
     const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
     if (existing) {
       // Update to mark as junta
-      const { error: updateError } = await supabase.from('building_members')
-        .update({ name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin, is_junta: true })
+const { error: updateError } = await supabase.from('building_members')
+        .update({ name: memberNameVal, role: newMemberRole || 'Vocal', is_admin: newMemberIsAdmin })
         .eq('id', existing.id);
       if (updateError) {
         console.error('Error updating member:', updateError);
@@ -389,8 +388,7 @@ export default function EdificioAdminPage() {
         building_id: building.id,
         email: memberEmail,
         name: memberNameVal,
-        role: newMemberRole,
-        is_junta: true,
+        role: newMemberRole || 'Vocal',
         is_admin: newMemberIsAdmin,
       });
       if (insertError) {
@@ -1105,7 +1103,7 @@ export default function EdificioAdminPage() {
               <div className="px-5 py-4 border-b border-slate-700">
                 <h3 className="text-white font-semibold flex items-center gap-2">
                   <Mail className="w-4 h-4 text-purple-400" />
-                  Suscriptores Regulares ({allSubscribers.filter(s => !s.is_junta).length})
+                  Suscriptores Regulares
                 </h3>
                 <p className="text-slate-400 text-xs mt-0.5">Vecinos que reciben reportes (máx. 5 por ciclo)</p>
               </div>
@@ -1119,21 +1117,8 @@ export default function EdificioAdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
-                    {allSubscribers.filter(s => !s.is_junta).map(s => (
-                      <tr key={s.id} className="hover:bg-slate-700/20">
-                        <td className="px-4 py-3 text-slate-300 text-xs">{maskEmail(s.email)}</td>
-                        <td className="px-4 py-3">
-                          {(s.emails_remaining ?? 0) > 0 ? (
-                            <span className="text-xs font-medium text-green-400">{s.emails_remaining} restantes</span>
-                          ) : (
-                            <span className="text-xs font-medium text-slate-500">Ilimitado</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {allSubscribers.filter(s => !s.is_junta).length === 0 && (
-                      <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-500 text-sm">No hay suscriptores regulares aún</td></tr>
-                    )}
+                    {/* This section would need resident_subscriptions - showing placeholder for now */}
+                    <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-500 text-sm">No hay suscriptores regulares aún</td></tr>
                   </tbody>
                 </table>
               </div>
