@@ -377,7 +377,7 @@ export default function EdificioAdminPage() {
     if (existing) {
       // Update to mark as junta
       const { error: updateError } = await supabase.from('building_members')
-        .update({ name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
+        .update({ name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin, is_junta: true })
         .eq('id', existing.id);
       if (updateError) {
         console.error('Error updating member:', updateError);
