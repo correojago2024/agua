@@ -159,19 +159,18 @@ export default function EdificioAdminPage() {
       measurementsQueryBuildingId = REAL_BUILDING_ID; // Redirect measurements for demo
     }
 
-    const [{ data: ms }, { data: subs }] = await Promise.all([
+    const [{ data: ms }, { data: members }] = await Promise.all([
       supabase.from('measurements').select('*').eq('building_id', measurementsQueryBuildingId)
         .order('recorded_at', { ascending: false }).limit(200),
       supabase.from('building_members').select('*').eq('building_id', subscriptionsQueryBuildingId),
     ]);
     
-    // Invertir para que el más antiguo sea el primero (requerido por los gráficos)
     const sortedMs = (ms || []).slice().reverse();
     setMeasurements(sortedMs);
 
-    const allSubs = subs || [];
-    setAllSubscribers(allSubs);
-    setJuntaMembers(allSubs);
+    const allMembers = members || [];
+    setAllSubscribers(allMembers);
+    setJuntaMembers(allMembers.filter((s: any) => s.is_junta === true));
   }, [building]);
 
   useEffect(() => { if (authed && building) loadData(); }, [authed, building, loadData]);
@@ -212,15 +211,15 @@ export default function EdificioAdminPage() {
     const buildingPassword = building?.password || building?.admin_password || '';
     const TEMP_PASSWORD = '123456';
 
-    // Load subscribers if not loaded yet (needed for login verification)
+    // Load members if not loaded yet (needed for login verification)
     if (allSubscribers.length === 0 && building) {
-      const { data: subs } = await supabase
-        .from('resident_subscriptions')
+      const { data: members } = await supabase
+        .from('building_members')
         .select('*')
         .eq('building_id', building.id);
-      if (subs) {
-        setAllSubscribers(subs);
-        setJuntaMembers(subs.filter((s: any) => s.is_junta === true));
+      if (members) {
+        setAllSubscribers(members);
+        setJuntaMembers(members.filter((s: any) => s.is_junta === true));
       }
     }
 
@@ -373,27 +372,22 @@ export default function EdificioAdminPage() {
     const memberEmail = newMemberEmail.trim().toLowerCase();
     const memberNameVal = newMemberName.trim() || null;
     
-    // Check if already exists in building_members
-    const { data: existing } = await supabase
-      .from('building_members')
-      .select('*')
-      .eq('building_id', building.id)
-      .eq('email', memberEmail)
-      .single();
-
+    // Check if already exists as member
+    const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
     if (existing) {
-      // Update existing member
+      // Update to mark as junta
       await supabase.from('building_members')
-        .update({ name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
+        .update({ is_junta: true, name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
         .eq('id', existing.id);
     } else {
-      // Add new member to building_members
       await supabase.from('building_members').insert({
         building_id: building.id,
         email: memberEmail,
         name: memberNameVal,
         role: newMemberRole,
+        is_junta: true,
         is_admin: newMemberIsAdmin,
+        emails_remaining: 9999,
       });
     }
 

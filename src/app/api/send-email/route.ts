@@ -33,10 +33,27 @@ const getSiteUrl = (): string => {
 };
 
 /**
- * Obtiene las credenciales de Gmail desde Supabase y crea el Transporter
- * VERSIÓN ROBUSTA: Intenta ID 1, si falla, busca la primera fila disponible.
+ * Obtiene las credenciales de Gmail desde Variables de Entorno (primario) o Supabase (fallback)
  */
 async function getGmailTransporter() {
+  // 1. PRIMERO: Intentar usar variables de entorno
+  const envGmailUser = process.env.GMAIL_USER;
+  const envGmailPassword = process.env.GMAIL_APP_PASSWORD;
+
+  if (envGmailUser && envGmailPassword) {
+    console.log('Usando credenciales de variables de entorno (GMAIL_USER)');
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: envGmailUser,
+        pass: envGmailPassword,
+      },
+    });
+  }
+
+  // 2. FALLBACK: Buscar en Supabase si no hay variables de entorno
+  console.log('No se encontraron variables de entorno GMAIL_USER/GMAIL_APP_PASSWORD, buscando en Supabase...');
+  
   try {
     console.log('Buscando credenciales en Supabase...');
     
@@ -229,19 +246,21 @@ export async function POST(request: Request) {
 
     const siteUrl = getSiteUrl();
     
-    // 1. Configurar Transporter de Gmail (leyendo credenciales de Supabase con Anon Key)
+    // 1. Configurar Transporter de Gmail
     let transporter;
     let gmailUser;
     try {
       transporter = await getGmailTransporter();
-      // Obtenemos el email usuario para usarlo en el campo 'from'
-      const { data: creds } = await supabaseClient
-        .from('email_credentials')
-        .select('email_user')
-        .eq('id', 1)
-        .single();
-      
-      gmailUser = creds?.email_user || 'noreply@aquasaas.com';
+      // Si tenemos variable de entorno, usarla; si no, buscar en Supabase
+      gmailUser = process.env.GMAIL_USER || 'noreply@aquasaas.com';
+      if (!process.env.GMAIL_USER) {
+        const { data: creds } = await supabaseClient
+          .from('email_credentials')
+          .select('email_user')
+          .eq('id', 1)
+          .single();
+        gmailUser = creds?.email_user || gmailUser;
+      }
     } catch (err: any) {
       console.error('Error crítico obteniendo configuración de email:', err);
       return NextResponse.json(
