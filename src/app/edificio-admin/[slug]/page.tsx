@@ -376,11 +376,16 @@ export default function EdificioAdminPage() {
     const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
     if (existing) {
       // Update to mark as junta
-      await supabase.from('building_members')
+      const { error: updateError } = await supabase.from('building_members')
         .update({ is_junta: true, name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
         .eq('id', existing.id);
+      if (updateError) {
+        console.error('Error updating member:', updateError);
+        setMemberMsg('❌ Error al actualizar: ' + updateError.message);
+        return;
+      }
     } else {
-      await supabase.from('building_members').insert({
+      const { error: insertError } = await supabase.from('building_members').insert({
         building_id: building.id,
         email: memberEmail,
         name: memberNameVal,
@@ -389,6 +394,11 @@ export default function EdificioAdminPage() {
         is_admin: newMemberIsAdmin,
         emails_remaining: 9999,
       });
+      if (insertError) {
+        console.error('Error inserting member:', insertError);
+        setMemberMsg('❌ Error al agregar: ' + insertError.message);
+        return;
+      }
     }
 
     // Send welcome email to new member
