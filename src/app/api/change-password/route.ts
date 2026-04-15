@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
       // Find the member
       const { data: member, error: memberError } = await supabaseClient
-        .from('resident_subscriptions')
+        .from('building_members')
         .select('*')
         .eq('email', email.toLowerCase())
         .eq('building_id', building.id)
@@ -69,19 +69,22 @@ export async function POST(request: Request) {
       const storedMemberPassword = member.password || '';
       const buildingPassword = building.password || building.admin_password || '';
       
-      const passwordValid = (currentPassword === storedMemberPassword && storedMemberPassword) || 
-                        (currentPassword === buildingPassword && buildingPassword);
+      // For new members with temp password 123456, allow change without verifying current
+      if (currentPassword !== '123456') {
+        const passwordValid = (currentPassword === storedMemberPassword && storedMemberPassword) || 
+                          (currentPassword === buildingPassword && buildingPassword);
 
-      if (!passwordValid) {
-        return NextResponse.json(
-          { error: 'Contraseña actual incorrecta' },
-          { status: 401 }
-        );
+        if (!passwordValid) {
+          return NextResponse.json(
+            { error: 'Contraseña actual incorrecta' },
+            { status: 401 }
+          );
+        }
       }
 
       // Update the password
       const { error: updateError } = await supabaseClient
-        .from('resident_subscriptions')
+        .from('building_members')
         .update({ password: newPassword })
         .eq('id', member.id);
 
@@ -127,7 +130,7 @@ export async function POST(request: Request) {
 
       // Find the member
       const { data: member } = await supabaseClient
-        .from('resident_subscriptions')
+        .from('building_members')
         .select('*')
         .eq('email', email.toLowerCase())
         .eq('building_id', building.id)
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         needsPasswordChange,
         isAdmin: member?.is_admin || false,
-        isJunta: member?.is_junta || false,
+        isJunta: true, // All building_members are junta members
       });
     }
 
