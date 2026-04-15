@@ -162,7 +162,7 @@ export default function EdificioAdminPage() {
     const [{ data: ms }, { data: subs }] = await Promise.all([
       supabase.from('measurements').select('*').eq('building_id', measurementsQueryBuildingId)
         .order('recorded_at', { ascending: false }).limit(200),
-      supabase.from('resident_subscriptions').select('*').eq('building_id', subscriptionsQueryBuildingId),
+      supabase.from('building_members').select('*').eq('building_id', subscriptionsQueryBuildingId),
     ]);
     
     // Invertir para que el más antiguo sea el primero (requerido por los gráficos)
@@ -171,13 +171,10 @@ export default function EdificioAdminPage() {
 
     const allSubs = subs || [];
     setAllSubscribers(allSubs);
-    setJuntaMembers(allSubs.filter((s: any) => s.is_junta === true));
+    setJuntaMembers(allSubs);
   }, [building]);
 
   useEffect(() => { if (authed && building) loadData(); }, [authed, building, loadData]);
-
-  // Helper: check if current user is admin
-  const isUserAdmin = !currentUser || currentUser.is_admin === true;
 
   // Hook para generar gráficos cuando las mediciones cambian
   useEffect(() => {
@@ -213,38 +210,65 @@ export default function EdificioAdminPage() {
     const inputEmail = loginEmail.trim().toLowerCase();
     const inputPassword = password;
     const buildingPassword = building?.password || building?.admin_password || '';
+    const TEMP_PASSWORD = '123456';
 
-    // Try to find the user by email if provided
-    if (inputEmail) {
-      const member = allSubscribers.find(s => 
-        s.is_junta === true && s.email.toLowerCase() === inputEmail
+    // Try to find the user by email in building_members table
+    if (inputEmail && building) {
+      // First load building_members to check if user is member
+      let membersData = allSubscribers;
+      if (membersData.length === 0) {
+        const { data: members } = await supabase
+          .from('building_members')
+          .select('*')
+          .eq('building_id', building.id);
+        membersData = members || [];
+        setAllSubscribers(membersData);
+        setJuntaMembers(membersData);
+      }
+      
+      const member = membersData.find((s: any) => 
+        s.email && s.email.toLowerCase() === inputEmail
       );
       
       if (member) {
-        // Check member's individual password first
         const memberPassword = member.password || '';
+        
+        // Case 1: Member has their own password set - check it
         if (memberPassword && memberPassword === inputPassword) {
           setCurrentUser(member);
           setAuthed(true);
           setAuthError('');
-          // Check if they need to change password (first login with default)
-          if (memberPassword === '123456') {
+          return;
+        }
+        
+        // Case 2: No individual password set - accept temp password or building password
+        if (!memberPassword) {
+          // Accept the temporary default password "123456"
+          if (inputPassword === TEMP_PASSWORD) {
+            setCurrentUser(member);
+            setAuthed(true);
+            setAuthError('');
+            // Prompt to change password after first login
             setShowPasswordChange(true);
+            return;
           }
-          return;
+          // Or accept building password as fallback
+          if (buildingPassword && inputPassword === buildingPassword) {
+            setCurrentUser(member);
+            setAuthed(true);
+            setAuthError('');
+            setShowPasswordChange(true);
+            return;
+          }
         }
-        // If no individual password set, fall back to building password
-        if (!memberPassword && buildingPassword && inputPassword === buildingPassword) {
-          setCurrentUser(member);
-          setAuthed(true);
-          setAuthError('');
-          // If using building password, prompt to set personal password
-          setShowPasswordChange(true);
-          return;
-        }
+        
         setAuthError('Contraseña incorrecta para este usuario.');
         return;
       }
+      
+      // Email provided but not found as member
+      setAuthError('Este email no está registrado como miembro de la junta.');
+      return;
     }
 
     // Fallback: building password login (for original admin who registered the building)
@@ -309,6 +333,9 @@ export default function EdificioAdminPage() {
     }
   };
 
+  // Helper: check if current user is admin
+  const isUserAdmin = !currentUser || currentUser.is_admin === true;
+
   // ── KPIs ───────────────────────────────────────────────────────────────────
   const kpis = (() => {
     if (!measurements.length) return null;
@@ -349,19 +376,17 @@ export default function EdificioAdminPage() {
     // Check if already exists as subscriber
     const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
     if (existing) {
-      // Update to mark as junta
-      await supabase.from('resident_subscriptions')
-        .update({ is_junta: true, name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
+      // Update existing member
+      await supabase.from('building_members')
+        .update({ name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
         .eq('id', existing.id);
     } else {
-      await supabase.from('resident_subscriptions').insert({
+      await supabase.from('building_members').insert({
         building_id: building.id,
         email: memberEmail,
         name: memberNameVal,
         role: newMemberRole,
-        is_junta: true,
         is_admin: newMemberIsAdmin,
-        emails_remaining: 9999, // ilimitado para junta
       });
     }
 
@@ -393,14 +418,11 @@ export default function EdificioAdminPage() {
     loadData();
   };
 
-  const removeJuntaMember = async (member: JuntaMember) => {
+const removeJuntaMember = async (member: JuntaMember) => {
     if (!confirm(`¿Quitar a ${member.email} de la junta?\nDejará de recibir copias de los reportes.`)) return;
     if (demoBlock('⚠️ Modo Demo: no se pueden eliminar miembros en la cuenta de demostración.')) return;
-    // Al quitar de la junta: is_junta=false + emails_remaining=0
-    // Si esa persona quiere volver a recibir emails, deberá reportar
-    // un dato desde el formulario para reactivar su ciclo de 5 correos.
-    await supabase.from('resident_subscriptions')
-      .update({ is_junta: false, emails_remaining: 0 })
+    await supabase.from('building_members')
+      .delete()
       .eq('id', member.id);
     setMemberMsg('🗑️ Miembro removido de la junta');
     setTimeout(() => setMemberMsg(''), 3000);
@@ -410,7 +432,7 @@ export default function EdificioAdminPage() {
   const saveEditMember = async () => {
     if (!editingMember) return;
     if (demoBlock('⚠️ Modo Demo: los cambios no se guardan en la base de datos.')) { setEditingMember(null); return; }
-    await supabase.from('resident_subscriptions')
+    await supabase.from('building_members')
       .update({ name: editingMember.name, role: editingMember.role, is_admin: editingMember.is_admin })
       .eq('id', editingMember.id);
     setEditingMember(null);
@@ -639,11 +661,18 @@ export default function EdificioAdminPage() {
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-colors">
               Ingresar
             </button>
-            <p className="text-slate-600 text-xs text-center mt-4">
-              {loginEmail 
-                ? 'Usa tu email + contraseña personal' 
-                : 'Solo miembros autorizados de la Junta de Condominio'}
-            </p>
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <p className="text-slate-500 text-xs text-center mb-2">
+                {loginEmail 
+                  ? 'Usa tu email + contraseña personal' 
+                  : 'Solo miembros autorizados de la Junta de Condominio'}
+              </p>
+              <p className="text-center">
+                <a href="/" className="text-blue-400 text-xs hover:text-blue-300">
+                  ← Ir a página principal (recuperar contraseña)
+                </a>
+              </p>
+            </div>
           </>
         )}
       </div>
@@ -929,7 +958,7 @@ export default function EdificioAdminPage() {
                 )}
               </div>
 
-              {showAddMember && (
+{showAddMember && (
                 <div className="px-5 py-4 bg-slate-700/30 border-b border-slate-700">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <input type="email" value={newMemberEmail} onChange={e => setNewMemberEmail(e.target.value)}
@@ -1045,14 +1074,12 @@ export default function EdificioAdminPage() {
                               <span className="text-green-400 text-xs font-medium">∞ Ilimitado</span>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex gap-1">
-                                {isUserAdmin && (
-                                  <>
-                                    <button onClick={() => setEditingMember(m)} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 className="w-4 h-4" /></button>
-                                    <button onClick={() => removeJuntaMember(m)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded"><Trash2 className="w-4 h-4" /></button>
-                                  </>
-                                )}
-                              </div>
+                              {isUserAdmin && (
+                                <div className="flex gap-1">
+                                  <button onClick={() => setEditingMember(m)} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 className="w-4 h-4" /></button>
+                                  <button onClick={() => removeJuntaMember(m)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded"><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                              )}
                             </td>
                           </>
                         )}
@@ -1381,11 +1408,6 @@ export default function EdificioAdminPage() {
         {/* ── CONFIGURACIÓN TAB ─────────────────────────────────────────── */}
         {tab === 'configuracion' && (
           <div className="space-y-5">
-            {!isUserAdmin && (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-amber-300 text-sm">
-                Solo los administradores pueden editar la configuración del edificio.
-              </div>
-            )}
             {cfgMsg && <div className="bg-slate-700 border border-slate-600 text-white px-4 py-3 rounded-xl text-sm">{cfgMsg}</div>}
             {bannerMsg && <div className="bg-slate-700 border border-slate-600 text-white px-4 py-3 rounded-xl text-sm">{bannerMsg}</div>}
 
@@ -1398,7 +1420,6 @@ export default function EdificioAdminPage() {
                 </h3>
                 <p className="text-slate-400 text-xs mt-1">
                   Tamaño recomendado: <strong className="text-slate-300">1200 × 300 px</strong> (ratio 4:1) · Máx 2MB · JPG, PNG o WebP
-                  {!isUserAdmin && <span className="text-amber-400 ml-2">(Solo administradores)</span>}
                 </p>
               </div>
               <div className="p-5 space-y-4">
@@ -1408,23 +1429,19 @@ export default function EdificioAdminPage() {
                       <img src={building.banner_url} alt="Banner actual" className="w-full object-cover" style={{maxHeight: '200px'}} />
                     </div>
                     <div className="flex gap-2">
-                      {isUserAdmin && (
-                        <>
-                          <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors">
-                            <Upload className="w-4 h-4" />
-                            Cambiar banner
-                            <input type="file" accept="image/*" className="hidden"
-                              onChange={e => e.target.files?.[0] && uploadBanner(e.target.files[0])} />
-                          </label>
-                          <button onClick={removeBanner} className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-lg text-sm transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                            Eliminar banner
-                          </button>
-                        </>
-                      )}
+                      <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors">
+                        <Upload className="w-4 h-4" />
+                        Cambiar banner
+                        <input type="file" accept="image/*" className="hidden"
+                          onChange={e => e.target.files?.[0] && uploadBanner(e.target.files[0])} />
+                      </label>
+                      <button onClick={removeBanner} className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-lg text-sm transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar banner
+                      </button>
                     </div>
                   </div>
-                ) : isUserAdmin ? (
+                ) : (
                   <label className={`flex flex-col items-center justify-center border-2 border-dashed border-slate-600 rounded-xl p-8 cursor-pointer transition-colors hover:border-blue-500 hover:bg-blue-500/5 ${bannerUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                     <Upload className="w-10 h-10 text-slate-500 mb-3" />
                     <p className="text-slate-300 font-medium">
@@ -1434,12 +1451,6 @@ export default function EdificioAdminPage() {
                     <input type="file" accept="image/*" className="hidden"
                       onChange={e => e.target.files?.[0] && uploadBanner(e.target.files[0])} />
                   </label>
-                ) : (
-                  <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 rounded-xl p-8">
-                    <Upload className="w-10 h-10 text-slate-600 mb-3" />
-                    <p className="text-slate-500">No hay banner configurado</p>
-                    <p className="text-slate-600 text-xs mt-1">Solo administradores pueden subir banners</p>
-                  </div>
                 )}
               </div>
             </div>
@@ -1451,7 +1462,7 @@ export default function EdificioAdminPage() {
                   <Wrench className="w-4 h-4 text-cyan-400" />
                   Datos del Edificio
                 </h3>
-                {isUserAdmin && !editingConfig && (
+                {!editingConfig && (
                   <button onClick={startEditConfig}
                     className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />

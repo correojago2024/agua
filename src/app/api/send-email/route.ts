@@ -33,49 +33,50 @@ const getSiteUrl = (): string => {
 };
 
 /**
- * Obtiene las credenciales de Gmail desde Supabase y crea el Transporter
- * VERSIÓN ROBUSTA: Intenta ID 1, si falla, busca la primera fila disponible.
+ * Obtiene las credenciales de Gmail desde variables de entorno
+ * (más seguro que almacenar en la base de datos)
  */
 async function getGmailTransporter() {
+  // Try environment variables first
+  const emailUser = process.env.GMAIL_USER;
+  const emailPassword = process.env.GMAIL_APP_PASSWORD;
+
+  if (emailUser && emailPassword) {
+    console.log('Usando credenciales de variables de entorno');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: emailUser,
+        pass: emailPassword,
+      },
+    });
+    return transporter;
+  }
+
+  // Fallback: Try Supabase table (for backwards compatibility)
+  console.log('Variables de entorno no encontradas, intentando Supabase...');
+  
   try {
-    console.log('Buscando credenciales en Supabase...');
-    
-    // 1. Intento ideal: Buscar ID 1
     let { data, error } = await supabaseClient
       .from('email_credentials')
       .select('*')
       .eq('id', 1)
       .single();
 
-    // 2. Fallback: Si ID 1 falla (0 filas), buscar cualquier registro
     if (error || !data) {
-      console.warn('No se encontró ID 1, buscando cualquier registro disponible...');
-      const { data: anyData, error: anyError } = await supabaseClient
+      const { data: anyData } = await supabaseClient
         .from('email_credentials')
         .select('*')
         .limit(1)
-        .single(); // Intenta traer el primero que haya
-
-      if (anyError || !anyData) {
-        console.error('ERROR CRÍTICO: La tabla email_credentials está completamente vacía o no es accesible.');
-        throw new Error('No se encontraron credenciales en la base de datos. Ejecuta el script SQL de inserción.');
-      }
-      
-      // Usamos los datos encontrados
+        .single();
       data = anyData;
-      console.log('Credenciales recuperadas usando fallback (ID encontrado:', data.id, ')');
-    } else {
-      console.log('Credenciales recuperadas con ID 1 exitosamente.');
+    }
+
+    if (!data) {
+      throw new Error('No se encontraron credenciales de email.');
     }
 
     console.log('Usuario de Gmail:', data.email_user);
-
-    // 3. Validar que tengamos contraseña
-    if (!data.email_password) {
-      throw new Error('El campo email_password está vacío en la base de datos.');
-    }
-
-    // Crear el transportador
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -83,7 +84,6 @@ async function getGmailTransporter() {
         pass: data.email_password,
       },
     });
-
     return transporter;
   } catch (err) {
     console.error('Error configurando Gmail Transporter:', err);
@@ -473,24 +473,8 @@ export async function POST(request: Request) {
         <p style="color: #92400e; font-size: 12px; margin: 0; line-height: 1.5;">Por seguridad, al primer ingreso podrás crear tu propia contraseña personalizada.</p>
       </div>
 
-      <div style="background: #f0fdf4; border-radius: 8px; padding: 15px; margin: 20px 0;">
-        <p style="color: #166534; font-weight: bold; font-size: 14px; margin: 0 0 6px;">📋 Tus Funciones como ${isAdmin ? 'Administrador' : 'Miembro'} de Junta</p>
-        <ul style="color: #475569; font-size: 13px; margin: 6px 0 0; padding-left: 18px; line-height: 1.8;">
-          ${isAdmin ? `
-          <li><strong>Administrador:</strong> Acceso completo para gestionar la junta, agregar/remover miembros, configurar el edificio, y corregir mediciones.</li>
-          <li>Podrás agregar nuevos miembros de junta y asignarles permisos de administrador.</li>
-          <li>Tienes acceso a todas las secciones del panel administrativo.</li>
-          ` : `
-          <li><strong>Miembro de Junta:</strong> Puedes visualizar el dashboard, ver mediciones y generar reportes.</li>
-          <li>Puedes corregir registros incorrectos de agua.</li>
-          <li>NO puedes agregar ni eliminar miembros de la junta (solo el administrador puede hacerlo).</li>
-          `}
-          <li>Recibirás copia de <strong>todos los reportes</strong> automáticamente sin límite de emails.</li>
-        </ul>
-      </div>
-
       <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h3 style="color: #1e293b; margin-top: 0; font-size: 16px;">🔗 Tus Enlaces</h3>
+        <h3 style="color: #1e293b; margin-top: 0; font-size: 16px;">🔗 Tus Enlaces Importantes</h3>
         
         <div style="background: #dbeafe; border-radius: 8px; padding: 15px; margin: 10px 0;">
           <p style="color: #1e40af; font-weight: bold; font-size: 14px; margin: 0 0 6px;">🏢 Portal de Administrador</p>
@@ -503,17 +487,18 @@ export async function POST(request: Request) {
           <p style="color: #475569; font-size: 13px; margin: 0 0 8px;">Para reportar el nivel del tanque:</p>
           <a href="${siteUrl}/edificio/${building.slug}" style="color: #16a34a; font-size: 14px; word-break: break-all;">${siteUrl}/edificio/${building.slug}</a>
         </div>
+
+        <div style="background: #f8fafc; border-radius: 8px; padding: 15px; margin: 10px 0;">
+          <p style="color: #475569; font-weight: bold; font-size: 14px; margin: 0 0 6px;">🏠 Página Principal del Sistema</p>
+          <p style="color: #64748b; font-size: 13px; margin: 0 0 8px;">Para recuperar tu contraseña si la olvidas:</p>
+          <a href="${siteUrl}" style="color: #64748b; font-size: 14px; word-break: break-all;">${siteUrl}</a>
+        </div>
       </div>
 
       <div style="text-align: center; margin: 24px 0;">
         <a href="${siteUrl}/edificio-admin/${building.slug}" style="display: inline-block; background: #7c3aed; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px;">
           Ingresar al Portal
         </a>
-      </div>
-
-      <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 14px 16px; border-radius: 0 8px 8px 0; margin: 20px 0;">
-        <p style="color: #92400e; font-weight: bold; margin: 0 0 4px; font-size: 14px;">💡 Primer Ingreso</p>
-        <p style="color: #92400e; font-size: 13px; margin: 0; line-height: 1.5;">Usa tu email como identificador y la contraseña temporal <strong>123456</strong>. Luego podrás establecer tu propia contraseña.</p>
       </div>
 
       <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">2026 AquaSaaS - Todos los derechos reservados</p>
