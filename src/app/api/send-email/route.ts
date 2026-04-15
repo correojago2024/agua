@@ -33,50 +33,49 @@ const getSiteUrl = (): string => {
 };
 
 /**
- * Obtiene las credenciales de Gmail desde variables de entorno
- * (más seguro que almacenar en la base de datos)
+ * Obtiene las credenciales de Gmail desde Supabase y crea el Transporter
+ * VERSIÓN ROBUSTA: Intenta ID 1, si falla, busca la primera fila disponible.
  */
 async function getGmailTransporter() {
-  // Try environment variables first
-  const emailUser = process.env.GMAIL_USER;
-  const emailPassword = process.env.GMAIL_APP_PASSWORD;
-
-  if (emailUser && emailPassword) {
-    console.log('Usando credenciales de variables de entorno');
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: emailUser,
-        pass: emailPassword,
-      },
-    });
-    return transporter;
-  }
-
-  // Fallback: Try Supabase table (for backwards compatibility)
-  console.log('Variables de entorno no encontradas, intentando Supabase...');
-  
   try {
+    console.log('Buscando credenciales en Supabase...');
+    
+    // 1. Intento ideal: Buscar ID 1
     let { data, error } = await supabaseClient
       .from('email_credentials')
       .select('*')
       .eq('id', 1)
       .single();
 
+    // 2. Fallback: Si ID 1 falla (0 filas), buscar cualquier registro
     if (error || !data) {
-      const { data: anyData } = await supabaseClient
+      console.warn('No se encontró ID 1, buscando cualquier registro disponible...');
+      const { data: anyData, error: anyError } = await supabaseClient
         .from('email_credentials')
         .select('*')
         .limit(1)
-        .single();
-      data = anyData;
-    }
+        .single(); // Intenta traer el primero que haya
 
-    if (!data) {
-      throw new Error('No se encontraron credenciales de email.');
+      if (anyError || !anyData) {
+        console.error('ERROR CRÍTICO: La tabla email_credentials está completamente vacía o no es accesible.');
+        throw new Error('No se encontraron credenciales en la base de datos. Ejecuta el script SQL de inserción.');
+      }
+      
+      // Usamos los datos encontrados
+      data = anyData;
+      console.log('Credenciales recuperadas usando fallback (ID encontrado:', data.id, ')');
+    } else {
+      console.log('Credenciales recuperadas con ID 1 exitosamente.');
     }
 
     console.log('Usuario de Gmail:', data.email_user);
+
+    // 3. Validar que tengamos contraseña
+    if (!data.email_password) {
+      throw new Error('El campo email_password está vacío en la base de datos.');
+    }
+
+    // Crear el transportador
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -84,6 +83,7 @@ async function getGmailTransporter() {
         pass: data.email_password,
       },
     });
+
     return transporter;
   } catch (err) {
     console.error('Error configurando Gmail Transporter:', err);

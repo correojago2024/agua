@@ -212,22 +212,22 @@ export default function EdificioAdminPage() {
     const buildingPassword = building?.password || building?.admin_password || '';
     const TEMP_PASSWORD = '123456';
 
-    // Try to find the user by email in building_members table
-    if (inputEmail && building) {
-      // First load building_members to check if user is member
-      let membersData = allSubscribers;
-      if (membersData.length === 0) {
-        const { data: members } = await supabase
-          .from('building_members')
-          .select('*')
-          .eq('building_id', building.id);
-        membersData = members || [];
-        setAllSubscribers(membersData);
-        setJuntaMembers(membersData);
+    // Load subscribers if not loaded yet (needed for login verification)
+    if (allSubscribers.length === 0 && building) {
+      const { data: subs } = await supabase
+        .from('resident_subscriptions')
+        .select('*')
+        .eq('building_id', building.id);
+      if (subs) {
+        setAllSubscribers(subs);
+        setJuntaMembers(subs.filter((s: any) => s.is_junta === true));
       }
-      
-      const member = membersData.find((s: any) => 
-        s.email && s.email.toLowerCase() === inputEmail
+    }
+
+    // Try to find the user by email if provided
+    if (inputEmail) {
+      const member = allSubscribers.find(s => 
+        s.is_junta === true && s.email.toLowerCase() === inputEmail
       );
       
       if (member) {
@@ -266,7 +266,7 @@ export default function EdificioAdminPage() {
         return;
       }
       
-      // Email provided but not found as member
+      // Email provided but not found as junta member
       setAuthError('Este email no está registrado como miembro de la junta.');
       return;
     }
@@ -373,14 +373,21 @@ export default function EdificioAdminPage() {
     const memberEmail = newMemberEmail.trim().toLowerCase();
     const memberNameVal = newMemberName.trim() || null;
     
-    // Check if already exists as subscriber
-    const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
+    // Check if already exists in building_members
+    const { data: existing } = await supabase
+      .from('building_members')
+      .select('*')
+      .eq('building_id', building.id)
+      .eq('email', memberEmail)
+      .single();
+
     if (existing) {
       // Update existing member
       await supabase.from('building_members')
         .update({ name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
         .eq('id', existing.id);
     } else {
+      // Add new member to building_members
       await supabase.from('building_members').insert({
         building_id: building.id,
         email: memberEmail,
@@ -418,7 +425,7 @@ export default function EdificioAdminPage() {
     loadData();
   };
 
-const removeJuntaMember = async (member: JuntaMember) => {
+  const removeJuntaMember = async (member: JuntaMember) => {
     if (!confirm(`¿Quitar a ${member.email} de la junta?\nDejará de recibir copias de los reportes.`)) return;
     if (demoBlock('⚠️ Modo Demo: no se pueden eliminar miembros en la cuenta de demostración.')) return;
     await supabase.from('building_members')
