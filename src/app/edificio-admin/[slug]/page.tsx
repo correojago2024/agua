@@ -212,21 +212,20 @@ export default function EdificioAdminPage() {
     const buildingPassword = building?.password || building?.admin_password || '';
     const TEMP_PASSWORD = '123456';
 
-    // Load members if not loaded yet (needed for login verification)
-    if (allSubscribers.length === 0 && building) {
-      const { data: members } = await supabase
-        .from('building_members')
-        .select('*')
-        .eq('building_id', building.id);
-      if (members) {
-        setAllSubscribers(members);
-        setJuntaMembers(members);
-      }
+    // Always fetch fresh members from DB for login verification
+    const { data: members } = await supabase
+      .from('building_members')
+      .select('*')
+      .eq('building_id', building.id);
+    
+    if (members) {
+      setAllSubscribers(members);
+      setJuntaMembers(members);
     }
 
     // Try to find the user by email if provided
     if (inputEmail) {
-      const member = allSubscribers.find(s => s.email.toLowerCase() === inputEmail);
+      const member = members?.find(s => s.email.toLowerCase() === inputEmail);
       
       if (member) {
         const memberPassword = member.password || '';
