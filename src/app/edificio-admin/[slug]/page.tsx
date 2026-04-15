@@ -52,7 +52,7 @@ interface JuntaMember {
   email: string;
   name?: string;
   role?: string;
-  emails_remaining: number;
+  emails_remaining?: number;
   is_junta?: boolean;
   is_admin?: boolean;
   password?: string;
@@ -377,7 +377,7 @@ export default function EdificioAdminPage() {
     if (existing) {
       // Update to mark as junta
       const { error: updateError } = await supabase.from('building_members')
-        .update({ is_junta: true, name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
+        .update({ name: memberNameVal, role: newMemberRole, is_admin: newMemberIsAdmin })
         .eq('id', existing.id);
       if (updateError) {
         console.error('Error updating member:', updateError);
@@ -392,7 +392,6 @@ export default function EdificioAdminPage() {
         role: newMemberRole,
         is_junta: true,
         is_admin: newMemberIsAdmin,
-        emails_remaining: 9999,
       });
       if (insertError) {
         console.error('Error inserting member:', insertError);
@@ -1124,9 +1123,11 @@ export default function EdificioAdminPage() {
                       <tr key={s.id} className="hover:bg-slate-700/20">
                         <td className="px-4 py-3 text-slate-300 text-xs">{maskEmail(s.email)}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs font-medium ${s.emails_remaining > 0 ? 'text-green-400' : 'text-slate-500'}`}>
-                            {s.emails_remaining > 0 ? `${s.emails_remaining} restantes` : 'Ciclo finalizado'}
-                          </span>
+                          {(s.emails_remaining ?? 0) > 0 ? (
+                            <span className="text-xs font-medium text-green-400">{s.emails_remaining} restantes</span>
+                          ) : (
+                            <span className="text-xs font-medium text-slate-500">Ilimitado</span>
+                          )}
                         </td>
                       </tr>
                     ))}
