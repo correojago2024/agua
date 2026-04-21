@@ -637,17 +637,12 @@ export default function AdminPage() {
               {maintLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
               Mantenimiento
             </button>
-            <button onClick={checkSystemStatus} disabled={systemStatusLoading}
+<button onClick={checkSystemStatus} disabled={systemStatusLoading}
               title="Verificar uso de recursos vs límites gratuitos y enviar reporte"
               className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-sm disabled:opacity-50">
               {systemStatusLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
               Estado Sistema
             </button>
-            <label className="flex items-center gap-2 text-xs text-slate-400" title="Requiere configurar cron externo (ej. cron-job.org)">
-<input type="checkbox" checked={autoConfig.enabled} onChange={(e) => setAutoConfig({...autoConfig, enabled: e.target.checked})}
-                className="w-4 h-4" />
-              Auto
-            </label>
           </div>
           <p className="text-slate-500 text-xs mt-2">💡 Para diario: cron-job.org → POST a /api/system-status?sendEmail=true</p>
         </div>
@@ -1085,7 +1080,7 @@ export default function AdminPage() {
                 <div className="space-y-2 text-sm">
                   <p>Total Edificios: <span className="text-white font-bold">{buildings.length}</span></p>
                   <p>Activos: <span className="text-green-400 font-bold">{stats.activos}</span></p>
-                  <p>Pendiente por cobrar: <span className="text-red-400 font-bold">${buildings.reduce((sum, b) => sum + (b.pending_amount || 0), 0)}</span></p>
+                  <p>Pendiente por cobrar: <span className="text-red-400 font-bold">${buildings.reduce((sum, b) => sum + (Number(b.pending_amount) || 0), 0)}</span></p>
                 </div>
               </div>
               <div className="bg-slate-700/50 rounded-lg p-4">
