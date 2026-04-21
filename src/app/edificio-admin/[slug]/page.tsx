@@ -125,6 +125,14 @@ export default function EdificioAdminPage() {
     return true;
   };
 
+  // Helper to mask email for demo mode
+  const maskEmail = (email: string): string => {
+    if (!email || !email.includes('@')) return email;
+    const [local, domain] = email.split('@');
+    const maskedLocal = local.length > 2 ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] : local;
+    return `${maskedLocal}@${domain}`;
+  };
+
   // ── Load building ──────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -1514,8 +1522,9 @@ const { error: updateError } = await supabase.from('building_members')
                           className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-slate-400 text-xs mb-1">Email del Administrador</label>
-                        <input type="email" value={cfgAdminEmail} onChange={e => setCfgAdminEmail(e.target.value)}
+                        <label className="block text-slate-400 text-xs mb-1">Email del Administrador {isDemo && '(demo@example.com)'}</label>
+                        <input type="email" value={isDemo ? 'demo@example.com' : cfgAdminEmail} onChange={e => !isDemo && setCfgAdminEmail(e.target.value)}
+                          readOnly={isDemo}
                           className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                       </div>
                     </div>
@@ -1538,7 +1547,7 @@ const { error: updateError } = await supabase.from('building_members')
                       { label: 'Nombre',            value: building.name },
                       { label: 'Slug / Identificador', value: building.slug },
                       { label: 'Capacidad del tanque', value: `${(building.tank_capacity_liters || 169000).toLocaleString()} L` },
-                      { label: 'Email administrador',  value: building.admin_email },
+                      { label: 'Email administrador',  value: isDemo ? maskEmail(building.admin_email || '') : building.admin_email },
                       { label: 'Estado',             value: building.status || 'Prueba' },
                       { label: 'Banner',             value: building.banner_url ? '✅ Configurado' : '—' },
                     ].map(({ label, value }) => (
