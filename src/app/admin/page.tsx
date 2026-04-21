@@ -92,7 +92,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState('');
-  const [activeView, setActiveView] = useState<'leads' | 'maintenance' | 'reports' | 'emails' | 'logs'>('leads');
+  const [activeView, setActiveView] = useState<'leads' | 'maintenance' | 'reports' | 'emails' | 'logs' | 'plans'>('leads');
   
   // Editing fields
   const [editingField, setEditingField] = useState<{id: string; field: string} | null>(null);
@@ -117,6 +117,39 @@ export default function AdminPage() {
   // System Status
   const [systemStatusLoading, setSystemStatusLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState<any>(null);
+
+  // Plans
+  interface PlanPrecio {
+    id: number;
+    plan_id: string;
+    nombre: string;
+    precio: number;
+    caracteristicas: any;
+    activo: boolean;
+  }
+  const [plans, setPlans] = useState<PlanPrecio[]>([]);
+  const [plansMsg, setPlansMsg] = useState('');
+  const [plansLoading, setPlansLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeView === 'plans') loadPlans();
+  }, [activeView]);
+
+  const loadPlans = async () => {
+    setPlansLoading(true);
+    const { data, error } = await supabase.from('plan_precios').select('*').order('id');
+    if (data) setPlans(data);
+    setPlansLoading(false);
+  };
+
+  const updatePlanPrice = async (planId: string, precio: number) => {
+    const { error } = await supabase.from('plan_precios').update({ precio, updated_at: new Date().toISOString() }).eq('plan_id', planId);
+    if (!error) {
+      setPlans(plans.map(p => p.plan_id === planId ? { ...p, precio } : p));
+      setPlansMsg('Precio actualizado ✓');
+      setTimeout(() => setPlansMsg(''), 2000);
+    }
+  };
   
   // Auto Schedule Config
   const [autoConfig, setAutoConfig] = useState({
@@ -958,6 +991,7 @@ export default function AdminPage() {
             { id: 'maintenance' as const, label: '🔧 Mante' },
             { id: 'reports' as const, label: '📊 Reportes' },
             { id: 'emails' as const, label: '📧 Emails' },
+            { id: 'plans' as const, label: '💰 Planes' },
             { id: 'logs' as const,       label: '📨 Logs' },
           ]).map(({ id, label }) => (
             <button key={id}
@@ -1132,6 +1166,66 @@ export default function AdminPage() {
                     <p className="text-slate-400 text-xs mt-1">{t.subject_es.substring(0, 50)}...</p>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Plans tab */}
+        {activeView === 'plans' && (
+          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">💰 Configuración de Planes</h2>
+            <p className="text-slate-400 text-xs mb-6">Edita los precios de los planes que se muestran en la página principal.</p>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              {plans.map((plan) => (
+                <div key={plan.plan_id} className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-white font-medium">{plan.nombre}</span>
+                    <span className="text-slate-400 text-xs">{plan.plan_id}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-slate-400 text-sm">Precio:</span>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={plan.precio}
+                      onChange={(e) => updatePlanPrice(plan.plan_id, parseFloat(e.target.value) || 0)}
+                      className="bg-slate-800 text-white px-3 py-1 rounded text-sm w-24"
+                    />
+                    <span className="text-slate-400 text-sm">/mes</span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {plan.caracteristicas?.suscriptores} suscriptores, 
+                    {plan.caracteristicas?.alertas_email && ' email'}
+                    {plan.caracteristicas?.alertas_sms && ', SMS'}
+                    {plan.caracteristicas?.historial_ilimitado && ', historial ilimitado'}
+                    {plan.caracteristicas?.api && ', API'}
+                    {plan.caracteristicas?.soporte_24_7 && ', 24/7'}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-slate-700/30 rounded-lg">
+              <h3 className="text-white font-medium mb-3">Edificios por Plan</h3>
+              <div className="grid md:grid-cols-4 gap-3">
+                {['basico', 'profesional', 'empresarial', 'ia'].map((planId) => {
+                  const count = buildings.filter(b => (b.subscription_plan || 'basico') === planId).length;
+                  const plan = plans.find(p => p.plan_id === planId);
+                  return (
+                    <div key={planId} className="bg-slate-800 rounded p-3 text-center">
+                      <div className="text-2xl font-bold text-blue-400">{count}</div>
+                      <div className="text-xs text-slate-400">{plan?.nombre || planId}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {plansMsg && (
+              <div className="mt-4 p-3 bg-green-600/20 text-green-400 rounded-lg text-sm">
+                {plansMsg}
               </div>
             )}
           </div>
