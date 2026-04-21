@@ -699,8 +699,8 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Tools - Only show when not in buildings tab (moved to Maintenance tab) */}
-        {activeView !== 'buildings' && (
+        {/* Tools - Only show when NOT in buildings AND NOT in maintenance (those have their own tools) */}
+        {activeView !== 'buildings' && activeView !== 'maintenance' && (
         <>
         {/* Tools */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
