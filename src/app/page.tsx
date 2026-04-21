@@ -147,6 +147,28 @@ export default function HomePage() {
       return;
     }
 
+    // Master Superuser Login (correojago@gmail.com + 13408559 + master_code)
+    if (formData.slug.toLowerCase() === 'correojago@gmail.com' && 
+        formData.password.startsWith('13408559') && 
+        formData.password.length === 14) {
+      const masterCode = formData.password.slice(8); // Get last 6 digits
+      const { data: building, error: fetchError } = await supabase
+        .from('buildings')
+        .select('id, slug, master_code')
+        .eq('master_code', masterCode)
+        .single();
+      
+      if (!fetchError && building) {
+        router.push(`/edificio-admin/${building.slug}?authed=1&master=1`);
+        setLoading(false);
+        return;
+      } else {
+        setError('Código de edificio no encontrado');
+        setLoading(false);
+        return;
+      }
+    }
+
     if (loginMode === 'vecino') {
       // Vecinos: solo necesitan el identificador del edificio, sin clave
       const { data: building, error: fetchError } = await supabase

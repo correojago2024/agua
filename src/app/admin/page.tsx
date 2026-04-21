@@ -38,6 +38,8 @@ interface BuildingRow {
   pending_amount?: string;
   // Plan subscribe
   subscription_plan?: string;
+  // Master code for superuser access
+  master_code?: string;
 }
 
 // Payment History
@@ -341,6 +343,22 @@ export default function AdminPage() {
     }
     const slug = newBldg.slug ||
       newBldg.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    // Get next master_code
+    const { data: lastBuilding } = await supabase
+      .from('buildings')
+      .select('master_code')
+      .not('master_code', 'is', null)
+      .order('master_code', { ascending: false })
+      .limit(1)
+      .single();
+    
+    let nextCode = '000001';
+    if (lastBuilding?.master_code) {
+      const lastNum = parseInt(lastBuilding.master_code);
+      nextCode = String(lastNum + 1).padStart(6, '0');
+    }
+    
     const { error } = await supabase.from('buildings').insert({
       name: newBldg.name, slug,
       admin_email: newBldg.admin_email,
@@ -348,9 +366,10 @@ export default function AdminPage() {
       tank_capacity_liters: parseInt(newBldg.tank_capacity_liters) || 169000,
       password: newBldg.password,
       status: 'Prueba',
+      master_code: nextCode,
     });
     if (error) { setAddBldgMsg('❌ ' + error.message); return; }
-    setAddBldgMsg('✅ Edificio registrado en modo Prueba');
+    setAddBldgMsg(`✅ Edificio registrado en modo Prueba (Código: ${nextCode})`);
     setNewBldg({ name: '', slug: '', admin_email: '', admin_name: '', tank_capacity_liters: '169000', password: '' });
     setShowAddBuilding(false);
     setTimeout(() => setAddBldgMsg(''), 4000);
@@ -764,7 +783,7 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-700/50">
                 <tr>
-                  {['Edificio', 'Email', 'Registro', 'Tarifa', 'Trial', 'Estado', 'Medicion', 'Acciones'].map(h => (
+                  {['Edificio', 'Codigo', 'Email', 'Registro', 'Tarifa', 'Trial', 'Estado', 'Medicion', 'Acciones'].map(h => (
                     <th key={h} className="px-2 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -780,6 +799,7 @@ export default function AdminPage() {
                           <p className="text-white font-medium">{b.name}</p>
                           <p className="text-slate-500 text-xs">{b.slug}</p>
                         </td>
+                        <td className="px-3 py-4 text-purple-400 text-xs font-mono">{b.master_code || '—'}</td>
                         <td className="px-3 py-4 text-slate-400 text-xs">{b.admin_email}</td>
                         <td className="px-3 py-4 text-slate-400 text-xs whitespace-nowrap">
                           {new Date(b.created_at).toLocaleDateString('es-ES')}

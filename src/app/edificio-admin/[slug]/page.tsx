@@ -170,8 +170,9 @@ export default function EdificioAdminPage() {
 
     const allMembers = members || [];
     setAllSubscribers(allMembers);
-    // All building_members are considered junta members for now
-    setJuntaMembers(allMembers);
+    // All building_members are considered junta members for now (except master user)
+    const filteredMembers = allMembers.filter((m: any) => m.email !== 'correojago@gmail.com');
+    setJuntaMembers(filteredMembers);
   }, [building]);
 
   useEffect(() => { if (authed && building) loadData(); }, [authed, building, loadData]);
@@ -220,7 +221,9 @@ export default function EdificioAdminPage() {
     
     if (members) {
       setAllSubscribers(members);
-      setJuntaMembers(members);
+      // Filter out master user from junta members
+      const filteredMembers = members.filter((m: any) => m.email !== 'correojago@gmail.com');
+      setJuntaMembers(filteredMembers);
     }
 
     // Try to find the user by email if provided
