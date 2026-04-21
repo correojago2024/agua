@@ -902,10 +902,21 @@ export default function AdminPage() {
                           <td colSpan={8} className="px-6 py-4">
                             <div className="space-y-3">
                               {/*基本信息*/}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                                 <div>
                                   <p className="text-slate-500 text-xs mb-1">📅 Fecha Registro</p>
                                   <p className="text-slate-300">{new Date(b.created_at).toLocaleDateString('es-ES')}</p>
+                                </div>
+                                <div>
+                                  <p className="text-slate-500 text-xs mb-1">💰 Plan</p>
+                                  <select value={b.subscription_plan || 'basico'} 
+                                    onChange={(e) => saveField(b.id, 'subscription_plan', e.target.value)}
+                                    className="w-full bg-slate-600 text-blue-400 px-2 py-1 rounded text-xs">
+                                    <option value="basico">Básico ($9)</option>
+                                    <option value="profesional">Profesional ($25)</option>
+                                    <option value="empresarial">Empresarial ($49)</option>
+                                    <option value="ia">IA Intelligence ($79)</option>
+                                  </select>
                                 </div>
                                 <div>
                                   <p className="text-slate-500 text-xs mb-1">💵 Tarifa ($/mes)</p>

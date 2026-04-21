@@ -1,72 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 
-// Planes - estos deberían cargarse desde config en DB
-const defaultPlans = [
-  {
-    id: 'basico',
-    name: 'Básico',
-    price: 9,
-    maxSubscribers: 50,
-    isPopular: false,
-    features: [
-      'Hasta 50 suscriptores',
-      'Alertas por email',
-      'Historial de 3 meses',
-      'Dashboard básico',
-      'Soporte por email',
-    ],
-  },
-  {
-    id: 'profesional',
-    name: 'Profesional',
-    price: 25,
-    maxSubscribers: 200,
-    isPopular: true,
-    features: [
-      'Hasta 200 suscriptores',
-      'Alertas por email y SMS',
-      'Historial ilimitado',
-      'Dashboards personalizados',
-      'Exportación de reportes',
-      'Soporte prioritario',
-    ],
-  },
-  {
-    id: 'empresarial',
-    name: 'Empresarial',
-    price: 49,
-    maxSubscribers: 'unlimited',
-    isCustom: true,
-    features: [
-      'Suscriptores ilimitados',
-      'Todo incluido',
-      'Integración personalizada',
-      'API access',
-      'Soporte dedicado 24/7',
-    ],
-  },
-  {
-    id: 'ia',
-    name: 'IA Intelligence',
-    price: 79,
-    maxSubscribers: 'unlimited',
-    aiEnabled: true,
-    features: [
-      'Todo del plan Empresarial',
-      'Análisis con IA',
-      'Predicciones inteligentes',
-      'Recomendaciones automatizadas',
-      'Reportes inteligentes',
-      'Soporte 24/7 prioritario',
-    ],
-  },
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+interface Plan {
+  id: string;
+  plan_id: string;
+  nombre: string;
+  precio: number;
+  caracteristicas: any;
+  activo: boolean;
+}
+
+const defaultPlans: Plan[] = [
+  { id: '1', plan_id: 'basico', nombre: 'Básico', precio: 9, caracteristicas: { suscriptores: 50, alertas_email: true, historial_meses: 3 }, activo: true },
+  { id: '2', plan_id: 'profesional', nombre: 'Profesional', precio: 25, caracteristicas: { suscriptores: 200, alertas_sms: true, historial_ilimitado: true }, activo: true },
+  { id: '3', plan_id: 'empresarial', nombre: 'Empresarial', precio: 49, caracteristicas: { suscriptores: 'ilimitado', api: true, soporte_24_7: true }, activo: true },
+  { id: '4', plan_id: 'ia', nombre: 'IA Intelligence', precio: 79, caracteristicas: { suscriptores: 'ilimitado', ia: true, api: true, soporte_24_7: true }, activo: true },
 ];
+
+const getPlanFeatures = (plan: Plan) => {
+  const c = plan.caracteristicas;
+  const features = [];
+  if (c.suscriptores) features.push(`Hasta ${c.suscriptores} suscriptores`);
+  if (c.alertas_email) features.push('Alertas por email');
+  if (c.alertas_sms) features.push('Alertas por SMS');
+  if (c.historial_meses) features.push(`Historial de ${c.historial_meses} meses`);
+  if (c.historial_ilimitado) features.push('Historial ilimitado');
+  if (c.api) features.push('API access');
+  if (c.soporte_24_7) features.push('Soporte 24/7');
+  if (c.ia) features.push('Análisis con IA');
+  return features;
+};
 
 export default function PricingSection() {
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
+  const [plans, setPlans] = useState<Plan[]>(defaultPlans);
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      const { data } = await supabase.from('plan_precios').select('*').order('id');
+      if (data && data.length > 0) setPlans(data);
+    };
+    loadPlans();
+  }, []);
+
+  const getPlanById = (planId: string) => plans.find(p => p.plan_id === planId);
 
   return (
     <section id="planes" className="py-20 bg-slate-900">
@@ -81,59 +65,41 @@ export default function PricingSection() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {defaultPlans.map((plan) => (
+          {plans.map((plan) => (
             <div
-              key={plan.id}
+              key={plan.plan_id}
               className={`relative bg-slate-800 rounded-2xl p-6 transition-all ${
-                plan.isPopular
+                plan.plan_id === 'profesional'
                   ? 'ring-2 ring-blue-500 scale-105 shadow-2xl'
                   : 'hover:scale-102'
               }`}
-              onMouseEnter={() => setHoveredPlan(plan.id)}
+              onMouseEnter={() => setHoveredPlan(plan.plan_id)}
               onMouseLeave={() => setHoveredPlan(null)}
             >
-              {plan.isPopular && (
+              {plan.plan_id === 'profesional' && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">
                   Más popular
                 </div>
               )}
               
-              {plan.aiEnabled && (
+              {plan.plan_id === 'ia' && (
                 <div className="absolute -top-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                   🤖 IA
                 </div>
               )}
 
               <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                
-                {!plan.isCustom && !plan.aiEnabled && (
-                  <>
-                    <div className="text-4xl font-bold text-white mb-1">
-                      ${plan.price}
-                    </div>
-                    <div className="text-slate-400">/mes</div>
-                  </>
-                )}
-                
-                {!plan.isCustom && plan.aiEnabled && (
-                  <>
-                    <div className="text-4xl font-bold text-white mb-1">
-                      ${plan.price}
-                    </div>
-                    <div className="text-slate-400">/mes</div>
-                  </>
-                )}
-                
-                {plan.isCustom && (
-                  <div className="text-2xl font-bold text-white">Contactar</div>
-                )}
+                <h3 className="text-xl font-bold text-white mb-2">{plan.nombre}</h3>
+                <div className="text-4xl font-bold text-white mb-1">
+                  ${plan.precio}
+                </div>
+                <div className="text-slate-400">/mes</div>
               </div>
 
               <ul className="space-y-3 mb-6">
-                {plan.features.map((feature, i) => (
+                {getPlanFeatures(plan).map((feature, i) => (
                   <li key={i} className="flex items-start gap-2 text-slate-300 text-sm">
-                    <Check className={`w-5 h-5 flex-shrink-0 ${plan.isPopular ? 'text-blue-400' : 'text-green-400'}`} />
+                    <Check className={`w-5 h-5 flex-shrink-0 ${plan.plan_id === 'profesional' ? 'text-blue-400' : 'text-green-400'}`} />
                     {feature}
                   </li>
                 ))}
@@ -141,12 +107,12 @@ export default function PricingSection() {
 
               <button
                 className={`w-full py-3 rounded-xl font-medium transition-colors ${
-                  plan.isPopular
+                  plan.plan_id === 'profesional'
                     ? 'bg-blue-500 hover:bg-blue-600 text-white'
                     : 'bg-slate-700 hover:bg-slate-600 text-white'
                 }`}
               >
-                {plan.isCustom ? 'Contactar' : plan.aiEnabled ? 'Comenzar' : 'Comenzar'}
+                Comenzar
               </button>
             </div>
           ))}
