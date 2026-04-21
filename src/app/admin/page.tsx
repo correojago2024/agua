@@ -528,25 +528,51 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Building className="w-6 h-6 text-white" />
+      {/* Header with integrated menu */}
+      <header className="bg-slate-800 border-b border-slate-700 px-4 py-3">
+        <div className="max-w-7xl mx-auto">
+          {/* Top row: Logo + Menu */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                <Building className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Panel de Administración</h1>
+                <p className="text-xs text-slate-400">AquaSaaS</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">Panel de Administración</h1>
-              <p className="text-xs text-slate-400">Sistema AquaSaaS — Administrador Principal</p>
+            <div className="flex items-center gap-2">
+              <button onClick={loadBuildings} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg" title="Actualizar">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button onClick={() => router.push('/')} className="flex items-center gap-2 text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-700">
+                <LogOut className="w-4 h-4" /> Salir
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={loadBuildings} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg">
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            <button onClick={() => router.push('/')} className="flex items-center gap-2 text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-700">
-              <LogOut className="w-4 h-4" /> Salir
-            </button>
+
+          {/* Main navigation tabs */}
+          <div className="flex flex-wrap gap-1 bg-slate-700/50 p-1 rounded-lg">
+            {[
+              { id: 'buildings', label: '🏢 Edificios' },
+              { id: 'leads', label: '📬 Leads' },
+              { id: 'reports', label: '📊 Reportes' },
+              { id: 'emails', label: '📧 Emails' },
+              { id: 'plans', label: '💰 Planes' },
+              { id: 'maintenance', label: '🔧 Mantenimiento' },
+              { id: 'logs', label: '📨 Logs' },
+            ].map(({ id, label }) => (
+              <button key={id}
+                onClick={() => { setActiveView(id as any); if (id === 'leads') loadLeads(); if (id === 'logs') loadNotificationLogs(); }}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                  activeView === id 
+                    ? 'bg-blue-600 text-white shadow' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                }`}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </header>
@@ -999,30 +1025,6 @@ export default function AdminPage() {
         </div>
         </>
         )}
-
-        {/* Main navigation tabs - horizontal menu */}
-        <div className="flex flex-wrap gap-2 mb-6 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-          {[
-            { id: 'buildings', label: '🏢 Edificios', Icon: Building },
-            { id: 'leads', label: '📬 Leads', Icon: Users },
-            { id: 'maintenance', label: '🔧 Mantenimiento', Icon: Settings },
-            { id: 'reports', label: '📊 Reportes', Icon: BarChart3 },
-            { id: 'emails', label: '📧 Emails', Icon: Mail },
-            { id: 'plans', label: '💰 Planes', Icon: CreditCard },
-            { id: 'logs', label: '📨 Logs', Icon: Clock },
-          ].map(({ id, label, Icon }) => (
-            <button key={id}
-              onClick={() => { setActiveView(id as any); if (id === 'leads') loadLeads(); if (id === 'logs') loadNotificationLogs(); }}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                activeView === id 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}>
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </div>
 
         {/* Buildings tab */}
 
