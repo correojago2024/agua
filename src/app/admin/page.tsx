@@ -680,6 +680,9 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {/* Tools - Only show when not in buildings tab (moved to Maintenance tab) */}
+        {activeView !== 'buildings' && (
+        <>
         {/* Tools */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
           <div className="flex flex-wrap gap-3 items-center">
@@ -705,94 +708,8 @@ export default function AdminPage() {
           </div>
           <p className="text-slate-500 text-xs mt-2">💡 Para diario: cron-job.org → POST a /api/system-status?sendEmail=true</p>
         </div>
-
-        {/* Auto Schedule Settings */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4 text-purple-400" />
-            <span className="text-white font-medium text-sm">⏰ Programación de Tareas Automáticas</span>
-          </div>
-
-          {/* Tarea 1: Reporte de Estado */}
-          <div className="mb-4 pb-4 border-b border-slate-700">
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="w-4 h-4 text-purple-400" />
-              <span className="text-slate-300 font-medium text-sm">📊 Reporte de Uso del Sistema</span>
-            </div>
-            <div className="grid md:grid-cols-4 gap-2 text-sm">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={autoConfig.reportEnabled} onChange={(e) => setAutoConfig({...autoConfig, reportEnabled: e.target.checked})}
-                  className="w-4 h-4 accent-purple-500" />
-                <span className="text-slate-300">Activar</span>
-              </label>
-              <select value={autoConfig.reportHour} onChange={(e) => setAutoConfig({...autoConfig, reportHour: e.target.value})}
-                className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
-                {['05:00', '06:00', '07:00', '08:00', '09:00', '18:00', '20:00'].map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
-              <select value={autoConfig.reportFrequency} onChange={(e) => setAutoConfig({...autoConfig, reportFrequency: e.target.value as any})}
-                className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
-                <option value="daily">Diaria</option>
-                <option value="weekly">Semanal</option>
-                <option value="monthual">Mensual</option>
-                <option value="percentage">Por %</option>
-              </select>
-              <label className="flex items-center gap-1">
-                <input type="checkbox" checked={autoConfig.reportEmailOnError} onChange={(e) => setAutoConfig({...autoConfig, reportEmailOnError: e.target.checked})}
-                  className="w-4 h-4" />
-                <span className="text-slate-400 text-xs">Error</span>
-              </label>
-            </div>
-            {autoConfig.reportFrequency === 'percentage' && (
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-slate-400 text-xs">Al %:</span>
-                {['50', '75', '90', '95'].map(p => (
-                  <label key={p} className="flex items-center gap-1">
-                    <input type="checkbox" checked={autoConfig.reportPercentageTriggers.includes(p)}
-                      onChange={(e) => {
-                        const newTriggers = e.target.checked ? [...autoConfig.reportPercentageTriggers, p] : autoConfig.reportPercentageTriggers.filter(t => t !== p);
-                        setAutoConfig({...autoConfig, reportPercentageTriggers: newTriggers});
-                      }}
-                      className="w-3 h-3" />
-                    <span className="text-slate-300 text-xs">{p}%</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Tarea 2: Mantenimiento */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Wrench className="w-4 h-4 text-cyan-400" />
-              <span className="text-slate-300 font-medium text-sm">🔧 Mantenimiento</span>
-            </div>
-            <div className="grid md:grid-cols-3 gap-2 text-sm">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={autoConfig.maintenanceEnabled} onChange={(e) => setAutoConfig({...autoConfig, maintenanceEnabled: e.target.checked})}
-                  className="w-4 h-4 accent-cyan-500" />
-                <span className="text-slate-300">Activar</span>
-              </label>
-              <select value={autoConfig.maintenanceHour} onChange={(e) => setAutoConfig({...autoConfig, maintenanceHour: e.target.value})}
-                className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
-                {['02:00', '03:00', '04:00', '05:00'].map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
-              <select value={autoConfig.maintenanceFrequency} onChange={(e) => setAutoConfig({...autoConfig, maintenanceFrequency: e.target.value as any})}
-                className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
-                <option value="daily">Diaria</option>
-                <option value="weekly">Semanal</option>
-                <option value="biweekly">Quincenal (15 días)</option>
-                <option value="monthual">Mensual</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="mt-3 pt-3 border-t border-slate-700">
-            <button className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs">
-              💾 Guardar Configuración
-            </button>
-            <span className="text-slate-500 text-xs ml-2">(Se guarda en la próxima actualización)</span>
-          </div>
-        </div>
+        </>
+        )}
 
         {/* Buildings tab */}
         {activeView === 'buildings' && (
@@ -1079,21 +996,109 @@ export default function AdminPage() {
 
         {/* Maintenance tab */}
         {activeView === 'maintenance' && (
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 space-y-5">
-            <div className="flex items-start justify-between flex-wrap gap-3">
-              <div>
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Wrench className="w-5 h-5 text-cyan-400" />
-                  Mantenimiento Manual del Sistema
-                </h2>
-                <p className="text-slate-400 text-sm mt-1">Ejecuta la rutina ahora y recibe reporte por email.</p>
+          <div className="space-y-6">
+            {/* Tools Section */}
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Wrench className="w-5 h-5 text-cyan-400" />
+                <h2 className="text-lg font-semibold text-white">🔧 Herramientas</h2>
               </div>
-              <button onClick={runMaintenance} disabled={maintLoading}
-                className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
-                <RefreshCw className={`w-4 h-4 ${maintLoading ? 'animate-spin' : ''}`} />
-                {maintLoading ? 'Ejecutando...' : 'Ejecutar Ahora'}
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={runTrialCheck} disabled={trialCheckLoading}
+                  title="Revisa edificios con prueba por vencer (3 días). Envía emails y suspende automáticamente los vencidos."
+                  className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50">
+                  {trialCheckLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                  Verificar Pruebas
+                </button>
+                <button onClick={runMaintenance} disabled={maintLoading}
+                  title="Limpia datos antiguos, verifica integridad y envía reporte a correojago@gmail.com"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50">
+                  {maintLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
+                  Mantenimiento
+                </button>
+                <button onClick={checkSystemStatus} disabled={systemStatusLoading}
+                  title="Verificar uso de recursos vs límites gratuitos y enviar reporte"
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50">
+                  {systemStatusLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
+                  Estado Sistema
+                </button>
+              </div>
+              <p className="text-slate-500 text-xs mt-3">💡 Para diario: cron-job.org → POST a /api/system-status?sendEmail=true</p>
             </div>
+
+            {/* Auto Schedule Settings */}
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-5 h-5 text-purple-400" />
+                <h2 className="text-lg font-semibold text-white">⏰ Programación de Tareas Automáticas</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div className="pb-4 border-b border-slate-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="w-4 h-4 text-purple-400" />
+                    <span className="text-slate-300 font-medium">📊 Reporte de Uso del Sistema</span>
+                  </div>
+                  <div className="grid md:grid-cols-4 gap-3 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" checked={autoConfig.reportEnabled} onChange={(e) => setAutoConfig({...autoConfig, reportEnabled: e.target.checked})}
+                        className="w-4 h-4 accent-purple-500" />
+                      <span className="text-slate-300">Activar</span>
+                    </label>
+                    <select value={autoConfig.reportHour} onChange={(e) => setAutoConfig({...autoConfig, reportHour: e.target.value})}
+                      className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
+                      {['05:00', '06:00', '07:00', '08:00', '09:00', '18:00', '20:00'].map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                    <select value={autoConfig.reportFrequency} onChange={(e) => setAutoConfig({...autoConfig, reportFrequency: e.target.value as any})}
+                      className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
+                      <option value="daily">Diaria</option>
+                      <option value="weekly">Semanal</option>
+                      <option value="monthual">Mensual</option>
+                      <option value="percentage">Por %</option>
+                    </select>
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={autoConfig.reportEmailOnError} onChange={(e) => setAutoConfig({...autoConfig, reportEmailOnError: e.target.checked})}
+                        className="w-4 h-4" />
+                      <span className="text-slate-400 text-xs">Error</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wrench className="w-4 h-4 text-cyan-400" />
+                    <span className="text-slate-300 font-medium">🔧 Mantenimiento</span>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-3 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" checked={autoConfig.maintenanceEnabled} onChange={(e) => setAutoConfig({...autoConfig, maintenanceEnabled: e.target.checked})}
+                        className="w-4 h-4 accent-cyan-500" />
+                      <span className="text-slate-300">Activar</span>
+                    </label>
+                    <select value={autoConfig.maintenanceHour} onChange={(e) => setAutoConfig({...autoConfig, maintenanceHour: e.target.value})}
+                      className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
+                      {['02:00', '03:00', '04:00', '05:00'].map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                    <select value={autoConfig.maintenanceFrequency} onChange={(e) => setAutoConfig({...autoConfig, maintenanceFrequency: e.target.value as any})}
+                      className="bg-slate-700 text-white px-2 py-1 rounded text-xs">
+                      <option value="daily">Diaria</option>
+                      <option value="weekly">Semanal</option>
+                      <option value="biweekly">Quincenal (15 días)</option>
+                      <option value="monthual">Mensual</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="pt-3 border-t border-slate-700">
+                  <button className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm">
+                    💾 Guardar Configuración
+                  </button>
+                  <span className="text-slate-500 text-xs ml-2">(Se guarda en la próxima actualización)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Maintenance Result */}
             {maintResult && (
               <div className="space-y-3">
                 <div className="flex gap-3 flex-wrap">

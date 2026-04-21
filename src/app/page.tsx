@@ -998,6 +998,12 @@ export default function HomePage() {
               Ingresar <ArrowRight className="w-5 h-5" />
             </button>
             <button
+              onClick={() => { setFormData({...formData, slug: 'demo', password: 'demo'}); setLoginMode('admin'); setView('login'); }}
+              className="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-xl transition-all shadow-lg shadow-purple-500/25 flex items-center gap-2 justify-center"
+            >
+              Ver Demo
+            </button>
+            <button
               onClick={() => setView('register')}
               className="border border-slate-600 text-gray-200 hover:bg-slate-800 font-semibold px-8 py-4 rounded-xl transition-all"
             >
