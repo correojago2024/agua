@@ -92,7 +92,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState('');
-  const [activeView, setActiveView] = useState<'leads' | 'maintenance' | 'reports' | 'emails' | 'logs' | 'plans'>('leads');
+  const [activeView, setActiveView] = useState<'buildings' | 'leads' | 'maintenance' | 'reports' | 'emails' | 'plans' | 'logs'>('buildings');
   
   // Editing fields
   const [editingField, setEditingField] = useState<{id: string; field: string} | null>(null);
@@ -150,7 +150,7 @@ export default function AdminPage() {
       setTimeout(() => setPlansMsg(''), 2000);
     }
   };
-  
+
   // Auto Schedule Config
   const [autoConfig, setAutoConfig] = useState({
     // System Status Report
@@ -768,8 +768,11 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Buildings table */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden mb-4">
+        {/* Buildings tab */}
+        {activeView === 'buildings' && (
+          <>
+            {/* Buildings table */}
+            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden mb-4">
           <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-white">Edificios Registrados</h2>
             <div className="flex items-center gap-3">
@@ -994,26 +997,34 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+        </>
+        )}
 
-        {/* Sub-tabs: Leads / Maintenance / Reports / Emails / Logs */}
-        <div className="flex gap-2 border-b border-slate-700 mb-6 mt-10">
-          {([
-            { id: 'leads' as const,       label: '📬 Leads' },
-            { id: 'maintenance' as const, label: '🔧 Mante' },
-            { id: 'reports' as const, label: '📊 Reportes' },
-            { id: 'emails' as const, label: '📧 Emails' },
-            { id: 'plans' as const, label: '💰 Planes' },
-            { id: 'logs' as const,       label: '📨 Logs' },
-          ]).map(({ id, label }) => (
+        {/* Main navigation tabs - horizontal menu */}
+        <div className="flex flex-wrap gap-2 mb-6 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+          {[
+            { id: 'buildings', label: '🏢 Edificios', Icon: Building },
+            { id: 'leads', label: '📬 Leads', Icon: Users },
+            { id: 'maintenance', label: '🔧 Mantenimiento', Icon: Settings },
+            { id: 'reports', label: '📊 Reportes', Icon: BarChart3 },
+            { id: 'emails', label: '📧 Emails', Icon: Mail },
+            { id: 'plans', label: '💰 Planes', Icon: CreditCard },
+            { id: 'logs', label: '📨 Logs', Icon: Clock },
+          ].map(({ id, label, Icon }) => (
             <button key={id}
               onClick={() => { setActiveView(id as any); if (id === 'leads') loadLeads(); if (id === 'logs') loadNotificationLogs(); }}
-              className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeView === id ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white'
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                activeView === id 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
               }`}>
+              <Icon className="w-4 h-4" />
               {label}
             </button>
           ))}
         </div>
+
+        {/* Buildings tab */}
 
         {/* Leads tab */}
         {activeView === 'leads' && (
