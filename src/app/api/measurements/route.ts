@@ -24,41 +24,28 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 // GMAIL — obtener transporter con credenciales de Supabase
 // ════════════════════════════════════════════════════════════════════════════
 async function getGmailTransporter(): Promise<{ transporter: nodemailer.Transporter; fromEmail: string }> {
-  console.log('[GMAIL] Leyendo credenciales de email_credentials...');
+  console.log('[GMAIL] Intentando leer credenciales...');
   
-  // Buscamos primero el id=1, pero sin usar .single() estrictamente para evitar errores de coerción
-  let { data: list, error } = await supabaseAdmin
+  // Consulta simplificada para evitar problemas de RLS o filtrado
+  const { data: list, error } = await supabaseAdmin
     .from('email_credentials')
-    .select('*')
-    .eq('id', 1)
+    .select('email_user, email_password')
     .limit(1);
 
-  let data = list && list.length > 0 ? list[0] : null;
-
-  if (error || !data) {
-    console.warn('[GMAIL] No se encontró id=1, buscando cualquier registro disponible...');
-    const { data: fallbackList, error: fallbackError } = await supabaseAdmin
-      .from('email_credentials')
-      .select('*')
-      .limit(1);
-    
-    data = fallbackList && fallbackList.length > 0 ? fallbackList[0] : null;
-    error = fallbackError;
-  }
-
   if (error) {
-    console.error('[GMAIL] Error consultando email_credentials:', error.message);
-    throw new Error('Error consultando email_credentials: ' + error.message);
+    console.error('[GMAIL] ❌ Error de Supabase al leer email_credentials:', error.message, error.details, error.hint);
+    throw new Error(`Error de base de datos: ${error.message}`);
   }
+
+  const data = list && list.length > 0 ? list[0] : null;
 
   if (!data) {
-    console.error('[GMAIL] ❌ La tabla email_credentials está VACÍA.');
-    throw new Error('Configuración incompleta: La tabla email_credentials no tiene registros. Por favor, agregue las credenciales de Gmail en Supabase.');
+    console.error('[GMAIL] ❌ No se recibió ningún registro de email_credentials. Verifique RLS o que la tabla tenga datos.');
+    throw new Error('Configuración incompleta: No se encontraron credenciales. Por favor, asegúrese de que la tabla email_credentials tenga datos y permisos de lectura.');
   }
-  console.log('[GMAIL] Credenciales encontradas. email_user:', data.email_user ? data.email_user.substring(0, 6) + '***' : 'VACÍO');
-  if (!data.email_user || !data.email_password) {
-    throw new Error('email_credentials incompleto: faltan email_user o email_password');
-  }
+
+  console.log('[GMAIL] ✅ Credenciales recuperadas para:', data.email_user.substring(0, 5) + '...');
+  
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
