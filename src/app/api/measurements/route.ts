@@ -649,7 +649,7 @@ export async function POST(request: Request) {
       if (!existingSub) {
         await supabase
           .from('resident_subscriptions')
-          .insert({ building_id, email, emails_remaining: 5 });
+          .insert({ building_id, email, emails_remaining: 10 });
       }
     }
 
@@ -659,15 +659,20 @@ export async function POST(request: Request) {
       .eq('building_id', building_id)
       .gt('emails_remaining', 0);
 
+    const emailHtml = buildReportEmailHtml(
+      building, allMeasurements, indicators,
+      liters, percentage, isAnomaly, variationPercentage
+    );
+
     let emailsSent = 0;
-    if (subscribers && subscribers.length > 0) {
-      const recipientEmails = subscribers.map(s => s.email);
+    const recipientEmails = subscribers?.map(s => s.email) || [];
+    
+    // SIEMPRE añadir al administrador del edificio a los destinatarios si tiene admin_email
+    if (building.admin_email && !recipientEmails.includes(building.admin_email)) {
+      recipientEmails.push(building.admin_email);
+    }
 
-      const emailHtml = buildReportEmailHtml(
-        building, allMeasurements, indicators,
-        liters, percentage, isAnomaly, variationPercentage
-      );
-
+    if (recipientEmails.length > 0) {
       const emailResult = await sendEmailViaGmail(
         recipientEmails,
         `💧 Reporte de Agua: ${Math.round(percentage)}% actual — ${building.name}`,
@@ -680,12 +685,15 @@ export async function POST(request: Request) {
         emailsSent = recipientEmails.length;
       }
 
-      for (const sub of subscribers) {
-        const nuevoCredito = sub.emails_remaining - 1;
-        await supabase
-          .from('resident_subscriptions')
-          .update({ emails_remaining: nuevoCredito })
-          .eq('id', sub.id);
+      // Descontar créditos solo a los suscriptores residentes (no al admin)
+      if (subscribers && subscribers.length > 0) {
+        for (const sub of subscribers) {
+          const nuevoCredito = sub.emails_remaining - 1;
+          await supabase
+            .from('resident_subscriptions')
+            .update({ emails_remaining: nuevoCredito })
+            .eq('id', sub.id);
+        }
       }
     }
 

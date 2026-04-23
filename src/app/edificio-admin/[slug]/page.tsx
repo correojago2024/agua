@@ -30,7 +30,12 @@ import {
   FlowComparisonChart, 
   TankLevelGauge, 
   ThresholdsChart, 
-  StatusIndicator 
+  StatusIndicator,
+  DayOfWeekConsumptionChart,
+  LastWeeksTrendChart,
+  WeekendConsumptionChart,
+  MonthlyHistoryChart,
+  HourlyConsumptionChart
 } from '@/components/DashboardCharts';
 
 import { Measurement } from '@/lib/calculations';
@@ -859,41 +864,32 @@ const { error: updateError } = await supabase.from('building_members')
                   <div className="space-y-6 p-6">
                     {/* Fila Principal: Gauge + Indicador de Alarma */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="flex flex-col gap-4">
-                        <TankLevelGauge percentage={measurements[0]?.percentage ?? 0} />
-                      </div>
-                      <div className="flex flex-col gap-4">
-                        <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
-                      </div>
+                      <TankLevelGauge percentage={measurements[0]?.percentage ?? 0} />
+                      <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
                     </div>
 
-                    {/* Gráficos de Tendencia */}
-                    <div className="grid grid-cols-1 gap-6">
-                      <CombinedTrendChart data={measurements} />
-                    </div>
-
+                    {/* Fila 2: Tendencia y Umbrales */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FlowComparisonChart data={measurements} />
+                      <CombinedTrendChart data={measurements} />
                       <ThresholdsChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
                     </div>
 
-                    {/* Otros gráficos que siguen usando imágenes (optimizados) por ahora */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { title: 'Consumo por Día de la Semana',       url: chartUrls?.dayOfWeekChart },
-                        { title: 'Nivel % — Últimas 4 Semanas',        url: chartUrls?.last4WeeksChart },
-                        { title: 'Consumo Fin de Semana (5 semanas)',   url: chartUrls?.weekendChart },
-                        { title: 'Histórico Mensual Consumo/Llenado',  url: chartUrls?.historicoMensualChart },
-                      ].map((chart, i) => (
-                        <div key={i} className="bg-white rounded-lg overflow-hidden p-2">
-                          <p className="text-xs text-slate-500 font-medium mb-2 text-center">{chart.title}</p>
-                          {chart.url ? (
-                            <img src={chart.url} alt={chart.title} className="max-w-full h-auto mx-auto" />
-                          ) : (
-                            <div className="h-40 flex items-center justify-center text-slate-300">Cargando...</div>
-                          )}
-                        </div>
-                      ))}
+                    {/* Fila 3: Consumo por Día y Semanas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <DayOfWeekConsumptionChart data={measurements} />
+                      <LastWeeksTrendChart data={measurements} />
+                    </div>
+
+                    {/* Fila 4: Fin de Semana e Histórico */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <WeekendConsumptionChart data={measurements} />
+                      <MonthlyHistoryChart data={measurements} />
+                    </div>
+
+                    {/* VALOR AGREGADO: Franja Horaria y Caudal */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <HourlyConsumptionChart data={measurements} />
+                      <FlowComparisonChart data={measurements} />
                     </div>
                   </div>
                 ) : (

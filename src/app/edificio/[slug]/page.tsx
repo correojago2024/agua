@@ -157,7 +157,12 @@ export default function ResidentForm() {
               src={building.banner_url}
               alt={`Banner ${building.name}`}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                // Si la imagen falla, ocultamos el img o cambiamos a un degradado
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
             />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-slate-900 -z-10" />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4">
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="bg-white/20 p-1.5 md:p-2 rounded-lg backdrop-blur-sm">
