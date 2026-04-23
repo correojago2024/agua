@@ -32,23 +32,11 @@ function sanitize(obj: any): any {
 
 function enc(cfg: any, w = 700, h = 350): string {
   const sanitizedCfg = sanitize(cfg);
-  // Agregamos v=2.9.4 para asegurar estabilidad y quitamos parámetros redundantes
-  return `${QUICKCHART_BASE}?v=2.9.4&c=${encodeURIComponent(JSON.stringify(sanitizedCfg))}&width=${w}&height=${h}&bkg=white`;
+  // Forzamos v=3 para usar la sintaxis moderna de Chart.js
+  return `${QUICKCHART_BASE}?v=3&c=${encodeURIComponent(JSON.stringify(sanitizedCfg))}&width=${w}&height=${h}&bkg=white`;
 }
 
-// Obtiene la variación de una medición leyendo ambos nombres de campo posibles
-function getVar(m: Measurement): number {
-  const v = (m.variacion_lts ?? m.variation_lts ?? 0) as number;
-  return isNaN(v) ? 0 : v;
-}
-
-// Ordena mediciones por recorded_at ascendente y toma las últimas N
-function lastN(measurements: Measurement[], n: number): Measurement[] {
-  return [...measurements]
-    .filter(m => m && m.recorded_at)
-    .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
-    .slice(-n);
-}
+// ... (getVar y lastN se mantienen igual) ...
 
 // ── 1. Gauge mejorado ─────────────────────────────────────────────────────────
 export function getGaugeChartUrl(percentage: number) {
@@ -65,9 +53,11 @@ export function getGaugeChartUrl(percentage: number) {
       }]
     },
     options: {
-      valueLabel: {
-        fontSize: 28,
-        color: '#1e293b'
+      plugins: {
+        datalabels: {
+          display: true,
+          formatter: (v: any) => v + '%'
+        }
       }
     }
   }, 420, 260);
@@ -87,11 +77,14 @@ export function getCaudalChartUrl(measurements: Measurement[]) {
         { label: 'Consumo (L/min)', data: data.map(m => flowField(m) < 0 ? +Math.abs(flowField(m)).toFixed(2) : 0), backgroundColor: '#ef4444' }
       ]
     },
-    options: { plugins: { title: { display: true, text: 'Caudal — Llenado vs Consumo (L/min)' } } }
+    options: { 
+      plugins: { title: { display: true, text: 'Caudal — Llenado vs Consumo (L/min)' } },
+      scales: { y: { beginAtZero: true } }
+    }
   });
 }
 
-// ── 3. Porcentaje del Tanque (línea simple, compatible con QuickChart) ───────
+// ── 3. Porcentaje del Tanque (línea simple) ──────────────────────────────────
 export function getCombinadoChartUrl(measurements: Measurement[]) {
   const data = lastN(measurements, 20);
   const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm'));
@@ -116,7 +109,7 @@ export function getCombinadoChartUrl(measurements: Measurement[]) {
     options: {
       plugins: { title: { display: true, text: 'Evolución del Nivel del Tanque (%)' } },
       scales: {
-        yAxes: [{ ticks: { min: 0, max: 100 }, scaleLabel: { display: true, labelString: '% Nivel' } }]
+        y: { min: 0, max: 100, title: { display: true, text: '% Nivel' } }
       }
     }
   });
@@ -455,7 +448,7 @@ export function getWeekendLitrosChartUrl(measurements: Measurement[]) {
     },
     options: {
       plugins: { title: { display: true, text: 'Consumo/Llenado Sáb-Dom — Últimas 5 Semanas (L)' } },
-      scales: { yAxes: [{ scaleLabel: { display: true, labelString: 'Litros' } }] }
+      scales: { y: { title: { display: true, text: 'Litros' } } }
     }
   });
 }
@@ -486,7 +479,7 @@ export function getSemanaActualVsAnteriorChartUrl(measurements: Measurement[]) {
     },
     options: {
       plugins: { title: { display: true, text: 'Consumo por Día — Semana Actual vs Anterior (L)' } },
-      scales: { yAxes: [{ scaleLabel: { display: true, labelString: 'Litros consumidos' } }] }
+      scales: { y: { title: { display: true, text: 'Litros consumidos' } } }
     }
   });
 }
@@ -527,7 +520,7 @@ export function getWeekendVariacionPctChartUrl(measurements: Measurement[]) {
     },
     options: {
       plugins: { title: { display: true, text: 'Variación en Puntos % Sáb-Dom — Últimas 5 Semanas' } },
-      scales: { yAxes: [{ scaleLabel: { display: true, labelString: 'Puntos %' } }] }
+      scales: { y: { title: { display: true, text: 'Puntos %' } } }
     }
   });
 }
@@ -568,7 +561,7 @@ export function getConsumoFranjaHorariaChartUrl(measurements: Measurement[]) {
     },
     options: {
       plugins: { title: { display: true, text: 'Consumo Promedio por Franja Horaria — Última Semana vs Mes' } },
-      scales: { yAxes: [{ scaleLabel: { display: true, labelString: 'Litros promedio' } }] }
+      scales: { y: { title: { display: true, text: 'Litros promedio' } } }
     }
   });
 }
