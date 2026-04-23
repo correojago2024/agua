@@ -160,7 +160,7 @@ export const DayOfWeekConsumptionChart = ({ data }: ChartProps) => {
 export const LastWeeksTrendChart = ({ data }: ChartProps) => {
   const now = new Date();
   const diasLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const datasets = [];
+  const datasets: { name: string; data: (number | null)[] }[] = [];
 
   for (let w = 3; w >= 0; w--) {
     const weekStart = startOfWeek(subWeeks(now, w), { weekStartsOn: 1 });
@@ -200,7 +200,7 @@ export const LastWeeksTrendChart = ({ data }: ChartProps) => {
 // ── 6. Weekend Consumption (5 Weeks) ───────────────────────────────────────
 export const WeekendConsumptionChart = ({ data }: ChartProps) => {
   const now = new Date();
-  const chartData = [];
+  const chartData: { name: string; Sabado: number; Domingo: number }[] = [];
 
   for (let w = 4; w >= 0; w--) {
     const weekStart = startOfWeek(subWeeks(now, w), { weekStartsOn: 1 });
@@ -240,7 +240,7 @@ export const WeekendConsumptionChart = ({ data }: ChartProps) => {
 // ── 7. Monthly History (Consumed vs Filled) ────────────────────────────────
 export const MonthlyHistoryChart = ({ data }: ChartProps) => {
   const now = new Date();
-  const chartData = [];
+  const chartData: { name: string; Consumo: number; Llenado: number }[] = [];
 
   for (let i = 5; i >= 0; i--) {
     const mStart = startOfMonth(subMonths(now, i));
