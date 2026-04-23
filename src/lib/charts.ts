@@ -20,25 +20,40 @@ import { es } from 'date-fns/locale';
 
 const QUICKCHART_BASE = 'https://quickchart.io/chart';
 
+// Helper para limpiar objetos de valores no serializables como NaN o Infinity
+function sanitize(obj: any): any {
+  return JSON.parse(JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'number') {
+      if (isNaN(value) || !isFinite(value)) return 0;
+    }
+    return value;
+  }));
+}
+
 function enc(cfg: any, w = 700, h = 350): string {
-  return `${QUICKCHART_BASE}?c=${encodeURIComponent(JSON.stringify(cfg))}&width=${w}&height=${h}&backgroundColor=%23ffffff&devicePixelRatio=2`;
+  const sanitizedCfg = sanitize(cfg);
+  // Agregamos v=2.9.4 para asegurar estabilidad y quitamos parámetros redundantes
+  return `${QUICKCHART_BASE}?v=2.9.4&c=${encodeURIComponent(JSON.stringify(sanitizedCfg))}&width=${w}&height=${h}&bkg=white`;
 }
 
 // Obtiene la variación de una medición leyendo ambos nombres de campo posibles
 function getVar(m: Measurement): number {
-  return (m.variacion_lts ?? m.variation_lts ?? 0) as number;
+  const v = (m.variacion_lts ?? m.variation_lts ?? 0) as number;
+  return isNaN(v) ? 0 : v;
 }
 
 // Ordena mediciones por recorded_at ascendente y toma las últimas N
 function lastN(measurements: Measurement[], n: number): Measurement[] {
   return [...measurements]
+    .filter(m => m && m.recorded_at)
     .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
     .slice(-n);
 }
 
 // ── 1. Gauge mejorado ─────────────────────────────────────────────────────────
 export function getGaugeChartUrl(percentage: number) {
-  const pct = Math.round(Math.max(0, Math.min(100, percentage)));
+  const safePct = isNaN(percentage) ? 0 : percentage;
+  const pct = Math.round(Math.max(0, Math.min(100, safePct)));
   return enc({
     type: 'gauge',
     data: {
@@ -52,8 +67,7 @@ export function getGaugeChartUrl(percentage: number) {
     options: {
       valueLabel: {
         fontSize: 28,
-        color: '#1e293b',
-        formatter: (v: number) => v + '%'
+        color: '#1e293b'
       }
     }
   }, 420, 260);
@@ -289,7 +303,7 @@ export function getProjectionFillingChartUrl(measurements: Measurement[], capaci
   const baseTime = new Date(lastRecord.recorded_at);
 
   const points: { label: string; pct: number; color: string }[] = [
-    { label: format(baseTime, 'HH:mm\ndd/MM'), pct: +currentPct.toFixed(1), color: '#3b82f6' }
+    { label: format(baseTime, 'HH:mm dd/MM'), pct: +currentPct.toFixed(1), color: '#3b82f6' }
   ];
 
   if (flowLpm < 0) {
@@ -300,7 +314,7 @@ export function getProjectionFillingChartUrl(measurements: Measurement[], capaci
       if (targetL < currentLiters) {
         const mins = (currentLiters - targetL) / Math.abs(flowLpm);
         if (mins > 0 && mins < 20160) {
-          points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm\ndd/MM'), pct: t, color: colors[i] });
+          points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm dd/MM'), pct: t, color: colors[i] });
         }
       }
     });
@@ -312,14 +326,14 @@ export function getProjectionFillingChartUrl(measurements: Measurement[], capaci
       if (targetL > currentLiters) {
         const mins = (targetL - currentLiters) / flowLpm;
         if (mins > 0 && mins < 20160) {
-          points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm\ndd/MM'), pct: t, color: colors[i] });
+          points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm dd/MM'), pct: t, color: colors[i] });
         }
       }
     });
   } else {
     // estable: mostrar línea plana con etiquetas de tiempo +6h, +12h, +24h
     [0, 6*60, 12*60, 24*60].forEach(mins => {
-      points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm\ndd/MM'), pct: +currentPct.toFixed(1), color: '#94a3b8' });
+      points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm dd/MM'), pct: +currentPct.toFixed(1), color: '#94a3b8' });
     });
   }
 
