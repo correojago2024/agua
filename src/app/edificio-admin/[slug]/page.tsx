@@ -25,6 +25,13 @@ import {
 } from 'lucide-react';
 
 import { getAllImprovedCharts } from '@/lib/charts';
+import { 
+  CombinedTrendChart, 
+  FlowComparisonChart, 
+  TankLevelGauge, 
+  ThresholdsChart, 
+  StatusIndicator 
+} from '@/components/DashboardCharts';
 
 import { Measurement } from '@/lib/calculations';
 
@@ -848,50 +855,49 @@ const { error: updateError } = await supabase.from('building_members')
                     <RefreshCw className="w-5 h-5 animate-spin" />
                     <span>Generando gráficos...</span>
                   </div>
-                ) : chartUrls ? (
-                  <div className="space-y-4 p-4">
-                    {/* Fila 1: Gauge + Proyección */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white rounded-lg overflow-hidden p-2 flex flex-col items-center">
-                        <p className="text-xs text-slate-500 font-medium mb-2 text-center">🎯 Nivel Actual del Tanque</p>
-                        <img src={chartUrls.gaugeChart} alt="Nivel Tanque" className="max-w-full h-auto" />
+                ) : measurements.length > 0 ? (
+                  <div className="space-y-6 p-6">
+                    {/* Fila Principal: Gauge + Indicador de Alarma */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-4">
+                        <TankLevelGauge percentage={measurements[0]?.percentage ?? 0} />
                       </div>
-                      <div className="bg-white rounded-lg overflow-hidden p-2 flex flex-col items-center">
-                        <p className="text-xs text-slate-500 font-medium mb-2 text-center">📈 Proyección Llenado/Vaciado</p>
-                        <img src={chartUrls.projectionFillingChart} alt="Proyección" className="max-w-full h-auto" />
+                      <div className="flex flex-col gap-4">
+                        <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
                       </div>
                     </div>
-                    {/* Filas de gráficos pares */}
-                    {[
-                      { title: 'Evolución del Nivel del Tanque (%)', url: chartUrls.combinadoChart },
-                      { title: 'Caudal — Llenado vs Consumo',       url: chartUrls.caudalChart },
-                      { title: 'Variación entre Mediciones',         url: chartUrls.variationChart },
-                      { title: 'Nivel con Umbrales de Alerta',       url: chartUrls.thresholdChart },
-                      { title: 'Consumo por Día de la Semana',       url: chartUrls.dayOfWeekChart },
-                      { title: 'Nivel % — Últimas 4 Semanas',        url: chartUrls.last4WeeksChart },
-                      { title: 'Consumo Fin de Semana (5 semanas)',   url: chartUrls.weekendChart },
-                      { title: 'Histórico Mensual Consumo/Llenado',  url: chartUrls.historicoMensualChart },
-                      { title: 'Consumo/Llenado Sáb-Dom (5 sem.)',   url: chartUrls.weekendLitrosChart },
-                      { title: 'Semana Actual vs Anterior (por día)', url: chartUrls.semanaVsAnteriorChart },
-                      { title: 'Variación % Sáb-Dom (5 semanas)',     url: chartUrls.weekendVariacionChart },
-                      { title: 'Consumo por Franja Horaria',          url: chartUrls.franjaHorariaChart },
-                    ].reduce((rows: any[], chart, i) => {
-                      if (i % 2 === 0) rows.push([chart]);
-                      else rows[rows.length - 1].push(chart);
-                      return rows;
-                    }, []).map((pair: any[], rowIdx: number) => (
-                      <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {pair.map((chart: any, i: number) => (
-                          <div key={i} className="bg-white rounded-lg overflow-hidden p-2">
-                            <p className="text-xs text-slate-500 font-medium mb-2 text-center">{chart.title}</p>
-                            <img src={chart.url} alt={chart.title} className="max-w-full h-auto" />
-                          </div>
-                        ))}
-                      </div>
-                    ))}
+
+                    {/* Gráficos de Tendencia */}
+                    <div className="grid grid-cols-1 gap-6">
+                      <CombinedTrendChart data={measurements} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FlowComparisonChart data={measurements} />
+                      <ThresholdsChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
+                    </div>
+
+                    {/* Otros gráficos que siguen usando imágenes (optimizados) por ahora */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { title: 'Consumo por Día de la Semana',       url: chartUrls?.dayOfWeekChart },
+                        { title: 'Nivel % — Últimas 4 Semanas',        url: chartUrls?.last4WeeksChart },
+                        { title: 'Consumo Fin de Semana (5 semanas)',   url: chartUrls?.weekendChart },
+                        { title: 'Histórico Mensual Consumo/Llenado',  url: chartUrls?.historicoMensualChart },
+                      ].map((chart, i) => (
+                        <div key={i} className="bg-white rounded-lg overflow-hidden p-2">
+                          <p className="text-xs text-slate-500 font-medium mb-2 text-center">{chart.title}</p>
+                          {chart.url ? (
+                            <img src={chart.url} alt={chart.title} className="max-w-full h-auto mx-auto" />
+                          ) : (
+                            <div className="h-40 flex items-center justify-center text-slate-300">Cargando...</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
-                  <div className="p-10 text-center text-slate-500">No se pudieron generar los gráficos.</div>
+                  <div className="p-10 text-center text-slate-500">No hay datos para generar gráficos.</div>
                 )}
               </div>
             )}

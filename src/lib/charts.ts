@@ -54,7 +54,9 @@ function lastN(measurements: Measurement[], n: number): Measurement[] {
 export function getGaugeChartUrl(percentage: number) {
   const safePct = isNaN(percentage) ? 0 : percentage;
   const pct = Math.round(Math.max(0, Math.min(100, safePct)));
-  return enc({
+  
+  // Usamos una configuración más compacta para el Gauge
+  const config = {
     type: 'gauge',
     data: {
       datasets: [{
@@ -68,16 +70,20 @@ export function getGaugeChartUrl(percentage: number) {
       plugins: {
         datalabels: {
           display: true,
-          formatter: (v: any) => v + '%'
+          formatter: (v: any) => v + '%',
+          color: '#1e293b',
+          font: { weight: 'bold', size: 20 }
         }
       }
     }
-  }, 420, 260);
+  };
+  return enc(config, 400, 250);
 }
 
 // ── 2. Caudal Llenado/Consumo ─────────────────────────────────────────────────
 export function getCaudalChartUrl(measurements: Measurement[]) {
-  const data = lastN(measurements, 20);
+  // Reducimos a 12 puntos para acortar la URL
+  const data = lastN(measurements, 12);
   const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm'));
   const flowField = (m: Measurement) => (m.flow_lpm ?? m.caudal_lts_min ?? 0) as number;
   return enc({
@@ -85,66 +91,59 @@ export function getCaudalChartUrl(measurements: Measurement[]) {
     data: {
       labels,
       datasets: [
-        { label: 'Llenado (L/min)', data: data.map(m => flowField(m) > 0 ? +flowField(m).toFixed(2) : 0), backgroundColor: '#22c55e' },
-        { label: 'Consumo (L/min)', data: data.map(m => flowField(m) < 0 ? +Math.abs(flowField(m)).toFixed(2) : 0), backgroundColor: '#ef4444' }
+        { label: 'Llenado', data: data.map(m => flowField(m) > 0 ? +flowField(m).toFixed(1) : 0), backgroundColor: '#22c55e' },
+        { label: 'Consumo', data: data.map(m => flowField(m) < 0 ? +Math.abs(flowField(m)).toFixed(1) : 0), backgroundColor: '#ef4444' }
       ]
     },
     options: { 
-      plugins: { title: { display: true, text: 'Caudal — Llenado vs Consumo (L/min)' } },
+      plugins: { title: { display: true, text: 'Caudal (L/min)' } },
       scales: { y: { beginAtZero: true } }
     }
-  });
+  }, 600, 300);
 }
 
 // ── 3. Porcentaje del Tanque (línea simple) ──────────────────────────────────
 export function getCombinadoChartUrl(measurements: Measurement[]) {
-  const data = lastN(measurements, 20);
-  const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm'));
-  const valores = data.map(m => +m.percentage.toFixed(1));
-  const pointColors = valores.map(v => v > 60 ? '#22c55e' : v > 30 ? '#f59e0b' : '#ef4444');
+  const data = lastN(measurements, 15);
+  const labels = data.map(m => format(new Date(m.recorded_at), 'HH:mm'));
+  const valores = data.map(m => +m.percentage.toFixed(0));
   return enc({
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label: 'Nivel del Tanque (%)',
+        label: 'Nivel (%)',
         data: valores,
         borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59,130,246,0.15)',
-        borderWidth: 3,
-        pointRadius: 5,
-        pointBackgroundColor: pointColors,
+        backgroundColor: 'rgba(59,130,246,0.1)',
         fill: true,
         tension: 0.3
       }]
     },
     options: {
-      plugins: { title: { display: true, text: 'Evolución del Nivel del Tanque (%)' } },
-      scales: {
-        y: { min: 0, max: 100, title: { display: true, text: '% Nivel' } }
-      }
+      scales: { y: { min: 0, max: 100 } }
     }
-  });
+  }, 600, 300);
 }
 
 // ── 4. Variación entre Mediciones — barras rojas/verdes ──────────────────────
 export function getDailyVariationChartUrl(measurements: Measurement[]) {
-  const data = lastN(measurements, 20);
-  const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm'));
-  const values = data.map(m => +getVar(m));
+  const data = lastN(measurements, 15);
+  const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM'));
+  const values = data.map(m => +getVar(m).toFixed(0));
   return enc({
     type: 'bar',
     data: {
       labels,
-      datasets: [{ label: 'Variación (L)', data: values, backgroundColor: values.map(v => v >= 0 ? '#22c55e' : '#ef4444') }]
+      datasets: [{ label: 'Var (L)', data: values, backgroundColor: values.map(v => v >= 0 ? '#22c55e' : '#ef4444') }]
     },
-    options: { plugins: { title: { display: true, text: 'Variación entre Mediciones (verde=llenado, rojo=consumo)' } } }
-  });
+    options: { plugins: { title: { display: true, text: 'Variación (L)' } } }
+  }, 600, 300);
 }
 
 // ── 5. Nivel con Umbrales ────────────────────────────────────────────────────
 export function getThresholdChartUrl(measurements: Measurement[], capacity: number) {
-  const data = lastN(measurements, 30);
+  const data = lastN(measurements, 15);
   const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm'));
   const n = data.length;
   return enc({
@@ -152,26 +151,23 @@ export function getThresholdChartUrl(measurements: Measurement[], capacity: numb
     data: {
       labels,
       datasets: [
-        { label: 'Nivel Actual', data: data.map(m => Math.round(m.liters)), borderColor: '#3b82f6', borderWidth: 3, pointRadius: 2 },
-        { label: `60% (${Math.round(capacity*0.6).toLocaleString()} L)`, data: Array(n).fill(Math.round(capacity*0.6)), borderColor: '#fbbf24', borderDash: [6,4], borderWidth: 2, pointRadius: 0 },
-        { label: `40% (${Math.round(capacity*0.4).toLocaleString()} L)`, data: Array(n).fill(Math.round(capacity*0.4)), borderColor: '#f97316', borderDash: [6,4], borderWidth: 2, pointRadius: 0 },
-        { label: `20% (${Math.round(capacity*0.2).toLocaleString()} L)`, data: Array(n).fill(Math.round(capacity*0.2)), borderColor: '#ef4444', borderDash: [6,4], borderWidth: 2, pointRadius: 0 }
+        { label: 'Nivel', data: data.map(m => Math.round(m.liters)), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 2 },
+        { label: '60%', data: Array(n).fill(Math.round(capacity*0.6)), borderColor: '#fbbf24', borderDash: [5,5], borderWidth: 1, pointRadius: 0 },
+        { label: '20%', data: Array(n).fill(Math.round(capacity*0.2)), borderColor: '#ef4444', borderDash: [5,5], borderWidth: 1, pointRadius: 0 }
       ]
-    },
-    options: { plugins: { title: { display: true, text: 'Nivel del Tanque con Umbrales de Alerta' } } }
-  });
+    }
+  }, 600, 300);
 }
 
 // ── 6. Tendencia 4 Semanas — líneas por semana, eje X = Lun-Dom ──────────────
 export function getLast4WeeksChartUrl(measurements: Measurement[]) {
   const now = new Date();
-  const diasLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const diasLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7'];
   const datasets: any[] = [];
 
-  for (let w = 3; w >= 0; w--) {
+  for (let w = 2; w >= 0; w--) { // Reducimos a 3 semanas para acortar URL
     const weekStart = startOfWeek(subWeeks(now, w), { weekStartsOn: 1 });
-    const weekEnd   = addDays(weekStart, 6);
     const weekData: (number | null)[] = [];
     for (let d = 0; d < 7; d++) {
       const dayStr = format(addDays(weekStart, d), 'yyyy-MM-dd');
@@ -179,24 +175,16 @@ export function getLast4WeeksChartUrl(measurements: Measurement[]) {
         format(new Date(m.recorded_at), 'yyyy-MM-dd') === dayStr
       );
       weekData.push(dayMs.length > 0
-        ? +(dayMs.reduce((a, m) => a + m.percentage, 0) / dayMs.length).toFixed(1)
+        ? +(dayMs.reduce((a, m) => a + m.percentage, 0) / dayMs.length).toFixed(0)
         : null
       );
     }
-    // Build label with date range: "Esta sem (05/04-11/04)" or "Sem -1 (29/03)"
-    const startFmt = format(weekStart, 'dd/MM');
-    const endFmt   = format(weekEnd,   'dd/MM');
-    const lbl = w === 0
-      ? `Esta sem (${startFmt}-${endFmt})`
-      : `Sem -${w} (${startFmt})`;
     datasets.push({
-      label: lbl,
+      label: w === 0 ? 'Actual' : `Sem -${w}`,
       data: weekData,
-      borderColor: COLORS[3 - w],
+      borderColor: COLORS[2 - w],
       backgroundColor: 'transparent',
       borderWidth: 2,
-      pointRadius: 4,
-      tension: 0.3,
       spanGaps: true
     });
   }
@@ -204,10 +192,10 @@ export function getLast4WeeksChartUrl(measurements: Measurement[]) {
     type: 'line',
     data: { labels: diasLabels, datasets },
     options: {
-      plugins: { title: { display: true, text: 'Nivel % por Día — Últimas 4 Semanas' } },
-      scales: { y: { title: { display: true, text: '% Nivel' }, min: 0, max: 100 } }
+      plugins: { title: { display: true, text: 'Nivel % Últimas 3 Sem' } },
+      scales: { y: { min: 0, max: 100 } }
     }
-  });
+  }, 600, 300);
 }
 
 // ── 7. Consumo Nocturno ──────────────────────────────────────────────────────
@@ -303,69 +291,41 @@ export function getProjectionFillingChartUrl(measurements: Measurement[], capaci
   if (!lastRecord) return enc({ type: 'bar', data: { labels: ['Sin datos'], datasets: [{ data: [0] }] } });
 
   const currentLiters = lastRecord.liters;
-  const currentPct = lastRecord.percentage;
   const flowLpm = (lastRecord.flow_lpm ?? lastRecord.caudal_lts_min ?? 0) as number;
   const baseTime = new Date(lastRecord.recorded_at);
 
-  const points: { label: string; pct: number; color: string }[] = [
-    { label: format(baseTime, 'HH:mm dd/MM'), pct: +currentPct.toFixed(1), color: '#3b82f6' }
+  const points: { label: string; pct: number }[] = [
+    { label: format(baseTime, 'HH:mm'), pct: +lastRecord.percentage.toFixed(0) }
   ];
 
-  if (flowLpm < 0) {
-    const targets  = [60, 40, 30, 20, 0];
-    const colors   = ['#fbbf24', '#f97316', '#ef4444', '#dc2626', '#991b1b'];
-    targets.forEach((t, i) => {
+  if (Math.abs(flowLpm) > 0.1) {
+    const targetPct = flowLpm < 0 ? [50, 0] : [80, 100];
+    targetPct.forEach(t => {
       const targetL = (t / 100) * capacity;
-      if (targetL < currentLiters) {
-        const mins = (currentLiters - targetL) / Math.abs(flowLpm);
-        if (mins > 0 && mins < 20160) {
-          points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm dd/MM'), pct: t, color: colors[i] });
-        }
+      const mins = (targetL - currentLiters) / flowLpm;
+      if (mins > 0 && mins < 10080) {
+        points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm'), pct: t });
       }
-    });
-  } else if (flowLpm > 0) {
-    const targets = [50, 60, 80, 90, 100];
-    const colors  = ['#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'];
-    targets.forEach((t, i) => {
-      const targetL = (t / 100) * capacity;
-      if (targetL > currentLiters) {
-        const mins = (targetL - currentLiters) / flowLpm;
-        if (mins > 0 && mins < 20160) {
-          points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm dd/MM'), pct: t, color: colors[i] });
-        }
-      }
-    });
-  } else {
-    // estable: mostrar línea plana con etiquetas de tiempo +6h, +12h, +24h
-    [0, 6*60, 12*60, 24*60].forEach(mins => {
-      points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm dd/MM'), pct: +currentPct.toFixed(1), color: '#94a3b8' });
     });
   }
-
-  const isVaciar = flowLpm < 0;
-  const title = flowLpm > 0 ? 'Proyección de Llenado (fechas estimadas)'
-    : flowLpm < 0 ? 'Proyección de Vaciado (fechas estimadas)'
-    : 'Nivel Estable — Sin variación significativa';
 
   return enc({
     type: 'line',
     data: {
       labels: points.map(p => p.label),
       datasets: [{
-        label: isVaciar ? 'Nivel estimado vaciado (%)' : 'Nivel estimado llenado (%)',
+        label: flowLpm < 0 ? 'Vaciado (%)' : 'Llenado (%)',
         data: points.map(p => p.pct),
-        borderColor: isVaciar ? '#ef4444' : '#22c55e',
-        backgroundColor: isVaciar ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
-        borderWidth: 3, pointRadius: 6,
-        pointBackgroundColor: points.map(p => p.color),
-        tension: 0.2, fill: true
+        borderColor: flowLpm < 0 ? '#ef4444' : '#22c55e',
+        backgroundColor: 'transparent',
+        borderWidth: 2
       }]
     },
     options: {
-      plugins: { title: { display: true, text: title } },
-      scales: { y: { title: { display: true, text: '% Nivel' }, min: 0, max: 100 } }
+      plugins: { title: { display: true, text: 'Proyección' } },
+      scales: { y: { min: 0, max: 100 } }
     }
-  });
+  }, 600, 300);
 }
 
 // ── 12. Caudal en L/h ─────────────────────────────────────────────────────────
