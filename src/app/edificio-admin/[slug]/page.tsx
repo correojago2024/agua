@@ -35,7 +35,9 @@ import {
   LastWeeksTrendChart,
   WeekendConsumptionChart,
   MonthlyHistoryChart,
-  HourlyConsumptionChart
+  HourlyConsumptionChart,
+  WeeklyComparisonChart,
+  NightlyConsumptionChart
 } from '@/components/DashboardCharts';
 
 import { Measurement } from '@/lib/calculations';
@@ -862,34 +864,29 @@ const { error: updateError } = await supabase.from('building_members')
                   </div>
                 ) : measurements.length > 0 ? (
                   <div className="space-y-6 p-6">
-                    {/* Fila Principal: Gauge + Indicador de Alarma */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <TankLevelGauge percentage={measurements[0]?.percentage ?? 0} />
-                      <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
+                    {/* Fila Principal: Solo Velocímetro centrado */}
+                    <div className="flex justify-center">
+                      <div className="w-full max-w-md">
+                        <TankLevelGauge percentage={measurements[0]?.percentage ?? 0} />
+                      </div>
                     </div>
 
-                    {/* Fila 2: Tendencia y Umbrales */}
+                    {/* Cuadrícula de todos los gráficos */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <CombinedTrendChart data={measurements} />
                       <ThresholdsChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
-                    </div>
-
-                    {/* Fila 3: Consumo por Día y Semanas */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
                       <DayOfWeekConsumptionChart data={measurements} />
                       <LastWeeksTrendChart data={measurements} />
-                    </div>
-
-                    {/* Fila 4: Fin de Semana e Histórico */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
                       <WeekendConsumptionChart data={measurements} />
                       <MonthlyHistoryChart data={measurements} />
-                    </div>
-
-                    {/* VALOR AGREGADO: Franja Horaria y Caudal */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
                       <HourlyConsumptionChart data={measurements} />
                       <FlowComparisonChart data={measurements} />
+                      
+                      <WeeklyComparisonChart data={measurements} />
+                      <NightlyConsumptionChart data={measurements} />
                     </div>
                   </div>
                 ) : (

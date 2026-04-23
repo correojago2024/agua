@@ -343,6 +343,71 @@ export const ThresholdsChart = ({ data, capacity = 169000 }: ChartProps) => {
   );
 };
 
+// ── 11. AGREGADO: Consumo Nocturno (Litros) ──────────────────────────────────
+export const NightlyConsumptionChart = ({ data }: ChartProps) => {
+  const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-15);
+  const formattedData = chartData.map(m => ({
+    name: format(new Date(m.recorded_at), 'dd/MM HH:mm'),
+    litros: getVar(m) < 0 ? Math.abs(getVar(m)) : 0
+  }));
+
+  return (
+    <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Consumo Nocturno (Litros)</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={formattedData}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis dataKey="name" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+          <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Bar dataKey="litros" fill="#1e293b" radius={[4, 4, 0, 0]} name="Litros" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// ── 12. AGREGADO: Comparativa Semana Actual vs Anterior ───────────────────────
+export const WeeklyComparisonChart = ({ data }: ChartProps) => {
+  const now = new Date();
+  const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+  const getWeekData = (offset: number) => {
+    const weekStart = startOfWeek(subWeeks(now, offset), { weekStartsOn: 1 });
+    return DIAS.map((_, d) => {
+      const dayStr = format(addDays(weekStart, d), 'yyyy-MM-dd');
+      const ms = data.filter(m => format(new Date(m.recorded_at), 'yyyy-MM-dd') === dayStr);
+      return Math.round(ms.reduce((a, m) => a + Math.abs(Math.min(0, getVar(m))), 0));
+    });
+  };
+
+  const currentWeek = getWeekData(0);
+  const previousWeek = getWeekData(1);
+
+  const chartData = DIAS.map((day, i) => ({
+    name: day,
+    Actual: currentWeek[i],
+    Anterior: previousWeek[i]
+  }));
+
+  return (
+    <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Semana Actual vs Anterior (L)</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
+          <Bar dataKey="Actual" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Anterior" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 // ── 10. AGREGADO: Hourly Consumption Pattern ───────────────────────────────
 export const HourlyConsumptionChart = ({ data }: ChartProps) => {
   const bins = ['00-04h', '04-08h', '08-12h', '12-16h', '16-20h', '20-24h'];
@@ -378,3 +443,6 @@ export const HourlyConsumptionChart = ({ data }: ChartProps) => {
     </div>
   );
 };
+
+export { FlowComparisonChart, ThresholdsChart } from './DashboardCharts';
+

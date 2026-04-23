@@ -263,20 +263,18 @@ function buildReportEmailHtml(
 
   <div style="padding:28px;">
 
-    <!-- GAUGE e INDICADOR DE ALARMA -->
+    <!-- INDICADOR DE ALARMA (CSS) -->
     <div style="text-align:center;margin-bottom:30px;">
-      <div style="display:inline-block; vertical-align:middle; margin-right:20px;">
-        <img src="${chartUrls.gaugeChart}" width="240" height="auto" alt="Nivel actual del tanque" style="display:block;border:1px solid #e2e8f0;border-radius:12px;"/>
-      </div>
-      <div style="display:inline-block; vertical-align:middle; text-align:left; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0; min-width:200px;">
-        <p style="margin:0 0 5px; font-size:12px; color:#64748b; font-weight:bold; text-transform:uppercase;">Estado de Reserva</p>
-        <p style="margin:0 0 10px; font-size:24px; font-weight:bold; color:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}">
+      <div style="display:inline-block; text-align:left; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; min-width:300px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+        <p style="margin:0 0 8px; font-size:12px; color:#64748b; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Estado de Reserva Actual</p>
+        <p style="margin:0 0 15px; font-size:28px; font-weight:bold; color:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}">
           ${percentageInt > 60 ? '✅ ÓPTIMO' : percentageInt > 30 ? '⚠️ REGULAR' : '🚨 CRÍTICO'}
         </p>
-        <div style="width:100%; background:#e2e8f0; border-radius:10px; height:12px; overflow:hidden;">
+        <div style="width:100%; background:#e2e8f0; border-radius:10px; height:16px; overflow:hidden; margin-bottom:10px;">
           <div style="width:${percentageInt}%; background:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}; height:100%;"></div>
         </div>
-        <p style="margin:8px 0 0; font-size:14px; font-weight:bold; color:#1e293b;">${percentageInt}% de capacidad</p>
+        <p style="margin:0; font-size:18px; font-weight:bold; color:#1e293b;">${percentageInt}% de capacidad</p>
+        <p style="margin:5px 0 0; font-size:12px; color:#64748b;">Aproximadamente ${Math.round(currentLiters).toLocaleString()} Litros</p>
       </div>
     </div>
 
