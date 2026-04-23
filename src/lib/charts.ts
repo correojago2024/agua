@@ -36,7 +36,19 @@ function enc(cfg: any, w = 700, h = 350): string {
   return `${QUICKCHART_BASE}?v=3&c=${encodeURIComponent(JSON.stringify(sanitizedCfg))}&width=${w}&height=${h}&bkg=white`;
 }
 
-// ... (getVar y lastN se mantienen igual) ...
+// Obtiene la variación de una medición leyendo ambos nombres de campo posibles
+function getVar(m: Measurement): number {
+  const v = (m.variacion_lts ?? m.variation_lts ?? 0) as number;
+  return isNaN(v) ? 0 : v;
+}
+
+// Ordena mediciones por recorded_at ascendente y toma las últimas N
+function lastN(measurements: Measurement[], n: number): Measurement[] {
+  return [...measurements]
+    .filter(m => m && m.recorded_at)
+    .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
+    .slice(-n);
+}
 
 // ── 1. Gauge mejorado ─────────────────────────────────────────────────────────
 export function getGaugeChartUrl(percentage: number) {
