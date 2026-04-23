@@ -37,7 +37,10 @@ import {
   MonthlyHistoryChart,
   HourlyConsumptionChart,
   WeeklyComparisonChart,
-  NightlyConsumptionChart
+  NightlyConsumptionChart,
+  VariationChart,
+  FlowHourlyChart,
+  ProjectionChart
 } from '@/components/DashboardCharts';
 
 import { Measurement } from '@/lib/calculations';
@@ -871,7 +874,7 @@ const { error: updateError } = await supabase.from('building_members')
                       </div>
                     </div>
 
-                    {/* Cuadrícula de todos los gráficos */}
+                    {/* Cuadrícula de todos los gráficos (13 en total) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <CombinedTrendChart data={measurements} />
                       <ThresholdsChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
@@ -887,6 +890,12 @@ const { error: updateError } = await supabase.from('building_members')
                       
                       <WeeklyComparisonChart data={measurements} />
                       <NightlyConsumptionChart data={measurements} />
+
+                      <VariationChart data={measurements} />
+                      <FlowHourlyChart data={measurements} />
+
+                      <ProjectionChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
+                      <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
                     </div>
                   </div>
                 ) : (

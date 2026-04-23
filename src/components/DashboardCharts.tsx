@@ -408,6 +408,103 @@ export const WeeklyComparisonChart = ({ data }: ChartProps) => {
   );
 };
 
+// ── 13. AGREGADO: Variación entre Mediciones (Litros) ─────────────────────────
+export const VariationChart = ({ data }: ChartProps) => {
+  const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-15);
+  const formattedData = chartData.map(m => {
+    const v = getVar(m);
+    return {
+      name: format(new Date(m.recorded_at), 'dd/MM'),
+      valor: v
+    };
+  });
+
+  return (
+    <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Variación entre Mediciones (L)</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={formattedData}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
+            {formattedData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.valor >= 0 ? '#10b981' : '#ef4444'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// ── 14. AGREGADO: Caudal en Litros por Hora ──────────────────────────────────
+export const FlowHourlyChart = ({ data }: ChartProps) => {
+  const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-15);
+  const formattedData = chartData.map(m => ({
+    name: format(new Date(m.recorded_at), 'dd/MM HH:mm'),
+    caudal: Math.abs(+(((m.caudal_lts_hora ?? 0) || (m.flow_lpm ?? 0) * 60)).toFixed(1))
+  }));
+
+  return (
+    <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Caudal (Litros por Hora)</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={formattedData}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis dataKey="name" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+          <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <Tooltip />
+          <Area type="monotone" dataKey="caudal" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} name="L/h" />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// ── 15. AGREGADO: Proyección de Nivel ────────────────────────────────────────
+export const ProjectionChart = ({ data, capacity = 169000 }: ChartProps) => {
+  if (data.length === 0) return null;
+  const last = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).pop()!;
+  
+  const currentLiters = last.liters;
+  const currentPct = last.percentage;
+  const flowLpm = (last.flow_lpm ?? last.caudal_lts_min ?? 0) as number;
+  const baseTime = new Date(last.recorded_at);
+
+  const points = [{ name: 'Actual', nivel: Math.round(currentPct) }];
+
+  if (Math.abs(flowLpm) > 0.1) {
+    const isLlenando = flowLpm > 0;
+    const target = isLlenando ? 100 : 0;
+    const diffLts = isLlenando ? (capacity - currentLiters) : currentLiters;
+    const mins = diffLts / Math.abs(flowLpm);
+    
+    if (mins > 0 && mins < 1440 * 7) {
+      points.push({ name: isLlenando ? 'Lleno' : 'Vacío', nivel: target });
+    }
+  } else {
+    points.push({ name: '+24h', nivel: Math.round(currentPct) });
+  }
+
+  return (
+    <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Proyección de Nivel</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={points}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <YAxis domain={[0, 100]} tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <Tooltip />
+          <Line type="monotone" dataKey="nivel" stroke={flowLpm >= 0 ? '#10b981' : '#ef4444'} strokeWidth={3} dot={{r: 6}} name="Nivel %" />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+
 // ── 10. AGREGADO: Hourly Consumption Pattern ───────────────────────────────
 export const HourlyConsumptionChart = ({ data }: ChartProps) => {
   const bins = ['00-04h', '04-08h', '08-12h', '12-16h', '16-20h', '20-24h'];

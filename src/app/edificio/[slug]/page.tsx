@@ -152,18 +152,19 @@ export default function ResidentForm() {
 
         {/* Header del edificio — con banner personalizado si existe */}
         {building?.banner_url ? (
-          <div className="relative overflow-hidden h-32 md:h-64">
+          <div className="relative overflow-hidden h-32 md:h-64 bg-blue-700">
             <img
               src={building.banner_url}
               alt={`Banner ${building.name}`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover relative z-10"
               onError={(e) => {
-                // Si la imagen falla, ocultamos el img o cambiamos a un degradado
-                (e.target as HTMLImageElement).style.display = 'none';
+                const target = e.target as HTMLImageElement;
+                target.style.opacity = '0';
+                target.parentElement!.classList.add('bg-gradient-to-br', 'from-blue-600', 'to-slate-900');
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-slate-900 -z-10" />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-slate-900" />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4 z-20">
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="bg-white/20 p-1.5 md:p-2 rounded-lg backdrop-blur-sm">
                   <Droplets size={20} className="text-white md:w-7 md:h-7" />
