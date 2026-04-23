@@ -238,7 +238,7 @@ export default function ResidentForm() {
           /* Formulario */
           <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-5 md:space-y-6">
             <div className="bg-amber-50 border border-amber-200 p-3 md:p-4 rounded-xl md:rounded-2xl flex gap-3 text-amber-800 text-[11px] md:text-sm">
-              <Info className="shrink-0" size={18} md:size={20} />
+              <Info className="shrink-0 w-4 h-4 md:w-5 md:h-5" />
               <p>
                 Por favor, transcriba los detalles que visualizó en el panel (
                 <strong>litros o porcentaje</strong>). Si no recuerda la hora exacta, indique una estimación aproximada.
@@ -247,7 +247,7 @@ export default function ResidentForm() {
 
             {error && (
               <div className="bg-red-50 text-red-700 p-3 md:p-4 rounded-xl text-xs md:text-sm font-bold border border-red-200 flex gap-2 items-center">
-                <AlertTriangle size={18} md:size={20} /> {error}
+                <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" /> {error}
               </div>
             )}
 
@@ -332,7 +332,7 @@ export default function ResidentForm() {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-xl flex items-center justify-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-200 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {loading ? 'Procesando...' : <><Send size={20} md:size={24} /> ENVIAR MI REPORTE</>}
+              {loading ? 'Procesando...' : <><Send className="w-5 h-5 md:w-6 md:h-6" /> ENVIAR MI REPORTE</>}
             </button>
 
             <p className="text-center text-slate-500 text-[10px] md:text-xs font-medium">
