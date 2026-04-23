@@ -21,39 +21,42 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
 // ════════════════════════════════════════════════════════════════════════════
-// GMAIL — obtener transporter con credenciales de Supabase
+// GMAIL — obtener transporter usando variables de entorno
 // ════════════════════════════════════════════════════════════════════════════
 async function getGmailTransporter(): Promise<{ transporter: nodemailer.Transporter; fromEmail: string }> {
-  console.log('[GMAIL] Intentando leer credenciales...');
-  
-  // Consulta simplificada para evitar problemas de RLS o filtrado
-  const { data: list, error } = await supabaseAdmin
-    .from('email_credentials')
-    .select('email_user, email_password')
-    .limit(1);
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
 
-  if (error) {
-    console.error('[GMAIL] ❌ Error de Supabase al leer email_credentials:', error.message, error.details, error.hint);
-    throw new Error(`Error de base de datos: ${error.message}`);
+  if (!user || !pass) {
+    console.warn('[GMAIL] ⚠️ No se encontraron las variables de entorno GMAIL_USER o GMAIL_APP_PASSWORD. Intentando fallback a email_credentials...');
+    
+    // Intento de fallback a la tabla por si acaso, pero priorizamos env vars
+    const { data: list } = await supabaseAdmin
+      .from('email_credentials')
+      .select('email_user, email_password')
+      .limit(1);
+    
+    const dbUser = list && list.length > 0 ? list[0].email_user : null;
+    const dbPass = list && list.length > 0 ? list[0].email_password : null;
+
+    if (!dbUser || !dbPass) {
+      throw new Error('Configuración de email ausente: Defina GMAIL_USER y GMAIL_APP_PASSWORD en Vercel.');
+    }
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: dbUser, pass: dbPass },
+    });
+    return { transporter, fromEmail: dbUser };
   }
 
-  const data = list && list.length > 0 ? list[0] : null;
-
-  if (!data) {
-    console.error('[GMAIL] ❌ No se recibió ningún registro de email_credentials. Verifique RLS o que la tabla tenga datos.');
-    throw new Error('Configuración incompleta: No se encontraron credenciales. Por favor, asegúrese de que la tabla email_credentials tenga datos y permisos de lectura.');
-  }
-
-  console.log('[GMAIL] ✅ Credenciales recuperadas para:', data.email_user.substring(0, 5) + '...');
+  console.log('[GMAIL] ✅ Usando credenciales desde variables de entorno Vercel.');
   
   const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-      user: data.email_user,
-      pass: data.email_password,
-    },
+    auth: { user, pass },
   });
-  return { transporter, fromEmail: data.email_user };
+  return { transporter, fromEmail: user };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
