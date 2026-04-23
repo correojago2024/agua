@@ -444,5 +444,4 @@ export const HourlyConsumptionChart = ({ data }: ChartProps) => {
   );
 };
 
-export { FlowComparisonChart, ThresholdsChart } from './DashboardCharts';
 
