@@ -25,27 +25,35 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 // ════════════════════════════════════════════════════════════════════════════
 async function getGmailTransporter(): Promise<{ transporter: nodemailer.Transporter; fromEmail: string }> {
   console.log('[GMAIL] Leyendo credenciales de email_credentials...');
-  let { data, error } = await supabaseAdmin
+  
+  // Buscamos primero el id=1, pero sin usar .single() estrictamente para evitar errores de coerción
+  let { data: list, error } = await supabaseAdmin
     .from('email_credentials')
     .select('*')
     .eq('id', 1)
-    .single();
+    .limit(1);
+
+  let data = list && list.length > 0 ? list[0] : null;
+
   if (error || !data) {
-    console.warn('[GMAIL] No se encontró id=1, buscando cualquier registro...');
-    const fallback = await supabaseAdmin
+    console.warn('[GMAIL] No se encontró id=1, buscando cualquier registro disponible...');
+    const { data: fallbackList, error: fallbackError } = await supabaseAdmin
       .from('email_credentials')
       .select('*')
-      .limit(1)
-      .single();
-    data = fallback.data;
-    error = fallback.error;
+      .limit(1);
+    
+    data = fallbackList && fallbackList.length > 0 ? fallbackList[0] : null;
+    error = fallbackError;
   }
+
   if (error) {
     console.error('[GMAIL] Error consultando email_credentials:', error.message);
     throw new Error('Error consultando email_credentials: ' + error.message);
   }
+
   if (!data) {
-    throw new Error('Tabla email_credentials vacía — no hay credenciales configuradas');
+    console.error('[GMAIL] ❌ La tabla email_credentials está VACÍA.');
+    throw new Error('Configuración incompleta: La tabla email_credentials no tiene registros. Por favor, agregue las credenciales de Gmail en Supabase.');
   }
   console.log('[GMAIL] Credenciales encontradas. email_user:', data.email_user ? data.email_user.substring(0, 6) + '***' : 'VACÍO');
   if (!data.email_user || !data.email_password) {
