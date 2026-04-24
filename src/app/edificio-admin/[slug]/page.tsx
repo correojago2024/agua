@@ -896,7 +896,7 @@ export default function EdificioAdminPage() {
         body: JSON.stringify({
           building_id: building.id,
           banner_url: publicUrl,
-          user_email: user?.email
+          user_email: currentUser?.email
         })
       });
 
