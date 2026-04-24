@@ -9,6 +9,7 @@ import { calculateIndicators } from '@/lib/calculations';
 import { getAllImprovedCharts } from '@/lib/charts';
 import { sendEmailViaGmail } from '@/lib/server/email';
 import { logAudit } from '@/lib/audit';
+import { buildReportEmailHtml } from '@/lib/server/email-templates';
 
 export async function POST(request: Request) {
   try {
@@ -31,21 +32,25 @@ export async function POST(request: Request) {
     const lastRecord = history[history.length - 1];
     const chartUrls = getAllImprovedCharts(history, building.tank_capacity_liters);
     
-    // Usamos el HTML del reporte (importaríamos si estuviera separado, por ahora replicamos lógica base)
-    // Para simplificar esta tarea, el endpoint llamará a una versión simplificada o compartida si existiera.
-    // Por ahora, asumimos que el usuario quiere el reporte estándar.
-    
     // Log previo
     await logAudit({ req: request, building_id, user_email: sender_email || 'ADMIN', operation: 'MANUAL_SEND', entity_type: 'email', entity_id: building_id, data_after: { recipients } });
 
-    // Nota: Aquí se debería usar la misma función buildReportEmailHtml que en la ruta de mediciones.
-    // Lo ideal sería mover esa función a @/lib/server/email-templates.ts. 
-    // Por ahora, enviaremos un reporte informativo rápido para validar la funcionalidad.
+    // GENERAR HTML PROFESIONAL
+    const emailHtml = buildReportEmailHtml(
+      building, 
+      history, 
+      indicators, 
+      lastRecord.liters, 
+      lastRecord.percentage, 
+      false, // No es anomalía por defecto en manual
+      0, 
+      chartUrls
+    );
 
     const res = await sendEmailViaGmail(
       recipients, 
-      `💧 Reporte Manual de Agua — ${building.name}`, 
-      `<p>Reporte enviado manualmente por administración.</p><p>Nivel actual: <b>${Math.round(lastRecord.percentage)}%</b></p>`, 
+      `💧 Reporte de Agua — ${building.name}`, 
+      emailHtml, 
       building_id, 
       'manual_report'
     );
