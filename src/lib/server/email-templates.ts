@@ -88,6 +88,18 @@ export function buildReportEmailHtml(
   const flowDirIcon = flowLpm >= 0 ? '🟢' : '🔴';
   const flowTypeText = flowLpm >= 0 ? 'llenado' : 'consumo';
 
+  // Función de formateo de fecha personalizada: dd/mm/aaaa hh:mm AM/PM
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).replace(',', '').toUpperCase();
+  };
+
   const tableRows = last10.map(m => {
     const varLts = m.variation_lts || 0;
     const flow = m.flow_lpm || 0;
@@ -96,7 +108,7 @@ export function buildReportEmailHtml(
     
     return `
       <tr style="border-bottom:1px solid #e2e8f0;">
-        <td style="padding:8px;text-align:left;">${new Date(m.recorded_at).toLocaleString('es-ES')}</td>
+        <td style="padding:8px;text-align:left;">${formatDate(m.recorded_at)}</td>
         <td style="padding:8px;">${Math.round(m.liters).toLocaleString()}</td>
         <td style="padding:8px;font-weight:bold;">${Math.round(m.percentage)}%</td>
         <td style="padding:8px;color:${varLts >= 0 ? '#16a34a' : '#dc2626'}">${varLts > 0 ? '+' : ''}${Math.round(varLts).toLocaleString()}</td>
@@ -108,8 +120,8 @@ export function buildReportEmailHtml(
     `;
   }).join('');
 
-  // Lógica de Doble Columna para Gráficos
-  const chartEntries = Object.entries(chartUrls);
+  // Lógica de Doble Columna para Gráficos (Filtrando el Gauge)
+  const chartEntries = Object.entries(chartUrls).filter(([key]) => key !== 'gaugeChart');
   let chartGalleryHtml = '<table width="100%" border="0" cellspacing="0" cellpadding="5">';
   for (let i = 0; i < chartEntries.length; i += 2) {
     const pair = chartEntries.slice(i, i + 2);
@@ -154,7 +166,7 @@ export function buildReportEmailHtml(
 
     <div style="background:#f1f5f9; padding:20px; border-radius:12px; margin-bottom:15px;">
       <h3 style="margin:0 0 15px; color:#1e40af; font-size:17px;">💡 Principales Indicadores del Tanque al Día de Hoy 🔍</h3>
-      <p style="margin:0 0 15px; font-size:12px; color:#64748b;">Reporte generado: ${indicators.reportDate} — Último registro: ${new Date(lastRecord.recorded_at).toLocaleString('es-ES')} — Nivel: ${Math.round(lastRecord.percentage)}%</p>
+      <p style="margin:0 0 15px; font-size:12px; color:#64748b;">Reporte generado: ${indicators.reportDate} — Último registro: ${formatDate(lastRecord.recorded_at)} — Nivel: ${Math.round(lastRecord.percentage)}%</p>
       
       <table style="width:100%; font-size:13px; border-collapse:collapse;">
         <tr><td style="padding:6px 0;">1️⃣ <b>Balance últimas 24 horas:</b></td><td style="padding:6px 0;">Se consumieron ${Math.round(indicators.balance24h.consumed).toLocaleString()} L y se llenaron ${Math.round(indicators.balance24h.filled).toLocaleString()} L. Balance neto: ${Math.round(indicators.balance24h.net).toLocaleString()} L.</td></tr>
@@ -209,7 +221,7 @@ export function buildReportEmailHtml(
       </thead>
       <tbody>
         <tr>
-          <td style="padding:10px;">${new Date(lastRecord.recorded_at).toLocaleString('es-ES')}</td>
+          <td style="padding:10px;">${formatDate(lastRecord.recorded_at)}</td>
           <td style="padding:10px;">${Math.round(lastRecord.liters).toLocaleString()}</td>
           <td style="padding:10px; font-weight:bold;">${Math.round(lastRecord.percentage)}%</td>
           <td style="padding:10px;">${(lastRecord.variation_lts || 0) > 0 ? '+' : ''}${Math.round(lastRecord.variation_lts || 0).toLocaleString()}</td>

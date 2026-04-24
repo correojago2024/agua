@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { sendEmailViaGmail } from '@/lib/server/email';
+import { sendWhatsApp } from '@/lib/server/whatsapp';
 
 export async function POST(request: Request) {
   console.log('=== INICIO API /api/contact (v3.0) ===');
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
       </div>
     `;
 
-    // Envío usando la función compartida (building_id = null para contacto general)
+    // 1. Envío de Email
     const result = await sendEmailViaGmail(
       ['correojago@gmail.com'],
       subject,
@@ -44,6 +45,22 @@ export async function POST(request: Request) {
       null,
       'contact_form'
     );
+
+    // 2. Envío de WhatsApp (Notificación a Admin)
+    try {
+      const waMessage = `🚀 *Nuevo Contacto AquaSaaS*\n\n` +
+        `👤 *Nombre:* ${nombre_apellido}\n` +
+        `🏢 *Edificio:* ${nombre_edificio || '—'}\n` +
+        `📧 *Email:* ${email}\n` +
+        `📱 *WhatsApp:* ${whatsapp || '—'}\n\n` +
+        `📝 *Mensaje:* ${mensaje.substring(0, 100)}${mensaje.length > 100 ? '...' : ''}`;
+      
+      // Reemplazar con el número del administrador del sistema
+      // Usamos el servicio global (building_id = null)
+      await sendWhatsApp('00000000-0000-0000-0000-000000000000', '573100000000', waMessage);
+    } catch (waErr: any) {
+      console.error('[WHATSAPP CONTACT ERROR]', waErr.message);
+    }
 
     if (result.success) {
       return NextResponse.json({ success: true, messageId: result.messageId });
