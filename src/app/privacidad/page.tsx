@@ -1,6 +1,6 @@
 /**
  * ARCHIVO: /src/app/privacidad/page.tsx
- * Página de Política de Privacidad (Bilingüe) - AquaSaaS
+ * Política de Privacidad - Sistema AquaSaaS
  */
 
 export default function PrivacyPolicyPage() {
@@ -12,69 +12,142 @@ export default function PrivacyPolicyPage() {
             <span className="text-xl font-bold text-white">AquaSaaS</span>
           </a>
           <nav className="flex items-center gap-6">
-            <a href="/#features" className="hover:text-white transition-colors text-sm">Características</a>
-            <a href="/#contacto" className="hover:text-white transition-colors text-sm">Contacto</a>
-            <a href="/" className="hover:text-white transition-colors text-sm">Volver al Inicio</a>
+            <a href="/" className="hover:text-white transition-colors text-sm">Volver al inicio</a>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-16 space-y-20">
-        
-        {/* SECCIÓN EN ESPAÑOL */}
-        <section className="prose prose-invert prose-lg max-w-none text-slate-300 space-y-4">
-          <h1 className="text-4xl font-bold text-white mb-6">Política de Privacidad</h1>
-          <p className="text-sm border-l-4 border-blue-500 pl-4 py-1 bg-blue-500/10">
-            <strong>Última actualización:</strong> 8 de Abril de 2026
-          </p>
-          <p>
-            En <strong>AquaSaaS</strong>, valoramos su privacidad. Esta política describe cómo manejamos la información en nuestra plataforma de monitoreo comunitario.
-          </p>
+      <main className="max-w-4xl mx-auto px-6 py-16">
+        <section className="prose prose-invert prose-lg max-w-none text-slate-300 space-y-6">
+          <h1 className="text-4xl font-bold text-white mb-2">Política de Privacidad</h1>
+          <p className="text-sm text-slate-400 mb-8">Última actualización: 24 de abril de 2026</p>
 
-          <h2 className="text-2xl font-semibold text-white pt-6 border-t border-slate-700">1. Información que Recopilamos</h2>
-          <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Datos Personales:</strong> Nombre, correo y teléfono que usted proporciona al registrarse.</li>
-            <li><strong>Datos de Gestión (Crowdsourcing):</strong> Niveles de agua ingresados manualmente por los usuarios autorizados.</li>
-            <li><strong>Datos Técnicos:</strong> Registros de acceso y dirección IP para auditoría de seguridad.</li>
-          </ul>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">1. Responsable del tratamiento</h2>
+              <p>
+                El responsable del tratamiento de datos es <strong>AquaSaaS</strong>. Nos comprometemos a proteger 
+                la privacidad y seguridad de la información de nuestros usuarios (administradores y colaboradores) 
+                en cumplimiento con las mejores prácticas y el marco legal aplicable en Venezuela.
+              </p>
+            </div>
 
-          <h2 className="text-2xl font-semibold text-white pt-6 border-t border-slate-700">2. Uso y Divulgación</h2>
-          <p>Los datos se usan para generar proyecciones de suministro y alertas. No vendemos ni compartimos sus datos con fines comerciales. Utilizamos proveedores como <strong>Supabase, Make y Google Cloud</strong> para el funcionamiento técnico.</p>
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">2. Datos recolectados</h2>
+              <p>Podemos recopilar y procesar los siguientes tipos de información:</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div className="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+                  <h3 className="text-blue-400 font-bold mb-2">a) Datos personales</h3>
+                  <ul className="list-disc pl-5 text-sm space-y-1">
+                    <li>Nombre y Apellido (Colaboradores).</li>
+                    <li>N° de Apartamento o identificación comunitaria.</li>
+                    <li>Correo electrónico (para recepción de reportes).</li>
+                  </ul>
+                </div>
+                <div className="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+                  <h3 className="text-blue-400 font-bold mb-2">b) Datos operativos</h3>
+                  <ul className="list-disc pl-5 text-sm space-y-1">
+                    <li>Mediciones de niveles de tanque (litros/porcentaje).</li>
+                    <li>Historial de variaciones y caudales.</li>
+                    <li>Configuraciones de capacidad de tanques del edificio.</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="bg-slate-700/30 p-4 rounded-lg border border-slate-600 mt-4">
+                <h3 className="text-blue-400 font-bold mb-2">c) Datos técnicos</h3>
+                <ul className="list-disc pl-5 text-sm space-y-1">
+                  <li>Dirección IP y ubicación aproximada.</li>
+                  <li>Navegador y sistema operativo.</li>
+                  <li>Logs de actividad del sistema para auditoría de seguridad y depuración.</li>
+                </ul>
+              </div>
+            </div>
 
-          <h2 className="text-2xl font-semibold text-white pt-6 border-t border-slate-700">3. Seguridad</h2>
-          <p>Implementamos medidas técnicas para proteger los datos, aunque recordamos que ningún sistema en internet es 100% impenetrable.</p>
-        </section>
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">3. Finalidad del tratamiento</h2>
+              <p>Los datos se utilizan exclusivamente para:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Operar y mantener la funcionalidad de los dashboards inteligentes.</li>
+                <li>Facilitar la gestión de suministro de agua por parte de las Juntas de Condominio.</li>
+                <li>Enviar alertas automáticas sobre niveles críticos o anomalías.</li>
+                <li>Garantizar la seguridad, integridad y auditoría de los registros comunitarios.</li>
+              </ul>
+            </div>
 
-        <hr className="border-slate-700" />
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">4. Base legal (Venezuela)</h2>
+              <p>
+                El tratamiento de datos se fundamenta en el consentimiento expreso del usuario al reportar datos, 
+                el interés legítimo de la comunidad de vecinos para la gestión de servicios comunes 
+                y el cumplimiento de obligaciones derivadas de la Ley de Propiedad Horizontal.
+              </p>
+            </div>
 
-        {/* SECTION IN ENGLISH */}
-        <section className="prose prose-invert prose-lg max-w-none text-slate-400 space-y-4 italic">
-          <h1 className="text-4xl font-bold text-white mb-6 font-sans not-italic">Privacy Policy</h1>
-          <p className="text-sm border-l-4 border-slate-600 pl-4 py-1 bg-slate-800/50 not-italic">
-            <strong>Last Updated:</strong> April 8, 2026
-          </p>
-          <p>
-            At <strong>AquaSaaS</strong>, we value your privacy. This policy describes how we handle information within our community monitoring platform.
-          </p>
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">5. Compartición de datos</h2>
+              <p>Los datos pueden compartirse únicamente con:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li><strong>Proveedores tecnológicos:</strong> Servicios de base de datos (Supabase), hosting (Vercel) e infraestructura necesarios para la operación.</li>
+                <li><strong>Autoridades:</strong> Cuando sea estrictamente requerido por ley o mandamiento judicial bajo la legislación venezolana.</li>
+              </ul>
+              <p className="font-bold text-blue-400 mt-2 italic">
+                Importante: AquaSaaS NO vende ni comercializa sus datos personales ni los datos de consumo del edificio con terceros.
+              </p>
+            </div>
 
-          <h2 className="text-2xl font-semibold text-white pt-6 border-t border-slate-700 not-italic">1. Information We Collect</h2>
-          <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Personal Data:</strong> Name, email, and phone number provided during registration.</li>
-            <li><strong>Management Data (Crowdsourcing):</strong> Water levels manually entered by authorized users.</li>
-            <li><strong>Technical Data:</strong> Access logs and IP addresses for security auditing.</li>
-          </ul>
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">6. Transferencias internacionales</h2>
+              <p>Al utilizar nuestra plataforma basada en la nube, el usuario acepta la transferencia técnica de datos a servidores seguros ubicados fuera de Venezuela, operados bajo estándares internacionales de seguridad (SOC2/GDPR).</p>
+            </div>
 
-          <h2 className="text-2xl font-semibold text-white pt-6 border-t border-slate-700 not-italic">2. Use and Disclosure</h2>
-          <p>Data is used to generate supply projections and alerts. We do not sell or share your data for commercial purposes. We use providers such as <strong>Supabase, Make, and Google Cloud</strong> for technical operations.</p>
-          
-          <h2 className="text-2xl font-semibold text-white pt-6 border-t border-slate-700 not-italic">3. Security</h2>
-          <p>We implement technical measures to protect data, although we remind users that no internet-based system is 100% impenetrable.</p>
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">7. Seguridad de la información</h2>
+              <p>Aplicamos medidas de seguridad avanzadas, incluyendo:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Cifrado de datos en tránsito (SSL/TLS).</li>
+                <li>Políticas de control de acceso mediante contraseñas cifradas.</li>
+                <li>Monitoreo de actividad para prevenir accesos no autorizados.</li>
+              </ul>
+              <p className="text-xs text-slate-400 mt-2 italic">Nota: Aunque aplicamos altos estándares, ningún sistema de transmisión electrónica es 100% invulnerable.</p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">8. Derechos del usuario</h2>
+              <p>Usted tiene derecho a:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Acceder a los registros de mediciones asociados a su edificio.</li>
+                <li>Rectificar información errónea cargada en el sistema a través del administrador.</li>
+                <li>Solicitar la eliminación de registros personales cuando no existan obligaciones de transparencia comunitaria.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">9. Retención de datos</h2>
+              <p>Los datos operativos se conservarán mientras el edificio mantenga su cuenta activa para fines históricos y estadísticos, necesarios para la correcta proyección del servicio.</p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">10. Cookies</h2>
+              <p>Utilizamos cookies técnicas estrictamente necesarias para mantener la sesión de administración activa. No utilizamos cookies de rastreo publicitario.</p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">11. Menores de edad</h2>
+              <p>Nuestro servicio está dirigido a la gestión de servicios comunes de vivienda y presupone la actuación de personas con capacidad legal de reporte.</p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">12. Cambios en la política</h2>
+              <p>Podremos actualizar esta política para adaptarla a mejoras técnicas o cambios legislativos. La última versión siempre estará disponible en esta dirección.</p>
+            </div>
+          </div>
         </section>
       </main>
 
       <footer className="border-t border-slate-800 bg-slate-900/80 py-8">
         <div className="max-w-4xl mx-auto px-6 text-center text-sm text-slate-500">
-          <p>&copy; {new Date().getFullYear()} AquaSaaS. [ES] Todos los derechos reservados. [EN] All rights reserved.</p>
+          <p>&copy; 2026 AquaSaaS. Compromiso con la Privacidad y Gestión Eficiente.</p>
         </div>
       </footer>
     </div>

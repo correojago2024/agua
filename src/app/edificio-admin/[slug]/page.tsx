@@ -545,13 +545,24 @@ const { error: updateError } = await supabase.from('building_members')
   const deleteMeasurement = async (id: string) => {
     if (!confirm('¿Eliminar esta medición? Esta acción no se puede deshacer.')) return;
     if (demoBlock('⚠️ Modo Demo: no se pueden eliminar registros en la cuenta de demostración.')) return;
+
+    // Actualización optimista: removemos del estado local inmediatamente
+    const previousMeasurements = [...measurements];
+    setMeasurements(prev => prev.filter(m => m.id !== id));
+
     const { error } = await supabase.from('measurements').delete().eq('id', id);
+    
     if (!error) {
-      setMeasMsg('🗑️ Medición eliminada');
+      setMeasMsg('🗑️ Medición eliminada correctamente');
       setTimeout(() => setMeasMsg(''), 3000);
+      // No necesitamos llamar a loadData() porque ya actualizamos el estado optimísticamente,
+      // pero lo hacemos para asegurar consistencia con cálculos del servidor (caudal, etc)
       loadData();
     } else {
-      setMeasMsg('❌ Error al eliminar: ' + error.message);
+      // Revertir en caso de error
+      setMeasurements(previousMeasurements);
+      console.error('Error deleting measurement:', error);
+      setMeasMsg('❌ Error al eliminar: ' + (error.message || 'No tiene permisos para borrar'));
       setTimeout(() => setMeasMsg(''), 5000);
     }
   };
