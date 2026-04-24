@@ -22,7 +22,8 @@ import {
   X, RefreshCw, AlertTriangle, CheckCircle2, Mail, Calendar,
   TrendingDown, TrendingUp, Activity, FileText, Settings, LogOut,
   ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare, ClipboardList
-} from 'lucide-react';
+  } from 'lucide-react';
+
 
 import { format } from 'date-fns';
 import { getAllImprovedCharts } from '@/lib/charts';
@@ -2079,8 +2080,9 @@ const { error: updateError } = await supabase.from('building_members')
                 </table>
               </div>
             </div>
-            </div>
-            )}
-
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
