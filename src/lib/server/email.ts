@@ -10,30 +10,43 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
 });
 
 export async function getGmailTransporter(): Promise<{ transporter: nodemailer.Transporter; fromEmail: string }> {
-  let { data, error } = await supabaseAdmin
+  // Intentar obtener la credencial ID 1
+  const { data, error } = await supabaseAdmin
     .from('email_credentials')
-    .select('*')
+    .select('email_user, email_password')
     .eq('id', 1)
     .single();
   
-  if (error || !data) {
-    const fallback = await supabaseAdmin.from('email_credentials').select('*').limit(1).single();
-    data = fallback.data;
-    error = fallback.error;
-  }
-  
-  if (error || !data || !data.email_user || !data.email_password) {
-    throw new Error('Credenciales de Gmail no configuradas');
+  if (error) {
+    console.error('[DATABASE_ERROR] Error leyendo email_credentials:', error.message);
+    
+    // Intento de fallback: tomar el primer registro que encuentre
+    const { data: fallback, error: fbError } = await supabaseAdmin
+      .from('email_credentials')
+      .select('email_user, email_password')
+      .limit(1)
+      .maybeSingle();
+
+    if (fbError || !fallback) {
+      throw new Error(`Error de base de datos: ${error.message}. Por favor verifica la tabla email_credentials en Supabase.`);
+    }
+    
+    return createTransporter(fallback.email_user, fallback.email_password);
   }
 
+  if (!data?.email_user || !data?.email_password) {
+    throw new Error('La tabla email_credentials existe pero los campos email_user o email_password están vacíos.');
+  }
+
+  return createTransporter(data.email_user, data.email_password);
+}
+
+function createTransporter(user: string, pass: string) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-      user: data.email_user,
-      pass: data.email_password,
-    },
+    auth: { user, pass },
   });
-  return { transporter, fromEmail: data.email_user };
+  return { transporter, fromEmail: user };
 }
 
 export async function saveToEmailQueue(
