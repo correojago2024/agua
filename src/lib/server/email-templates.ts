@@ -1,6 +1,6 @@
 /**
  * SERVICIO: email-templates.ts
- * DESCRIPCIÓN: Plantilla MAESTRA idéntica a la original de AquaSaaS + Mapa de Calor.
+ * DESCRIPCIÓN: Plantilla MAESTRA FINAL con diseño de 2 columnas, Mapa de Calor al inicio y texto 100% literal.
  */
 
 import { Indicators } from '@/lib/calculations';
@@ -61,11 +61,11 @@ export function buildReportEmailHtml(
   const flowDirIcon = flowLpm >= 0 ? '🟢' : '🔴';
   const flowTypeText = flowLpm >= 0 ? 'llenado' : 'consumo';
 
-  // Ordenar para las tablas
   const sortedDesc = [...measurements].sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
   const lastRecord = sortedDesc[0];
   const last10 = sortedDesc.slice(0, 10);
 
+  // Tablas de datos
   const tableRows = last10.map(m => `
     <tr style="border-bottom:1px solid #e2e8f0;">
       <td style="padding:8px;text-align:left;">${new Date(m.recorded_at).toLocaleString('es-ES')}</td>
@@ -79,12 +79,29 @@ export function buildReportEmailHtml(
     </tr>
   `).join('');
 
+  // Lógica de Doble Columna para Gráficos
+  const chartEntries = Object.entries(chartUrls);
+  let chartGalleryHtml = '<table width="100%" border="0" cellspacing="0" cellpadding="10">';
+  for (let i = 0; i < chartEntries.length; i += 2) {
+    const pair = chartEntries.slice(i, i + 2);
+    chartGalleryHtml += '<tr>';
+    pair.forEach(([key, url]) => {
+      chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:20px;">
+        <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold; text-transform:uppercase;">${key.replace('Chart', '')}</div>
+        <img src="${url}" style="width:100%; max-width:320px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
+      </td>`;
+    });
+    if (pair.length === 1) chartGalleryHtml += '<td width="50%"></td>';
+    chartGalleryHtml += '</tr>';
+  }
+  chartGalleryHtml += '</table>';
+
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="font-family:Arial,sans-serif;color:#1e293b;max-width:800px;margin:0 auto;background:#fff;line-height:1.6;">
+<body style="font-family:Arial,sans-serif;color:#1e293b;max-width:850px;margin:0 auto;background:#fff;line-height:1.6;">
 
-  <div style="background:#f8fafc; padding:30px; border:1px solid #e2e8f0; border-radius:12px;">
+  <div style="padding:20px; border:1px solid #e2e8f0;">
     
     <div style="text-align:center; margin-bottom:30px;">
       <h1 style="margin:0; color:#0f172a; font-size:24px;">✨ Resumen de las Últimas Mediciones de Agua ✨</h1>
@@ -106,7 +123,7 @@ export function buildReportEmailHtml(
       <p>Le presentamos el resumen más reciente del nivel de agua en nuestro tanque, basado en los datos aportados por la comunidad. Su participación es clave para mantener un control eficiente del recurso hídrico.</p>
     </div>
 
-    <div style="background:#f1f5f9; padding:20px; border-radius:12px; margin-bottom:35px;">
+    <div style="background:#f1f5f9; padding:20px; border-radius:12px; margin-bottom:15px;">
       <h3 style="margin:0 0 15px; color:#1e40af; font-size:17px;">💡 Principales Indicadores del Tanque al Día de Hoy 🔍</h3>
       <p style="margin:0 0 15px; font-size:12px; color:#64748b;">Reporte generado: ${indicators.reportDate} — Último registro: ${new Date(lastRecord.recorded_at).toLocaleString('es-ES')} — Nivel: ${Math.round(lastRecord.percentage)}%</p>
       
@@ -122,12 +139,12 @@ export function buildReportEmailHtml(
       </table>
     </div>
 
-    <h3 style="color:#0f172a; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-bottom:20px; font-size:18px;">🖼️ Galería de Gráficos de Inteligencia Hídrica</h3>
-    <div style="text-align:center; space-y:20px;">
-      ${Object.values(chartUrls).map(url => `<div style="margin-bottom:25px;"><img src="${url}" style="width:100%; max-width:650px; border-radius:12px; border:1px solid #e2e8f0; shadow:sm;"></div>`).join('')}
-    </div>
-
+    <!-- MAPA DE CALOR AL INICIO -->
     ${indicators.heatmapData ? renderHeatmapHtml(indicators.heatmapData) : ''}
+
+    <h3 style="color:#0f172a; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:40px; margin-bottom:20px; font-size:18px;">🖼️ Galería de Gráficos de Inteligencia Hídrica</h3>
+    
+    ${chartGalleryHtml}
 
     <h3 style="color:#0f172a; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:40px; margin-bottom:20px; font-size:18px;">📋 Detalle de las Últimas 10 Mediciones</h3>
     <div style="overflow-x:auto;">
@@ -150,39 +167,66 @@ export function buildReportEmailHtml(
 
     <h3 style="color:#0f172a; margin-top:40px; font-size:17px;">⭐ Último Registro</h3>
     <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:center; background:#f8fafc; border:1px solid #e2e8f0;">
-      <tr style="background:#334155; color:white;"><th style="padding:10px;">Fecha y Hora</th><th style="padding:10px;">Litros</th><th style="padding:10px;">%</th><th style="padding:10px;">Variación</th><th style="padding:10px;">Caudal</th><th style="padding:10px;">Estimado</th></tr>
-      <tr>
-        <td style="padding:10px;">${new Date(lastRecord.recorded_at).toLocaleString('es-ES')}</td>
-        <td style="padding:10px;">${Math.round(lastRecord.liters).toLocaleString()}</td>
-        <td style="padding:10px; font-weight:bold;">${Math.round(lastRecord.percentage)}%</td>
-        <td style="padding:10px;">${(lastRecord.variation_lts || 0) > 0 ? '+' : ''}${Math.round(lastRecord.variation_lts || 0).toLocaleString()} L</td>
-        <td style="padding:10px;">${Number(lastRecord.flow_lpm || 0).toFixed(2)}</td>
-        <td style="padding:10px;">${indicators.timeEstimate}</td>
-      </tr>
+      <thead style="background:#334155; color:white;">
+        <tr>
+          <th style="padding:10px;">Fecha y Hora</th>
+          <th style="padding:10px;">💧 Litros</th>
+          <th style="padding:10px;">📊 %</th>
+          <th style="padding:10px;">📈 Variación (L)</th>
+          <th style="padding:10px;">Caudal (L/min)</th>
+          <th style="padding:10px;">Tiempo Estimado</th>
+          <th style="padding:10px;">👥 Reportado por</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:10px;">${new Date(lastRecord.recorded_at).toLocaleString('es-ES')}</td>
+          <td style="padding:10px;">${Math.round(lastRecord.liters).toLocaleString()}</td>
+          <td style="padding:10px; font-weight:bold;">${Math.round(lastRecord.percentage)}%</td>
+          <td style="padding:10px;">${(lastRecord.variation_lts || 0) > 0 ? '+' : ''}${Math.round(lastRecord.variation_lts || 0).toLocaleString()}</td>
+          <td style="padding:10px;">${Number(lastRecord.flow_lpm || 0).toFixed(2)}</td>
+          <td style="padding:10px;">${indicators.timeEstimate}</td>
+          <td style="padding:10px;">${lastRecord.collaborator_name || 'Vecino'}</td>
+        </tr>
+      </tbody>
     </table>
 
     <div style="margin-top:50px; padding-top:30px; border-top:1px solid #e2e8f0; font-size:13px; color:#475569;">
       <h4 style="color:#0f172a; margin-bottom:15px;">*** Observaciones y Explicación de Gráficos ***</h4>
-      <ul style="padding-left:20px; space-y:10px;">
-        <li><b>Caudal de Llenado y Consumo:</b> Muestra la tasa de cambio en litros por minuto. Barras verdes indican llenado, barras rojas consumo.</li>
-        <li><b>Evolución del Nivel del Tanque (%):</b> Línea azul con área sombreada. Puntos: Verde (>60%), Naranja (30-60%) y Rojo (<30%).</li>
-        <li><b>Variación entre Mediciones:</b> Diferencia neta de litros entre reportes consecutivos.</li>
-        <li><b>Nivel del Tanque con Umbrales:</b> Visualiza el nivel histórico comparado con las líneas de alerta crítica.</li>
-        <li><b>Consumo Promedio por Día de Semana:</b> Promedio histórico de litros consumidos (solo variaciones negativas).</li>
-        <li><b>Nivel % por Día — Últimas 4 Semanas:</b> Compara patrones de nivel entre las últimas 4 semanas naturales.</li>
-        <li><b>Distribución de Consumo por Día:</b> Vista proporcional de qué días se consume más agua históricamente.</li>
-        <li><b>Proyección de Llenado/Vaciado:</b> Fechas estimadas para alcanzar niveles críticos basado en el caudal actual.</li>
-      </ul>
+      <p style="margin-bottom:10px;"><b>Caudal de Llenado y Consumo:</b> Muestra la tasa de cambio en litros por minuto. Barras verdes indican llenado (entrada de agua), barras rojas indican consumo (salida de agua).</p>
+      <p style="margin-bottom:10px;"><b>Evolución del Nivel del Tanque (%):</b> Línea azul con área sombreada mostrando el porcentaje del nivel a lo largo del tiempo. Los puntos se colorean en verde (>60%), naranja (30-60%) y rojo (<30%) según el umbral de alerta.</p>
+      <p style="margin-bottom:10px;"><b>Variación entre Mediciones:</b> Diferencia de litros entre reportes consecutivos. Barras verdes = llenado, barras rojas = consumo.</p>
+      <p style="margin-bottom:10px;"><b>Nivel del Tanque con Umbrales:</b> Visualiza el nivel histórico con líneas de alerta: Alerta ${Math.round(building.tank_capacity_liters * 0.6).toLocaleString()} L (60%), Racionamiento ${Math.round(building.tank_capacity_liters * 0.4).toLocaleString()} L (40%), Crítico ${Math.round(building.tank_capacity_liters * 0.2).toLocaleString()} L (20%).</p>
+      <p style="margin-bottom:10px;"><b>Consumo Promedio por Día de Semana (barras):</b> Promedio histórico de litros consumidos por cada día. Solo considera variaciones negativas (consumo real).</p>
+      <p style="margin-bottom:10px;"><b>Nivel % por Día — Últimas 4 Semanas:</b> Cada línea representa una semana. El eje X muestra los días Lun–Dom. Permite comparar patrones entre semanas.</p>
+      <p style="margin-bottom:10px;"><b>Consumo Nocturno Estimado:</b> Litros consumidos entre mediciones consecutivas. Representa el consumo en los períodos registrados.</p>
+      <p style="margin-bottom:10px;"><b>Distribución de Consumo por Día (Doughnut):</b> Vista proporcional del consumo promedio histórico por día de la semana. Permite identificar qué días se consume más agua.</p>
+      <p style="margin-bottom:10px;"><b>Consumo Fin de Semana — Últimas 5 Semanas:</b> Barras amarillas = sábados, barras azules = domingos. Muestra la evolución real del consumo en cada fin de semana.</p>
+      <p style="margin-bottom:10px;"><b>Proyección de Llenado/Vaciado:</b> Basado en el caudal de la última medición, proyecta las fechas y horas estimadas para alcanzar niveles críticos (vaciado: 60%, 40%, 30%, 20%, 0%) o completos (llenado: 50%, 60%, 80%, 90%, 100%).</p>
+      <p style="margin-bottom:10px;"><b>Caudal en Litros por Hora:</b> Evolución del caudal horario en las últimas mediciones. Valores positivos = llenado, negativos = consumo.</p>
+      <p style="margin-bottom:10px;"><b>Histórico Mensual — Consumo y Llenado:</b> Barras rojas = litros consumidos por mes, barras verdes = litros de llenado por mes. Muestra los últimos 6 meses.</p>
+      <p style="margin-bottom:10px;"><b>Consumo/Llenado Sáb-Dom (5 semanas):</b> Barras agrupadas mostrando litros consumidos y llenados cada sábado y domingo de las últimas 5 semanas. Permite identificar patrones de fin de semana.</p>
+      <p style="margin-bottom:10px;"><b>Consumo por Día — Semana Actual vs Anterior:</b> Barras azules = semana actual, grises = semana anterior. Comparación directa del consumo diario entre ambas semanas.</p>
+      <p style="margin-bottom:10px;"><b>Variación % Sáb-Dom (5 semanas):</b> Cambio neto en puntos porcentuales del nivel del tanque durante cada sábado y domingo. Verde = el tanque subió, rojo = bajó.</p>
+      <p style="margin-bottom:10px;"><b>Consumo Promedio por Franja Horaria:</b> El consumo histórico agrupado en franjas de 6 horas (madrugada, mañana, tarde, noche). La barra roja indica la franja de mayor consumo.</p>
     </div>
 
     <div style="background:#f0f7ff; padding:20px; border-radius:12px; margin-top:40px;">
       <h4 style="color:#1e40af; margin:0 0 10px 0;">ℹ️ ¿Cómo interpretar el Caudal?</h4>
-      <p style="font-size:13px; margin:0;">El caudal neto representa la tasa de cambio. Un valor <b>positivo</b> indica que el tanque se está llenando (entrada > consumo). Un valor <b>negativo</b> señala disminución (consumo > entrada). El tiempo estimado proyecta cuándo se vaciará o llenará el tanque si el ritmo se mantiene.</p>
+      <p style="font-size:13px; margin-bottom:10px;">El caudal neto (L/min) representa la tasa de cambio en el volumen de agua, calculada dividiendo la diferencia de litros entre dos mediciones consecutivas sobre el tiempo transcurrido (en minutos).</p>
+      <p style="font-size:13px; margin-bottom:10px;">Un valor <b>positivo</b> indica que el tanque se está llenando: la entrada de agua supera al consumo.</p>
+      <p style="font-size:13px; margin-bottom:10px;">Un valor <b>negativo</b> señala una disminución en el nivel: el consumo en el edificio supera la entrada de agua, o hay ausencia de suministro desde la red pública.</p>
+      <p style="font-size:13px; margin-bottom:10px;">El tiempo estimado de <b>llenado</b> se basa en los caudales positivos, proyectando el tiempo necesario para alcanzar la capacidad máxima (${building.tank_capacity_liters.toLocaleString()} L).</p>
+      <p style="font-size:13px;">El tiempo estimado de <b>vaciado</b> se calcula con los caudales negativos, estimando cuánto tardaría el tanque en vaciarse si el consumo se mantiene en ese ritmo.</p>
     </div>
 
     <div style="background:#fffbeb; padding:20px; border-radius:12px; margin-top:25px; border:1px solid #fef3c7;">
-      <h4 style="color:#92400e; margin:0 0 10px 0;">IMPORTANTE: Sistema de Resúmenes por Correo</h4>
-      <p style="font-size:12px; margin:0;">✉️ <b>Activación:</b> Cada vez que registre un dato e incluya su correo, activará los próximos <b>5 resúmenes</b>.<br>➡️ <b>Fin del Ciclo:</b> Tras 5 correos, dejará de recibirlos hasta que vuelva a registrar una medición.</p>
+      <h4 style="color:#92400e; margin:0 0 10px 0;">IMPORTANTE (Manténgase Informado): Así Funciona Nuestro Sistema de Resúmenes por Correo</h4>
+      <p style="font-size:13px; margin-bottom:10px;">Para que siempre esté al tanto del nivel del agua de nuestro tanque, hemos diseñado un sistema de notificación muy sencillo:</p>
+      <p style="font-size:13px; margin-bottom:5px;">✉️ <b>Activación de Resúmenes:</b> Cada vez que usted registre un nuevo dato en el formulario e incluya su correo electrónico, activará la recepción de los próximos <b>5 resúmenes</b> de estadísticas del agua.</p>
+      <p style="font-size:13px; margin-bottom:5px;">➡️ <b>Fin del Ciclo:</b> Una vez que haya recibido esos 5 correos, su ciclo de suscripción actual finalizará y dejará de recibir notificaciones.</p>
+      <p style="font-size:13px; margin-bottom:10px;">➡️ <b>Reactivar su Suscripción:</b> ¿Desea seguir recibiendo estas valiosas actualizaciones? ¡Es muy fácil! Simplemente, vuelva a registrar un nuevo dato en el formulario e indique nuevamente su correo electrónico.</p>
+      <p style="font-size:13px; margin-top:15px;">Agradecemos su colaboración en el monitoreo del agua. ¡Cada dato registrado es un paso hacia una mejor gestión del agua en el edificio!</p>
     </div>
 
     <div style="margin-top:50px; text-align:center; font-size:12px; color:#94a3b8;">
