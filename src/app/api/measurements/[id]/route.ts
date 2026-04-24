@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''; // Usamos la Service Role Key para tener permisos de borrado
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
 
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // En Next.js 15/16+, params es una promesa que debe ser esperada
   const { id } = await params;
 
   if (!id) {
     return NextResponse.json({ error: 'ID de medición requerido' }, { status: 400 });
   }
 
-  // Creamos un cliente con privilegios de administrador para asegurar el borrado
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  // Usamos el cliente con la clave disponible
+  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
   try {
     const { error } = await supabaseAdmin
