@@ -99,7 +99,7 @@ export default function PricingSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
           {plans.map((plan) => {
             const isPro = plan.plan_id === 'profesional';
             const isIA = plan.plan_id === 'ia' || plan.plan_id === 'empresarial';
@@ -109,38 +109,38 @@ export default function PricingSection() {
             return (
               <div
                 key={plan.plan_id}
-                className={`flex flex-col bg-slate-800/50 backdrop-blur-sm rounded-3xl border transition-all duration-500 ${
+                className={`flex flex-col bg-slate-800/50 backdrop-blur-sm rounded-2xl border transition-all duration-500 ${
                   isPro 
-                    ? 'border-blue-500 shadow-[0_0_40px_-15px_rgba(59,130,246,0.5)] scale-105 z-20 bg-slate-800' 
+                    ? 'border-blue-500 shadow-[0_0_40px_-15px_rgba(59,130,246,0.5)] lg:scale-105 z-20 bg-slate-800' 
                     : 'border-slate-700 hover:border-slate-500 z-10'
                 }`}
               >
                 {isPro && (
-                  <div className="bg-blue-500 text-white text-center text-xs font-bold py-1.5 rounded-t-3xl uppercase tracking-widest">
+                  <div className="bg-blue-500 text-white text-center text-[10px] font-bold py-1 rounded-t-2xl uppercase tracking-widest">
                     Más Popular
                   </div>
                 )}
                 
                 {isIA && (
-                  <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-center text-xs font-bold py-1.5 rounded-t-3xl uppercase tracking-widest flex items-center justify-center gap-2">
-                    <Sparkles size={14} /> Próximamente
+                  <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-center text-[10px] font-bold py-1 rounded-t-2xl uppercase tracking-widest flex items-center justify-center gap-2">
+                    <Sparkles size={12} /> Próximamente
                   </div>
                 )}
 
-                <div className="p-8 flex-1 flex flex-col">
-                  <div className="mb-8">
-                    <h4 className="text-white text-xl font-bold mb-2">{plan.nombre}</h4>
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="mb-6">
+                    <h4 className="text-white text-lg font-bold mb-1">{plan.nombre}</h4>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-black text-white">${Math.round(price)}</span>
-                      <span className="text-slate-400 text-sm">/ {billingCycle === 'monthly' ? 'mes' : 'mes (pago anual)'}</span>
+                      <span className="text-3xl font-black text-white">${Math.round(price)}</span>
+                      <span className="text-slate-400 text-[10px]">/ {billingCycle === 'monthly' ? 'mes' : 'mes (anual)'}</span>
                     </div>
                   </div>
 
-                  <ul className="space-y-4 mb-10 flex-1">
+                  <ul className="space-y-3 mb-8 flex-1">
                     {features.map((feat, i) => (
-                      <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
-                        <div className={`p-1 rounded-full ${isPro ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
-                          <Check size={14} />
+                      <li key={i} className="flex items-start gap-2 text-slate-300 text-[11px] leading-tight">
+                        <div className={`p-0.5 mt-0.5 rounded-full ${isPro ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
+                          <Check size={12} />
                         </div>
                         <span className="flex-1">{feat.text}</span>
                       </li>
@@ -149,7 +149,7 @@ export default function PricingSection() {
 
                   <button
                     disabled={isIA}
-                    className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                    className={`w-full py-3 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
                       isIA 
                         ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                         : isPro
@@ -158,7 +158,7 @@ export default function PricingSection() {
                     }`}
                   >
                     {isIA ? 'En Desarrollo' : 'Comenzar ahora'}
-                    {!isIA && <Rocket size={18} />}
+                    {!isIA && <Rocket size={14} />}
                   </button>
                   
                   {isIA && (

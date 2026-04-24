@@ -29,6 +29,7 @@ import { Menu, X as XIcon } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { Droplets, Building, Mail, Lock, AlertCircle, ArrowRight, ArrowLeft, Phone, Users, BarChart3, CheckCircle, User, MessageSquare, KeyRound, Eye, EyeOff } from 'lucide-react';
 import PricingSection from '@/components/PricingSection';
+import FAQSection from '@/components/FAQSection';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodnluaGhiZ3BpdHRpbXlvcHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMyOTM3NTYsImV4cCI6MjA1ODg2OTc1Nn0.sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
@@ -968,8 +969,9 @@ export default function HomePage() {
           <nav className="hidden md:flex items-center gap-6 text-gray-200">
             <a href="#features" className="hover:text-white transition-colors">Características</a>
             <a href="#planes" className="hover:text-white transition-colors">Planes</a>
-            <a href="#acerca-de" className="hover:text-white transition-colors">Acerca de</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
             <a href="#contacto" className="hover:text-white transition-colors">Contacto</a>
+
             <button onClick={() => setView('login')} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               Ingresar
             </button>
@@ -984,7 +986,7 @@ export default function HomePage() {
           <div className="md:hidden bg-slate-900 border-t border-slate-700 px-6 py-4 flex flex-col gap-4">
             <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">Características</a>
             <a href="#planes" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">Planes</a>
-            <a href="#acerca-de" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">Acerca de</a>
+            <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">FAQ</a>
             <a href="#contacto" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">Contacto</a>
             <button onClick={() => { setView('login'); setMobileMenuOpen(false); }} className="bg-blue-600 text-white py-3 rounded-xl font-medium text-center">
               Ingresar al Sistema
@@ -1185,6 +1187,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <FAQSection />
+
       {/* CONTACTO */}
       <section id="contacto" className="py-20 px-6 bg-slate-800/30">
         <div className="max-w-2xl mx-auto">
@@ -1325,8 +1329,9 @@ export default function HomePage() {
             © 2026 AquaSaaS. Todos los derechos reservados.
           </p>
           <div className="text-gray-300 text-sm flex gap-6">
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
             <a href="/privacidad" className="hover:text-white transition-colors">Política de Privacidad</a>
-            <a href="/disclaimer" className="hover:text-white transition-colors">Descargo de Responsabilidad</a>
+            <a href="/disclaimer" className="hover:text-white transition-colors">Términos de Servicio</a>
           </div>
         </div>
       </footer>
