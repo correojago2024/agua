@@ -420,9 +420,8 @@ export default function EdificioAdminPage() {
 
     const allMembers = members || [];
     setAllSubscribers(allMembers);
-    // All building_members are considered junta members for now (except master user)
-    const filteredMembers = allMembers.filter((m: any) => m.email !== 'correojago@gmail.com');
-    setJuntaMembers(filteredMembers);
+    // Mostrar todos los miembros sin filtrar para debugging y transparencia
+    setJuntaMembers(allMembers);
   }, [building]);
 
   useEffect(() => { if (authed && building) loadData(); }, [authed, building, loadData]);
@@ -644,6 +643,7 @@ export default function EdificioAdminPage() {
             name: memberNameVal, 
             role: newMemberRole || 'Vocal', 
             is_admin: newMemberIsAdmin,
+            is_junta: true,
             enable_email: newMemberEnableEmail,
             enable_whatsapp: newMemberEnableWhatsapp
           })
@@ -656,6 +656,7 @@ export default function EdificioAdminPage() {
           name: memberNameVal,
           role: newMemberRole || 'Vocal',
           is_admin: newMemberIsAdmin,
+          is_junta: true,
           enable_email: newMemberEnableEmail,
           enable_whatsapp: newMemberEnableWhatsapp
         });
@@ -664,42 +665,24 @@ export default function EdificioAdminPage() {
 
       if (error) {
         console.error('Error in Supabase:', error);
-        setMemberMsg('❌ Error BD: ' + error.message + '. Asegúrese de haber ejecutado el script SQL de actualizaciones.');
+        setMemberMsg('❌ Error BD: ' + error.message);
         return;
       }
 
-      // Send welcome email to new member
-      try {
-        await fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'junta-welcome',
-            building: {
-              name: building.name,
-              slug: building.slug,
-              memberEmail: memberEmail,
-              memberName: newMemberName || 'Nuevo Miembro',
-              memberRole: newMemberRole,
-              isAdmin: newMemberIsAdmin,
-            }
-          })
-        });
-      } catch (emailErr) {
-        console.error('Error sending welcome email:', emailErr);
-      }
+      // Auditoría con email explícito
+      logClientAudit('INSERT', 'junta_member', memberEmail, { name: memberNameVal, role: newMemberRole, email: memberEmail });
 
       setNewMemberEmail(''); setNewMemberName(''); setNewMemberRole('Vocal'); setNewMemberIsAdmin(false);
       setShowAddMember(false);
-      setMemberMsg('✅ Miembro agregado correctamente a la lista.');
+      setMemberMsg('✅ Miembro agregado correctamente.');
       
-      // Auditoría
-      logClientAudit('INSERT', 'junta_member', memberEmail, { name: memberNameVal, role: newMemberRole });
+      setTimeout(() => {
+        setMemberMsg('');
+        loadData(); // Recarga después de un momento para asegurar consistencia
+      }, 1000);
+      
+      loadData(); // Recarga inmediata
 
-      setTimeout(() => setMemberMsg(''), 5000);
-      
-      // Forzar recarga de datos
-      loadData();
       
     } catch (err: any) {
       setMemberMsg('❌ Error crítico: ' + err.message);
@@ -898,7 +881,7 @@ export default function EdificioAdminPage() {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from('building-banners').getPublicUrl(path);
-      const publicUrl = urlData.publicUrl + '?t=' + Date.now(); // cache bust
+      const publicUrl = urlData.publicUrl; // Guardar URL base limpia
 
       const { error: updateError } = await supabase
         .from('buildings').update({ banner_url: publicUrl }).eq('id', building.id);
