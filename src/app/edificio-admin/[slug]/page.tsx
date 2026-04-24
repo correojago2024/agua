@@ -895,7 +895,7 @@ const { error: updateError } = await supabase.from('building_members')
                   <div className="space-y-6 p-6">
                     {/* Fila Principal: Nivel y Caudal Llenado/Consumo */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
+                      <StatusIndicator percentage={kpis.currentPct} />
                       <FlowComparisonChart data={measurements} />
                     </div>
 
