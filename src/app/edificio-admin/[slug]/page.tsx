@@ -1982,9 +1982,8 @@ export default function EdificioAdminPage() {
                 {building?.banner_url ? (
                   <div className="space-y-3">
                     <div className="rounded-xl overflow-hidden border border-slate-600" style={{maxHeight: '200px'}}>
-                      <img src={building.banner_url} alt="Banner actual" className="w-full object-cover" style={{maxHeight: '200px'}} />
-                    </div>
-                    <div className="flex gap-2">
+                      <img src={`${building.banner_url}?t=${Date.now()}`} alt="Banner actual" className="w-full object-cover" style={{maxHeight: '200px'}} />
+                    </div>                    <div className="flex gap-2">
                       <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors">
                         <Upload className="w-4 h-4" />
                         Cambiar banner
