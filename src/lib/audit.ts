@@ -18,7 +18,7 @@ export async function logAudit({
   req?: Request | NextRequest;
   building_id?: string;
   user_email?: string;
-  operation: 'INSERT' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'EXPORT' | 'SECURITY';
+  operation: 'INSERT' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'EXPORT' | 'SECURITY' | 'INFO' | 'SUCCESS' | 'ERROR' | 'WARNING' | 'MANUAL_SEND';
   entity_type: string;
   entity_id?: string;
   data_before?: any;
