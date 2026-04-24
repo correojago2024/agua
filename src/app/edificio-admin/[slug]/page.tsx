@@ -886,8 +886,10 @@ export default function EdificioAdminPage() {
 
       if (uploadError) throw uploadError;
 
-       // 2. Construcción de URL Pública
-       const publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${filePath}`;
+        // 2. Construcción de URL Pública usando método oficial del SDK (garantiza formato correcto)
+        const { data: { publicUrl } } = supabase.storage
+          .from("building-banners")
+          .getPublicUrl(filePath);
 
        // 3. Guardar en Base de Datos vía API (Para logs en Vercel y Alertas)
        const response = await fetch('/api/buildings/banner', {
