@@ -863,44 +863,55 @@ export default function EdificioAdminPage() {
 
   // ── Banner upload ──────────────────────────────────────────────────────────
   const uploadBanner = async (file: File) => {
-    if (!file || !building) return;
+    if (!file || !building) {
+      console.log('DEBUG BANNER: Falta archivo o datos del edificio', { file, buildingId: building?.id });
+      return;
+    }
     if (demoBlock('⚠️ Modo Demo: no se puede subir banner.')) return;
     if (file.size > 2 * 1024 * 1024) { setBannerMsg('❌ La imagen debe ser menor a 2MB'); return; }
 
     setBannerUploading(true);
     setBannerMsg('📤 Subiendo imagen...');
+    console.log('DEBUG BANNER: Iniciando subida...', { name: file.name, size: file.size, type: file.type });
 
     try {
       const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${building.id}.${extension}`;
       const filePath = `banners/${fileName}`;
       
-      // 1. Subida a Storage
+      // 1. Subida a Storage (Sigue siendo en cliente)
       const { error: uploadError } = await supabase.storage
         .from('building-banners')
         .upload(filePath, file, { upsert: true, contentType: file.type });
 
       if (uploadError) throw uploadError;
 
-      // 2. Construcción de URL Pública Directa (Sin depender de getPublicUrl)
-      // Reemplazamos la lógica para asegurar que el path sea absoluto
+      // 2. Construcción de URL Pública
       const publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${filePath}`;
 
-      // 3. Guardar en Base de Datos
-      const { error: updateError } = await supabase
-        .from('buildings')
-        .update({ banner_url: publicUrl })
-        .eq('id', building.id);
+      // 3. Guardar en Base de Datos vía API (Para logs en Vercel y Alertas)
+      const response = await fetch('/api/buildings/banner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          banner_url: publicUrl,
+          user_email: user?.email
+        })
+      });
 
-      if (updateError) throw updateError;
+      const result = await response.json();
 
-      // 4. Actualizar Estado Local y Auditoría
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al guardar el banner en la base de datos');
+      }
+
+      // 4. Actualizar Estado Local
       setBuilding({ ...building, banner_url: publicUrl });
       setBannerMsg('✅ Banner actualizado correctamente');
-      logClientAudit('UPDATE_BANNER', 'banner', building.id, { url: publicUrl });
 
     } catch (e: any) {
-      console.error('BANNER ERROR:', e);
+      console.error('DEBUG BANNER: ERROR CRÍTICO', e);
       setBannerMsg('❌ Error: ' + e.message);
     } finally {
       setBannerUploading(false);

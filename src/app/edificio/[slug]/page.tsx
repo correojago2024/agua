@@ -63,7 +63,10 @@ export default function ResidentForm() {
       if (fetchError || !data) setError('Edificio no encontrado');
       else if (data.status === 'Inactivo') setError('INACTIVO: Este edificio está desactivado y no acepta nuevas mediciones. Contacte al administrador del sistema.');
       else if (data.status === 'Suspendido') setError('SUSPENDIDO: La cuenta de este edificio está suspendida. No se pueden registrar nuevas mediciones. Por favor contacte al administrador del sistema para reactivar su cuenta.');
-      else                      setBuilding(data);
+      else {
+        console.log('DEBUG BANNER (Public): Datos del edificio cargados:', data);
+        setBuilding(data);
+      }
       setLoading(false);
     }
     fetchBuilding();
@@ -169,7 +172,10 @@ export default function ResidentForm() {
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                console.error('Error cargando banner:', target.src);
+                console.error('DEBUG BANNER (Public): Error cargando banner desde URL:', target.src, {
+                  banner_url: building?.banner_url,
+                  building_id: building?.id
+                });
                 target.style.display = 'none';
                 // Si la URL guardada falla, intentar fallback a gradiente
                 if (target.parentElement) {
