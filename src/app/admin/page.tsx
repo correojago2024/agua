@@ -120,6 +120,10 @@ export default function AdminPage() {
   const [auditFilters, setAuditFilters] = useState({ building: '', operation: '', date: '' });
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
+  // Editing fields
+  const [editingField, setEditingField] = useState<{id: string; field: string} | null>(null);
+  const [fieldValue, setFieldValue] = useState('');
+
   const fetchAuditLogs = async () => {
     setAuditLoading(true);
     let query = supabase.from('audit_logs').select('*, buildings(name)').order('created_at', { ascending: false }).limit(100);
