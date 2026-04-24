@@ -533,6 +533,91 @@ export const ProjectionChart = ({ data, capacity = 169000 }: ChartProps) => {
 };
 
 
+// ── 10. AGREGADO: Hourly Consumption Pattern ───────────────────────────────
+export const HourlyConsumptionChart = ({ data }: ChartProps) => {
+  const bins = [
+    '00-02h', '02-04h', '04-06h', '06-08h', '08-10h', '10-12h',
+    '12-14h', '14-16h', '16-18h', '18-20h', '20-22h', '22-24h'
+  ];
+  const sums = Array(12).fill(0), counts = Array(12).fill(0);
+
+  data.forEach(m => {
+    const v = getVar(m);
+    if (v < 0) {
+      const hour = new Date(m.recorded_at).getHours();
+      const idx = Math.floor(hour / 2);
+      sums[idx] += Math.abs(v);
+      counts[idx]++;
+    }
+  });
+
+  const chartData = bins.map((label, i) => ({
+    name: label,
+    promedio: counts[i] > 0 ? Math.round(sums[i] / counts[i]) : 0
+  }));
+
+  return (
+    <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Patrón de Consumo por Franja Horaria (Promedio Histórico)</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis dataKey="name" tick={{fontSize: 8}} tickLine={false} axisLine={false} />
+          <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <Tooltip />
+          <Area type="monotone" dataKey="promedio" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} name="Lts Promedio" />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// ── 16. AGREGADO: Distribución de Consumo por Día (Pie) ────────────────────────
+export const ConsumptionDistributionPieChart = ({ data }: ChartProps) => {
+  const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const sums = Array(7).fill(0);
+  
+  data.forEach(m => {
+    const v = getVar(m);
+    if (v < 0) {
+      const d = new Date(m.recorded_at).getDay();
+      sums[d] += Math.abs(v);
+    }
+  });
+
+  const chartData = DIAS.map((label, i) => ({
+    name: label,
+    value: Math.round(sums[i])
+  })).filter(d => d.value > 0);
+
+  return (
+    <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Distribución de Consumo por Día (Histórico)</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={80}
+            paddingAngle={5}
+            dataKey="value"
+            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value: number) => `${value.toLocaleString()} L`} />
+          <Legend verticalAlign="bottom" height={36}/>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+
 // ── 17. AGREGADO: Consumo/Llenado Sáb-Dom (5 semanas) ───────────────────────
 export const WeekendLitrosChart = ({ data }: ChartProps) => {
   const now = new Date();
