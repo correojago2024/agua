@@ -182,7 +182,7 @@ export interface Indicators {
       estimateDateText = format(addMinutes(lastTime, mins), 'dd/MM/yyyy HH:mm');
     }
   } else if (flowForEstimate > 0.1) {
-    const mins = (tankCapacity - lastRecord.liters) / flowForEstimate;
+    const mins = (capacity - lastRecord.liters) / flowForEstimate;
     if (mins > 0 && mins < 1440 * 365) {
       timeEstimateText = `Llenado en ${(mins / 1440).toFixed(1)} días`;
       estimateDateText = format(addMinutes(lastTime, mins), 'dd/MM/yyyy HH:mm');
