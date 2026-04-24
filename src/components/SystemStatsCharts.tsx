@@ -34,7 +34,7 @@ export const UserParticipationPieChart = ({ measurements }: { measurements: any[
           outerRadius={80}
           paddingAngle={5}
           dataKey="value"
-          label={({ name, percent }) => `${name.slice(0, 10)} ${(percent * 100).toFixed(0)}%`}
+          label={({ name, percent }) => `${(name || 'Anónimo').slice(0, 10)} ${((percent || 0) * 100).toFixed(0)}%`}
         >
           {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
