@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { calculateIndicators, Indicators } from '@/lib/calculations';
 import { getAllImprovedCharts } from '@/lib/charts';
-import { sendEmailViaGmail } from '@/lib/supabase';
+import { sendEmailViaGmail } from '@/lib/server/email';
 import { logAudit } from '@/lib/audit';
 
 // ════════════════════════════════════════════════════════════════════════════

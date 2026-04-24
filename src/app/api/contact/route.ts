@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { sendEmailViaGmail } from '@/lib/supabase';
+import { sendEmailViaGmail } from '@/lib/server/email';
 
 export async function POST(request: Request) {
   console.log('=== INICIO API /api/contact (v3.0) ===');
