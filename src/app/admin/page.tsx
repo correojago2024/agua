@@ -12,8 +12,10 @@ import { createClient } from '@supabase/supabase-js';
 import {
   Building, Users, BarChart3, Settings, LogOut, Trash2, Edit,
   RefreshCw, Eye, ChevronDown, ChevronUp, Plus, Save, X, Wrench,
-  Mail, Send, Clock, CreditCard,
+  Mail, Send, Clock, CreditCard, ShieldCheck, Search, Filter,
+  FileJson,
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -67,6 +69,22 @@ interface Lead {
   created_at: string; atendido?: boolean;
 }
 
+interface AuditLog {
+  id: string;
+  created_at: string;
+  building_id?: string;
+  user_email: string;
+  ip_address: string;
+  operation: string;
+  entity_type: string;
+  entity_id: string;
+  data_before: any;
+  data_after: any;
+  status: string;
+  user_agent: string;
+  buildings?: { name: string };
+}
+
 const STATUS_CYCLE: Record<string, string> = {
   'Prueba': 'Activo', 'Activo': 'Suspendido',
   'Suspendido': 'Prueba', 'Inactivo': 'Prueba',
@@ -94,11 +112,25 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState('');
-  const [activeView, setActiveView] = useState<'buildings' | 'leads' | 'maintenance' | 'reports' | 'emails' | 'plans' | 'logs'>('buildings');
+  const [activeView, setActiveView] = useState<'buildings' | 'leads' | 'maintenance' | 'reports' | 'emails' | 'plans' | 'logs' | 'audit'>('buildings');
   
-  // Editing fields
-  const [editingField, setEditingField] = useState<{id: string; field: string} | null>(null);
-  const [fieldValue, setFieldValue] = useState('');
+  // Audit Logs
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditFilters, setAuditFilters] = useState({ building: '', operation: '', date: '' });
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+
+  const fetchAuditLogs = async () => {
+    setAuditLoading(true);
+    let query = supabase.from('audit_logs').select('*, buildings(name)').order('created_at', { ascending: false }).limit(100);
+    
+    if (auditFilters.operation) query = query.eq('operation', auditFilters.operation);
+    if (auditFilters.building) query = query.ilike('buildings.name', `%${auditFilters.building}%`);
+    
+    const { data } = await query;
+    setAuditLogs((data as any[]) || []);
+    setAuditLoading(false);
+  };
 
   // Leads
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -581,9 +613,15 @@ export default function AdminPage() {
               { id: 'plans', label: '💰 Planes' },
               { id: 'maintenance', label: '🔧 Mantenimiento' },
               { id: 'logs', label: '📨 Logs' },
+              { id: 'audit', label: '🛡️ Auditoría' },
             ].map(({ id, label }) => (
               <button key={id}
-                onClick={() => { setActiveView(id as any); if (id === 'leads') loadLeads(); if (id === 'logs') loadNotificationLogs(); }}
+                onClick={() => { 
+                  setActiveView(id as any); 
+                  if (id === 'leads') loadLeads(); 
+                  if (id === 'logs') loadNotificationLogs(); 
+                  if (id === 'audit') fetchAuditLogs();
+                }}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                   activeView === id 
                     ? 'bg-blue-600 text-white shadow' 
@@ -1325,6 +1363,145 @@ export default function AdminPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Audit Logs tab */}
+        {activeView === 'audit' && (
+          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-green-400" />
+                Auditoría Global de Transacciones
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar edificio..." 
+                    value={auditFilters.building}
+                    onChange={(e) => setAuditFilters({...auditFilters, building: e.target.value})}
+                    className="bg-slate-700 border border-slate-600 text-white pl-9 pr-3 py-1.5 rounded-lg text-xs focus:outline-none focus:border-blue-500 w-48"
+                  />
+                </div>
+                <select 
+                  value={auditFilters.operation}
+                  onChange={(e) => setAuditFilters({...auditFilters, operation: e.target.value})}
+                  className="bg-slate-700 border border-slate-600 text-white px-3 py-1.5 rounded-lg text-xs focus:outline-none">
+                  <option value="">Todas las operaciones</option>
+                  <option value="INSERT">INSERT (Nuevos)</option>
+                  <option value="UPDATE">UPDATE (Cambios)</option>
+                  <option value="DELETE">DELETE (Borrados)</option>
+                  <option value="LOGIN">LOGIN</option>
+                </select>
+                <button onClick={fetchAuditLogs} className="bg-blue-600 hover:bg-blue-500 p-2 rounded-lg transition-colors">
+                  <RefreshCw className={`w-4 h-4 text-white ${auditLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-slate-700">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-900/50">
+                  <tr>
+                    {['Fecha/Hora', 'Edificio', 'Usuario', 'Operación', 'IP', 'Estado', 'Detalle'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs text-slate-400 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700">
+                  {auditLogs.map(log => (
+                    <tr key={log.id} className="hover:bg-slate-700/20 transition-colors">
+                      <td className="px-4 py-3 text-slate-300 text-xs whitespace-nowrap">
+                        {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss')}
+                      </td>
+                      <td className="px-4 py-3 text-white font-medium">{log.buildings?.name || 'Sistema'}</td>
+                      <td className="px-4 py-3 text-slate-400 text-xs">{log.user_email}</td>
+                      <td className="px-4 py-3 text-xs">
+                        <span className={`px-2 py-0.5 rounded-full font-bold ${
+                          log.operation === 'DELETE' ? 'bg-red-500/20 text-red-400' :
+                          log.operation === 'INSERT' ? 'bg-green-500/20 text-green-400' :
+                          'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {log.operation}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 text-xs font-mono">{log.ip_address}</td>
+                      <td className="px-4 py-3">
+                        {log.status === 'SUCCESS' ? 
+                          <span className="text-green-500 font-bold">✓</span> : 
+                          <span className="text-red-500 font-bold">✗</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => setSelectedLog(log)} className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-xs">
+                          <Eye className="w-3 h-3" /> Ver
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {auditLogs.length === 0 && !auditLoading && (
+                    <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">No se encontraron registros de auditoría</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Detalle Audit Log */}
+        {selectedLog && (
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+              <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <FileJson className="w-5 h-5 text-blue-400" />
+                    Detalle de Transacción: {selectedLog.operation}
+                  </h3>
+                  <p className="text-xs text-slate-500">Log ID: {selectedLog.id} | Entidad: {selectedLog.entity_type}</p>
+                </div>
+                <button onClick={() => setSelectedLog(null)} className="p-2 hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto flex-1 bg-slate-900/30">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-xs font-bold text-red-400 uppercase mb-3 px-2 py-1 bg-red-400/10 rounded inline-block">Situación Anterior</h4>
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 h-96 overflow-auto">
+                      <pre className="text-[10px] text-slate-400 font-mono">
+                        {selectedLog.data_before ? JSON.stringify(selectedLog.data_before, null, 2) : '// No hay datos previos para esta operación'}
+                      </pre>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-green-400 uppercase mb-3 px-2 py-1 bg-green-400/10 rounded inline-block">Situación Resultante</h4>
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 h-96 overflow-auto">
+                      <pre className="text-[10px] text-slate-400 font-mono">
+                        {selectedLog.data_after ? JSON.stringify(selectedLog.data_after, null, 2) : '// Sin cambios o registro eliminado'}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                     <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Dispositivo/Navegador</p>
+                     <p className="text-[10px] text-slate-300 font-mono break-words">{selectedLog.user_agent}</p>
+                   </div>
+                   <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                     <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Dirección IP</p>
+                     <p className="text-sm text-blue-400 font-mono">{selectedLog.ip_address}</p>
+                   </div>
+                   <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                     <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">ID Entidad Afectada</p>
+                     <p className="text-sm text-purple-400 font-mono">{selectedLog.entity_id}</p>
+                   </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

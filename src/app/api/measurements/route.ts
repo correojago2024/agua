@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { calculateIndicators, Indicators } from '@/lib/calculations';
 import { getAllImprovedCharts } from '@/lib/charts';
+import { logAudit } from '@/lib/audit';
 import nodemailer from 'nodemailer';
 
 // Cliente Supabase server-side para leer email_credentials
@@ -610,6 +611,20 @@ export async function POST(request: Request) {
       }])
       .select()
       .single();
+
+    // AUDITORÍA: Registrar nueva medición
+    if (measurement) {
+      await logAudit({
+        req: request,
+        building_id,
+        user_email: email || collaborator_name || 'Anónimo',
+        operation: 'INSERT',
+        entity_type: 'measurement',
+        entity_id: measurement.id,
+        data_after: measurement,
+        status: 'SUCCESS'
+      });
+    }
 
     const { data: updatedHistory } = await supabase
       .from('measurements')
