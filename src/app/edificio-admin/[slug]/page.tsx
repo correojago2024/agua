@@ -125,7 +125,7 @@ export default function EdificioAdminPage() {
 
   // WhatsApp settings
   const [waEnabled, setWaEnabled] = useState(false);
-  const [waService, setWaService] = useState<'GREENAPI' | 'WHAPI'>('GREENAPI');
+  const [waService, setWaService] = useState<'GREENAPI' | 'WHAPI' | 'BUSINESS'>('GREENAPI');
   const [waThresholdCaution, setWaThresholdCaution] = useState(60);
   const [waThresholdRationing, setWaThresholdRationing] = useState(40);
   const [waThresholdCritical, setWaThresholdCritical] = useState(20);
@@ -135,6 +135,7 @@ export default function EdificioAdminPage() {
   const [waInstanceId, setWaInstanceId] = useState('');
   const [waApiToken, setWaApiToken] = useState('');
   const [waApiUrl, setWaApiUrl] = useState('');
+  const [waBusinessPhoneId, setWaBusinessPhoneId] = useState('');
   
   const [waLoading, setWaLoading] = useState(false);
   const [waMsg, setWaMsg] = useState('');
@@ -193,6 +194,7 @@ export default function EdificioAdminPage() {
       setWaInstanceId(data.wa_instance_id || '');
       setWaApiToken(data.wa_api_token || '');
       setWaApiUrl(data.wa_api_url || '');
+      setWaBusinessPhoneId(data.wa_business_phone_number_id || '');
     }
     setWaLoading(false);
   }, [building]);
@@ -215,6 +217,7 @@ export default function EdificioAdminPage() {
         wa_instance_id: waInstanceId,
         wa_api_token: waApiToken,
         wa_api_url: waApiUrl,
+        wa_business_phone_number_id: waBusinessPhoneId,
         updated_at: new Date().toISOString()
       });
 
@@ -1714,97 +1717,151 @@ const { error: updateError } = await supabase.from('building_members')
                 {waMsg && <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-2 rounded-lg text-sm">{waMsg}</div>}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Servicio */}
+                  {/* Servicio y Ayuda */}
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Servicio de WhatsApp</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">¿Qué servicio de WhatsApp usará?</label>
+                      <div className="grid grid-cols-3 gap-2">
                         <button 
                           onClick={() => waEnabled && setWaService('GREENAPI')}
                           disabled={!waEnabled}
-                          className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'GREENAPI' ? 'bg-green-600 border-green-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
+                          className={`px-2 py-3 rounded-xl text-[11px] font-bold border transition-all ${waService === 'GREENAPI' ? 'bg-green-600 border-green-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400'}`}
                         >
-                          Green API
-                          <span className="block text-[10px] opacity-70">Recomendado</span>
+                          GREEN API
+                          <span className="block text-[9px] font-normal opacity-70">Rápido</span>
                         </button>
                         <button 
                           onClick={() => waEnabled && setWaService('WHAPI')}
                           disabled={!waEnabled}
-                          className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'WHAPI' ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
+                          className={`px-2 py-3 rounded-xl text-[11px] font-bold border transition-all ${waService === 'WHAPI' ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400'}`}
                         >
-                          Whapi Cloud
-                          <span className="block text-[10px] opacity-70">Alternativa</span>
+                          WHAPI
+                          <span className="block text-[9px] font-normal opacity-70">Estable</span>
+                        </button>
+                        <button 
+                          onClick={() => waEnabled && setWaService('BUSINESS')}
+                          disabled={!waEnabled}
+                          className={`px-2 py-3 rounded-xl text-[11px] font-bold border transition-all ${waService === 'BUSINESS' ? 'bg-purple-600 border-purple-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400'}`}
+                        >
+                          BUSINESS
+                          <span className="block text-[9px] font-normal opacity-70">Oficial</span>
                         </button>
                       </div>
                     </div>
 
-                    {/* Credenciales */}
+                    {/* Bloque de Ayuda Amigable */}
                     <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-700 space-y-3">
-                      <h4 className="text-white text-xs font-bold uppercase flex items-center gap-2">
-                        <Wrench className="w-3 h-3" />
-                        Parámetros de Acceso
-                      </h4>
+                      <div className="flex items-center gap-2 text-blue-400">
+                        <Wrench className="w-4 h-4" />
+                        <h4 className="text-xs font-bold uppercase">Instrucciones de configuración</h4>
+                      </div>
+                      
                       {waService === 'GREENAPI' && (
-                        <div>
-                          <label className="block text-slate-500 text-[10px] mb-1">ID de Instancia</label>
-                          <input value={waInstanceId} onChange={e => setWaInstanceId(e.target.value)}
-                            disabled={!waEnabled} placeholder="Ej: 7107580078"
-                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500" />
+                        <div className="text-[11px] text-slate-400 space-y-2">
+                          <p>1. Crea una cuenta en <a href="https://green-api.com" target="_blank" className="text-blue-400 underline">green-api.com</a>.</p>
+                          <p>2. Escanea el código QR con tu WhatsApp en la consola.</p>
+                          <p>3. Copia el <strong className="text-white">ID de Instancia</strong> (número largo) y el <strong className="text-white">API Token</strong>.</p>
                         </div>
                       )}
-                      <div>
-                        <label className="block text-slate-500 text-[10px] mb-1">API Token</label>
-                        <input type="password" value={waApiToken} onChange={e => setWaApiToken(e.target.value)}
-                          disabled={!waEnabled} placeholder="Tu token secreto"
-                          className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500" />
-                      </div>
-                      <div>
-                        <label className="block text-slate-500 text-[10px] mb-1">URL Base (Opcional)</label>
-                        <input value={waApiUrl} onChange={e => setWaApiUrl(e.target.value)}
-                          disabled={!waEnabled} placeholder={waService === 'GREENAPI' ? 'https://api.greenapi.com' : 'https://gate.whapi.cloud'}
-                          className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500" />
-                      </div>
+                      {waService === 'WHAPI' && (
+                        <div className="text-[11px] text-slate-400 space-y-2">
+                          <p>1. Crea una cuenta en <a href="https://whapi.cloud" target="_blank" className="text-blue-400 underline">whapi.cloud</a>.</p>
+                          <p>2. Vincula tu número escaneando el QR.</p>
+                          <p>3. Copia el <strong className="text-white">API Token</strong> desde tu canal creado.</p>
+                        </div>
+                      )}
+                      {waService === 'BUSINESS' && (
+                        <div className="text-[11px] text-slate-400 space-y-2">
+                          <p>1. Usa tu cuenta de <a href="https://developers.facebook.com" target="_blank" className="text-blue-400 underline">Meta for Developers</a>.</p>
+                          <p>2. Configura tu App de WhatsApp Business.</p>
+                          <p>3. Necesitarás el <strong className="text-white">Phone Number ID</strong> y un <strong className="text-white">Token de Acceso Permanente</strong>.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Destinatarios y Prueba */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Números de la Junta (Alertas Reales)</label>
-                      <textarea 
-                        value={waJuntaPhones}
-                        onChange={e => setWaJuntaPhones(e.target.value)}
-                        disabled={!waEnabled}
-                        placeholder="Ej: 584161234567, 584127654321"
-                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-green-500 min-h-[80px]"
-                      />
-                      <p className="text-[10px] text-slate-500">Separados por coma. Se les enviará alertas automáticas de nivel.</p>
-                    </div>
+                  {/* Campos de Configuración */}
+                  <div className="bg-slate-800/50 p-5 rounded-2xl border border-slate-700 space-y-4">
+                    <h4 className="text-white text-xs font-bold uppercase flex items-center gap-2 mb-2">
+                      <Settings className="w-3 h-3 text-cyan-400" />
+                      Ingresa tus credenciales
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 gap-3">
+                      {waService === 'GREENAPI' && (
+                        <div>
+                          <label className="block text-slate-500 text-[10px] mb-1 font-bold">ID DE INSTANCIA</label>
+                          <input value={waInstanceId} onChange={e => setWaInstanceId(e.target.value)}
+                            disabled={!waEnabled} placeholder="Ej: 7107580078"
+                            className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500" />
+                        </div>
+                      )}
+                      
+                      {waService === 'BUSINESS' && (
+                        <div>
+                          <label className="block text-slate-500 text-[10px] mb-1 font-bold">PHONE NUMBER ID</label>
+                          <input value={waBusinessPhoneId} onChange={e => setWaBusinessPhoneId(e.target.value)}
+                            disabled={!waEnabled} placeholder="ID numérico de Meta"
+                            className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-purple-500" />
+                        </div>
+                      )}
 
-                    {/* SECCIÓN DE PRUEBA */}
-                    <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-2xl space-y-3">
-                      <h4 className="text-blue-400 text-xs font-bold uppercase flex items-center gap-2">
-                        <Activity className="w-3 h-3" />
-                        Prueba de Conexión
-                      </h4>
-                      <div className="flex gap-2">
-                        <input value={testPhone} onChange={e => setTestPhone(e.target.value)}
-                          disabled={!waEnabled || testLoading} placeholder="Número de prueba (con país)"
-                          className="flex-1 bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
-                        <button 
-                          onClick={handleTestWhatsApp}
-                          disabled={!waEnabled || !testPhone || testLoading}
-                          className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all"
-                        >
-                          {testLoading ? '...' : 'Enviar'}
-                        </button>
+                      <div>
+                        <label className="block text-slate-500 text-[10px] mb-1 font-bold">API TOKEN / ACCESS TOKEN</label>
+                        <input type="password" value={waApiToken} onChange={e => setWaApiToken(e.target.value)}
+                          disabled={!waEnabled} placeholder="Pega aquí el código largo (token)"
+                          className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
                       </div>
-                      {testResult && (
-                        <div className={`p-2 rounded text-[10px] font-medium ${testResult.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                          {testResult.msg}
+
+                      {waService !== 'BUSINESS' && (
+                        <div>
+                          <label className="block text-slate-500 text-[10px] mb-1 font-bold">URL DE LA API (OPCIONAL)</label>
+                          <input value={waApiUrl} onChange={e => setWaApiUrl(e.target.value)}
+                            disabled={!waEnabled} placeholder="Solo si usas un servidor propio"
+                            className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
                         </div>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Destinatarios y Prueba */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-700 pt-6">
+                  <div className="space-y-2">
+                    <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Números de la Junta (Alertas Reales)</label>
+                    <textarea 
+                      value={waJuntaPhones}
+                      onChange={e => setWaJuntaPhones(e.target.value)}
+                      disabled={!waEnabled}
+                      placeholder="Ej: 584161234567, 584127654321"
+                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-green-500 min-h-[80px]"
+                    />
+                    <p className="text-[10px] text-slate-500 italic">Separa los números con comas. Deben tener el código de país al inicio.</p>
+                  </div>
+
+                  <div className="bg-blue-600/5 border border-blue-500/20 p-5 rounded-2xl space-y-4">
+                    <h4 className="text-blue-400 text-xs font-bold uppercase flex items-center gap-2">
+                      <Activity className="w-4 h-4" />
+                      Verificar Configuración
+                    </h4>
+                    <p className="text-[10px] text-slate-400">Escribe tu número abajo para enviar un mensaje de prueba ahora mismo.</p>
+                    <div className="flex gap-2">
+                      <input value={testPhone} onChange={e => setTestPhone(e.target.value)}
+                        disabled={!waEnabled || testLoading} placeholder="Tu número (Ej: 58414123...)"
+                        className="flex-1 bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                      <button 
+                        onClick={handleTestWhatsApp}
+                        disabled={!waEnabled || !testPhone || testLoading}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95"
+                      >
+                        {testLoading ? '...' : 'Enviar'}
+                      </button>
+                    </div>
+                    {testResult && (
+                      <div className={`p-3 rounded-lg text-xs font-medium text-center ${testResult.success ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                        {testResult.msg}
+                      </div>
+                    )}
                   </div>
                 </div>
 

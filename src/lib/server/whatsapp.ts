@@ -1,7 +1,7 @@
 /**
  * SERVICIO: whatsapp.ts
- * DESCRIPCIÓN: Gestión de envío de mensajes vía WhatsApp usando Green API o Whapi.
- * PORTADO DE: Apps Script v4.1
+ * DESCRIPCIÓN: Gestión de envío de mensajes vía WhatsApp usando Green API, Whapi o Meta (Business API).
+ * PORTADO DE: Apps Script v4.1 + Soporte Meta API
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -13,13 +13,14 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
 });
 
-export type WhatsAppService = 'GREENAPI' | 'WHAPI';
+export type WhatsAppService = 'GREENAPI' | 'WHAPI' | 'BUSINESS';
 
 interface WhatsAppCredentials {
   service_type: WhatsAppService;
   instance_id?: string;
   api_token: string;
   api_url?: string;
+  phone_number_id?: string; // Para Meta Business
 }
 
 /**
@@ -102,6 +103,33 @@ async function sendViaWhapi(creds: WhatsAppCredentials, phone: string, message: 
 }
 
 /**
+ * Envío vía WhatsApp Business (Meta Graph API)
+ */
+async function sendViaMeta(creds: WhatsAppCredentials, phone: string, message: string) {
+  const cleanPhone = phone.replace(/\D/g, '');
+  const url = `https://graph.facebook.com/v18.0/${creds.phone_number_id}/messages`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${creds.api_token}`
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: cleanPhone,
+      type: "text",
+      text: { body: message }
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(data));
+  return data.messages[0].id;
+}
+
+/**
  * Función principal de envío
  */
 export async function sendWhatsApp(
@@ -127,12 +155,13 @@ export async function sendWhatsApp(
     // Priorizar credenciales del edificio, si no, usar las globales
     let creds: WhatsAppCredentials;
     
-    if (settings?.wa_api_token) {
+    if (settings?.wa_api_token || settings?.wa_business_phone_number_id) {
       creds = {
         service_type: service,
         instance_id: settings.wa_instance_id,
         api_token: settings.wa_api_token,
-        api_url: settings.wa_api_url || (service === 'GREENAPI' ? 'https://api.greenapi.com' : 'https://gate.whapi.cloud')
+        api_url: settings.wa_api_url || (service === 'GREENAPI' ? 'https://api.greenapi.com' : 'https://gate.whapi.cloud'),
+        phone_number_id: settings.wa_business_phone_number_id
       };
     } else {
       creds = await getCredentials(service);
@@ -147,8 +176,10 @@ export async function sendWhatsApp(
       try {
         if (service === 'GREENAPI') {
           await sendViaGreenApi(creds, phone, message);
-        } else {
+        } else if (service === 'WHAPI') {
           await sendViaWhapi(creds, phone, message);
+        } else if (service === 'BUSINESS') {
+          await sendViaMeta(creds, phone, message);
         }
         await logToQueue(building_id, phone, message, 'sent');
         successCount++;
