@@ -162,22 +162,24 @@ export default function ResidentForm() {
         {building?.banner_url ? (
           <div className="relative overflow-hidden h-40 md:h-64 bg-slate-900">
             <img
-              src={`${building.banner_url}?v=${new Date().getTime()}`}
+              src={building.banner_url}
               alt={`Banner ${building.name}`}
               className="w-full h-full object-cover relative z-10"
               style={{ display: 'block' }}
-              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
               onLoad={(e) => {
                 const img = e.target as HTMLImageElement;
                 img.style.opacity = '1';
-                console.log('✅ Banner cargado en Formulario Público');
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                console.error('❌ Error cargando banner en Formulario Público:', target.src);
-                target.style.display = 'none';
-                if (target.parentElement) {
-                  target.parentElement.classList.add('bg-blue-600');
+                if (!target.src.includes('retry=')) {
+                   target.src = `${building.banner_url}?retry=${Date.now()}`;
+                } else {
+                  target.style.display = 'none';
+                  if (target.parentElement) {
+                    target.parentElement.classList.add('bg-blue-600');
+                  }
                 }
               }}
             />

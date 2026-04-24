@@ -2016,7 +2016,15 @@ export default function EdificioAdminPage() {
                         alt="Banner" 
                         className="w-full object-cover" 
                         style={{maxHeight: '200px', display: 'block'}} 
-                        key={`${building.banner_url}-${Date.now()}`}
+                        key={building.banner_url}
+                        crossOrigin="anonymous"
+                        onError={(e) => {
+                          // Si falla la carga normal, intentamos añadir un timestamp para forzar
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.includes('force=')) {
+                            target.src = `${building.banner_url}?force=${Date.now()}`;
+                          }
+                        }}
                       />
                     </div>                    <div className="flex gap-2">
                       <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors">
