@@ -1,9 +1,10 @@
 /**
  * SERVICIO: email-templates.ts
- * DESCRIPCIÓN: Plantilla MAESTRA FINAL RIGUROSA con 16 gráficos en pares, Mapa de Calor al inicio y texto literal sagrado.
+ * DESCRIPCIÓN: Plantilla MAESTRA FINAL con enriquecimiento de datos en tiempo real para tablas precisas.
  */
 
 import { Indicators } from '@/lib/calculations';
+import { differenceInMinutes } from 'date-fns';
 
 export function renderHeatmapHtml(matrix: number[][]): string {
   const days = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
@@ -56,56 +57,72 @@ export function buildReportEmailHtml(
   chartUrls: any
 ): string {
   const percentageInt = Math.round(percentage);
-  const flowLpm = indicators.lastFlow;
+  
+  // ── ENRIQUECIMIENTO DE DATOS EN TIEMPO REAL ──
+  // Ordenamos de más antiguo a más nuevo para calcular
+  const enriched = [...measurements].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
+  
+  for (let i = 1; i < enriched.length; i++) {
+    const prev = enriched[i - 1];
+    const curr = enriched[i];
+    
+    // Calcular Variación si no existe o es 0
+    if (!curr.variation_lts || curr.variation_lts === 0) {
+      curr.variation_lts = curr.liters - prev.liters;
+    }
+    
+    // Calcular Caudal (L/min)
+    const mins = differenceInMinutes(new Date(curr.recorded_at), new Date(prev.recorded_at));
+    if (mins > 0 && (!curr.flow_lpm || curr.flow_lpm === 0)) {
+      curr.flow_lpm = curr.variation_lts / mins;
+    }
+  }
+
+  // Ahora invertimos para las tablas (más reciente primero)
+  const sortedDesc = enriched.reverse();
+  const lastRecord = sortedDesc[0];
+  const last10 = sortedDesc.slice(0, 10);
+
+  const flowLpm = lastRecord.flow_lpm || 0;
   const flowLph = Math.abs(flowLpm * 60);
   const flowDirIcon = flowLpm >= 0 ? '🟢' : '🔴';
   const flowTypeText = flowLpm >= 0 ? 'llenado' : 'consumo';
 
-  const sortedDesc = [...measurements].sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
-  const lastRecord = sortedDesc[0];
-  const last10 = sortedDesc.slice(0, 10);
+  const tableRows = last10.map(m => {
+    const varLts = m.variation_lts || 0;
+    const flow = m.flow_lpm || 0;
+    const tLlenado = (flow > 0.01) ? (Math.abs((building.tank_capacity_liters - m.liters) / flow) / 1440).toFixed(2) + ' d' : '—';
+    const tVaciado = (flow < -0.01) ? (Math.abs(m.liters / flow) / 1440).toFixed(2) + ' d' : '—';
+    
+    return `
+      <tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:8px;text-align:left;">${new Date(m.recorded_at).toLocaleString('es-ES')}</td>
+        <td style="padding:8px;">${Math.round(m.liters).toLocaleString()}</td>
+        <td style="padding:8px;font-weight:bold;">${Math.round(m.percentage)}%</td>
+        <td style="padding:8px;color:${varLts >= 0 ? '#16a34a' : '#dc2626'}">${varLts > 0 ? '+' : ''}${Math.round(varLts).toLocaleString()}</td>
+        <td style="padding:8px;">${Number(flow).toFixed(2)}</td>
+        <td style="padding:8px;">${tLlenado}</td>
+        <td style="padding:8px;">${tVaciado}</td>
+        <td style="padding:8px;">${m.collaborator_name || 'Vecino'}</td>
+      </tr>
+    `;
+  }).join('');
 
-  // Tablas de datos
-  const tableRows = last10.map(m => `
-    <tr style="border-bottom:1px solid #e2e8f0;">
-      <td style="padding:8px;text-align:left;">${new Date(m.recorded_at).toLocaleString('es-ES')}</td>
-      <td style="padding:8px;">${Math.round(m.liters).toLocaleString()}</td>
-      <td style="padding:8px;font-weight:bold;">${Math.round(m.percentage)}%</td>
-      <td style="padding:8px;color:${(m.variation_lts || 0) >= 0 ? '#16a34a' : '#dc2626'}">${(m.variation_lts || 0) > 0 ? '+' : ''}${Math.round(m.variation_lts || 0).toLocaleString()}</td>
-      <td style="padding:8px;">${Number(m.flow_lpm || 0).toFixed(2)}</td>
-      <td style="padding:8px;">${m.flow_lpm > 0 ? (Math.abs((building.tank_capacity_liters - m.liters)/m.flow_lpm)/1440).toFixed(2) + ' d' : '—'}</td>
-      <td style="padding:8px;">${m.flow_lpm < 0 ? (Math.abs(m.liters/m.flow_lpm)/1440).toFixed(2) + ' d' : '—'}</td>
-      <td style="padding:8px;">${m.collaborator_name || 'Vecino'}</td>
-    </tr>
-  `).join('');
-
-  // Definición de pares de gráficos (16 en total)
-  const chartPairs = [
-    { left: { key: 'caudalChart', label: 'Caudal de llenado y consumo (l/min)' }, right: { key: 'combinadoChart', label: 'Evolucion del nivel del tanque (%)' } },
-    { left: { key: 'variationChart', label: 'Variacion entre mediciones' }, right: { key: 'thresholdChart', label: 'Nivel con umbrales de alerta' } },
-    { left: { key: 'dayOfWeekChart', label: 'consumo promedio por dia de semana' }, right: { key: 'last4WeeksChart', label: 'Nivel % por dia - ultimas 5 semanas' } },
-    { left: { key: 'nightlyLitrosChart', label: 'consumo nocturno estimado' }, right: { key: 'consumoSemanalDoughnut', label: 'Distribucion de consume por dia (historico)' } },
-    { left: { key: 'weekendChart', label: 'consumo fines de semana (5 semanas)' }, right: { key: 'projectionFillingChart', label: 'Proyeccion de llenado/vaciado' } },
-    { left: { key: 'caudalHoraChart', label: 'caudal en litros por hora' }, right: { key: 'historicoMensualChart', label: 'historico mensual - consume y llenado' } },
-    { left: { key: 'weekendLitrosChart', label: 'consumo/llenado sab-dom (5 semanas)' }, right: { key: 'semanaVsAnteriorChart', label: 'consume por dia - semana actual vs anterior' } },
-    { left: { key: 'weekendVariacionChart', label: 'variacion % sab-dom (5 semanas)' }, right: { key: 'franjaHorariaChart', label: 'consume promedio por franja horaria' } }
-  ];
-
+  // Lógica de Doble Columna para Gráficos
+  const chartEntries = Object.entries(chartUrls);
   let chartGalleryHtml = '<table width="100%" border="0" cellspacing="0" cellpadding="5">';
-  chartPairs.forEach(pair => {
+  for (let i = 0; i < chartEntries.length; i += 2) {
+    const pair = chartEntries.slice(i, i + 2);
     chartGalleryHtml += '<tr>';
-    // Lado Izquierdo
-    chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:25px;">
-      <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold;">${pair.left.label}</div>
-      <img src="${chartUrls[pair.left.key]}" style="width:100%; max-width:380px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
-    </td>`;
-    // Lado Derecho
-    chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:25px;">
-      <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold;">${pair.right.label}</div>
-      <img src="${chartUrls[pair.right.key]}" style="width:100%; max-width:380px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
-    </td>`;
+    pair.forEach(([key, url]) => {
+      chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:25px;">
+        <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold; text-transform:uppercase;">${key.replace('Chart', '')}</div>
+        <img src="${url}" style="width:100%; max-width:380px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
+      </td>`;
+    });
+    if (pair.length === 1) chartGalleryHtml += '<td width="50%"></td>';
     chartGalleryHtml += '</tr>';
-  });
+  }
   chartGalleryHtml += '</table>';
 
   return `<!DOCTYPE html>
