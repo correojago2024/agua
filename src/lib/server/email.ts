@@ -10,7 +10,17 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
 });
 
 export async function getGmailTransporter(): Promise<{ transporter: nodemailer.Transporter; fromEmail: string }> {
-  // Intentar obtener la credencial ID 1
+  // --- PRIORIDAD 1: VARIABLES DE ENTORNO (Vercel) ---
+  const envUser = process.env.GMAIL_USER;
+  const envPass = process.env.GMAIL_APP_PASSWORD;
+
+  if (envUser && envPass) {
+    console.log('[EMAIL] Usando credenciales de variables de entorno (ENV)');
+    return createTransporter(envUser, envPass);
+  }
+
+  // --- PRIORIDAD 2: RESPALDO EN BASE DE DATOS (Supabase) ---
+  console.log('[EMAIL] Variables de entorno no encontradas, intentando con Supabase...');
   const { data, error } = await supabaseAdmin
     .from('email_credentials')
     .select('email_user, email_password')
@@ -18,24 +28,24 @@ export async function getGmailTransporter(): Promise<{ transporter: nodemailer.T
     .single();
   
   if (error) {
-    console.error('[DATABASE_ERROR] Error leyendo email_credentials:', error.message);
+    console.error('[DATABASE_ERROR] Falló el acceso a email_credentials:', error.message);
     
     // Intento de fallback: tomar el primer registro que encuentre
-    const { data: fallback, error: fbError } = await supabaseAdmin
+    const { data: fallback } = await supabaseAdmin
       .from('email_credentials')
       .select('email_user, email_password')
       .limit(1)
       .maybeSingle();
 
-    if (fbError || !fallback) {
-      throw new Error(`Error de base de datos: ${error.message}. Por favor verifica la tabla email_credentials en Supabase.`);
+    if (!fallback) {
+      throw new Error('No se encontraron credenciales de Gmail ni en ENV ni en Base de Datos.');
     }
     
     return createTransporter(fallback.email_user, fallback.email_password);
   }
 
   if (!data?.email_user || !data?.email_password) {
-    throw new Error('La tabla email_credentials existe pero los campos email_user o email_password están vacíos.');
+    throw new Error('Faltan credenciales de Gmail (ENV y DB vacíos).');
   }
 
   return createTransporter(data.email_user, data.email_password);

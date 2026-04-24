@@ -15,9 +15,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
+import { getGmailTransporter } from '@/lib/server/email';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const CRON_SECRET = process.env.CRON_SECRET || 'aquasaas-cron-2026';
 const ADMIN_EMAIL = 'correojago@gmail.com';
 
@@ -35,21 +36,10 @@ interface TaskResult {
 // ─────────────────────────────────────────────────────────────────────────────
 async function sendMaintenanceEmail(html: string, subject: string): Promise<void> {
   try {
-    let { data, error } = await supabase.from('email_credentials').select('*').eq('id', 1).single();
-    if (error || !data) {
-      const fallback = await supabase.from('email_credentials').select('*').limit(1).single();
-      data = fallback.data;
-    }
-    if (!data?.email_user || !data?.email_password) {
-      console.warn('[MAINT-EMAIL] Sin credenciales Gmail — email no enviado');
-      return;
-    }
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: data.email_user, pass: data.email_password },
-    });
+    const { transporter, fromEmail } = await getGmailTransporter();
+    
     await transporter.sendMail({
-      from: `"AquaSaaS Sistema" <${data.email_user}>`,
+      from: `"AquaSaaS Sistema" <${fromEmail}>`,
       to: ADMIN_EMAIL,
       subject,
       html,
