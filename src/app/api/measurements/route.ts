@@ -42,9 +42,14 @@ function renderHeatmapHtml(matrix: number[][]): string {
       <td style="padding:5px; border:1px solid #e2e8f0; font-weight:bold; background:#f8fafc;">${days[dayIdx]}</td>`;
     row.forEach(val => {
       const intensity = val / maxVal;
-      // Escala de azules: de #f1f5f9 (vacío) a #1e3a8a (lleno)
-      const bgColor = val === 0 ? '#ffffff' : intensity > 0.8 ? '#1e3a8a' : intensity > 0.6 ? '#2563eb' : intensity > 0.4 ? '#60a5fa' : intensity > 0.2 ? '#bfdbfe' : '#eff6ff';
-      const textColor = intensity > 0.5 ? '#ffffff' : '#1e293b';
+      let bgColor = '#ffffff';
+      if (val > 0) {
+        if (intensity < 0.25) bgColor = '#bae6fd';
+        else if (intensity < 0.5) bgColor = '#fde047';
+        else if (intensity < 0.75) bgColor = '#fb923c';
+        else bgColor = '#fda4af';
+      }
+      const textColor = intensity > 0.5 ? '#000000' : '#1e293b';
       html += `<td style="padding:5px; border:1px solid #e2e8f0; background:${bgColor}; color:${textColor};" title="${Math.round(val)} L">${val > 0 ? '●' : ''}</td>`;
     });
     html += `</tr>`;
@@ -245,11 +250,21 @@ export async function POST(request: Request) {
     if (building.admin_email && !recipientEmails.includes(building.admin_email)) recipientEmails.push(building.admin_email);
 
     if (recipientEmails.length > 0) {
+      await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'INFO', entity_type: 'email', entity_id: meas?.id || 'N/A', data_after: { message: 'Iniciando envío de reporte', recipients: recipientEmails } });
+      
       const emailHtml = buildReportEmailHtml(building, updHistory || [], indicators, liters, percentage, isAnomaly, variationPercentage);
       const res = await sendEmailViaGmail(recipientEmails, `💧 Reporte Agua: ${Math.round(percentage)}% — ${building.name}`, emailHtml, building_id, 'measurement_report');
-      if (res.success && subs) {
-        for (const s of subs) await supabase.from('resident_subscriptions').update({ emails_remaining: s.emails_remaining - 1 }).eq('id', s.id);
+      
+      if (res.success) {
+        await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'SUCCESS', entity_type: 'email', entity_id: meas?.id || 'N/A', data_after: { message: 'Emails enviados correctamente', messageId: res.messageId } });
+        if (subs) {
+          for (const s of subs) await supabase.from('resident_subscriptions').update({ emails_remaining: s.emails_remaining - 1 }).eq('id', s.id);
+        }
+      } else {
+        await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'ERROR', entity_type: 'email', entity_id: meas?.id || 'N/A', data_after: { message: 'Error enviando emails', error: res.error } });
       }
+    } else {
+      await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'WARNING', entity_type: 'email', entity_id: meas?.id || 'N/A', data_after: { message: 'No hay destinatarios con suscripciones activas' } });
     }
 
     return NextResponse.json({ success: true, measurementId: meas?.id, indicators, anomalyDetected: isAnomaly, variationPercentage: variationPercentage.toFixed(1), emailsSent: recipientEmails.length });

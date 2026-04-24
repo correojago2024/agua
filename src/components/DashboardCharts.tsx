@@ -722,12 +722,19 @@ export const ConsumptionHeatmap = ({ data }: ChartProps) => {
                 <div className="flex-1 grid grid-cols-24 gap-1">
                   {row.map((val, hourIdx) => {
                     const intensity = val / maxVal;
-                    const bgColor = val === 0 ? '#f9fafb' : intensity > 0.8 ? '#1e3a8a' : intensity > 0.6 ? '#2563eb' : intensity > 0.4 ? '#60a5fa' : intensity > 0.2 ? '#93c5fd' : '#dbeafe';
+                    // Escala térmica: Azul claro -> Amarillo -> Naranja -> Rojo claro
+                    let bgColor = '#f9fafb'; // Fondo neutro si es 0
+                    if (val > 0) {
+                      if (intensity < 0.25) bgColor = '#bae6fd'; // Azul claro (sky-200)
+                      else if (intensity < 0.5) bgColor = '#fde047'; // Amarillo (yellow-300)
+                      else if (intensity < 0.75) bgColor = '#fb923c'; // Naranja (orange-400)
+                      else bgColor = '#fda4af'; // Rojo claro (rose-300)
+                    }
                     return (
                       <div 
                         key={hourIdx} 
                         title={`${days[dayIdx]} ${hourIdx}:00 - ${Math.round(val).toLocaleString()} L`}
-                        className="aspect-square rounded-sm transition-all hover:ring-2 hover:ring-blue-400 cursor-help"
+                        className="aspect-square rounded-sm transition-all hover:ring-2 hover:ring-slate-400 cursor-help"
                         style={{ backgroundColor: bgColor }}
                       />
                     );
@@ -740,7 +747,7 @@ export const ConsumptionHeatmap = ({ data }: ChartProps) => {
           <div className="mt-4 flex justify-between items-center text-[9px] text-gray-400 uppercase tracking-tighter">
             <span>Bajo Consumo</span>
             <div className="flex gap-1">
-              {['#dbeafe', '#93c5fd', '#60a5fa', '#2563eb', '#1e3a8a'].map(color => (
+              {['#bae6fd', '#fde047', '#fb923c', '#fda4af'].map(color => (
                 <div key={color} className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
               ))}
             </div>

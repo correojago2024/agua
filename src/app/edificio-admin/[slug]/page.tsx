@@ -21,7 +21,7 @@ import {
   Droplets, Users, BarChart3, Download, Plus, Trash2, Edit2, Save,
   X, RefreshCw, AlertTriangle, CheckCircle2, Mail, Calendar,
   TrendingDown, TrendingUp, Activity, FileText, Settings, LogOut,
-  ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare
+  ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare, ClipboardList
 } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -52,7 +52,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpi
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion';
+type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'bitacora';
 
 // Helper: lee variation_lts o variacion_lts (ambos nombres posibles en BD)
 const getVariation = (m: Measurement): number =>
@@ -145,6 +145,12 @@ export default function EdificioAdminPage() {
   const [testPhone, setTestPhone] = useState('');
   const [testLoading, setTestLoading] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean, msg: string} | null>(null);
+
+  // Bitácora y Envío Manual
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [manualRecipients, setManualRecipients] = useState('');
+  const [sendingManual, setSendingManual] = useState(false);
+  const [manualMsg, setManualMsg] = useState('');
 
   // Junta editing
   const [showAddMember, setShowAddMember] = useState(false);
@@ -256,6 +262,46 @@ export default function EdificioAdminPage() {
       setTestResult({ success: false, msg: err.message });
     }
     setTestLoading(false);
+  };
+
+  const loadAuditLogs = useCallback(async () => {
+    if (!building) return;
+    const { data } = await supabase
+      .from('audit_logs')
+      .select('*')
+      .eq('building_id', building.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    setAuditLogs(data || []);
+  }, [building]);
+
+  const handleManualSendReport = async () => {
+    if (!building || !manualRecipients) return;
+    setSendingManual(true);
+    setManualMsg('');
+    
+    try {
+      const res = await fetch('/api/measurements/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          recipients: manualRecipients.split(',').map(e => e.trim()),
+          sender_email: currentUser?.email || 'ADMIN'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setManualMsg('✅ Reporte enviado con éxito');
+        setManualRecipients('');
+      } else {
+        setManualMsg('❌ Error: ' + (data.error || 'No se pudo enviar'));
+      }
+    } catch (err: any) {
+      setManualMsg('❌ Error: ' + err.message);
+    }
+    setSendingManual(false);
+    loadAuditLogs();
   };
 
   // ── Load building ──────────────────────────────────────────────────────────
@@ -920,6 +966,7 @@ const { error: updateError } = await supabase.from('building_members')
             { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,  color: 'amber' },
             { id: 'reportes',      label: 'Reportes',      Icon: FileText,  color: 'green' },
             { id: 'configuracion', label: 'Config.',       Icon: Settings,  color: 'cyan' },
+            { id: 'bitacora',      label: 'Bitácora',      Icon: ClipboardList, color: 'amber' },
           ] as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-2 my-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -1912,10 +1959,128 @@ const { error: updateError } = await supabase.from('building_members')
                 </div>
               </div>
             </div>
-          </div>
-        )}
+            </div>
+            )}
 
-      </div>
-    </div>
+            {/* ── BITÁCORA TAB ─────────────────────────────────────────────── */}
+            {tab === 'bitacora' && (
+            <div className="space-y-6">
+            {/* Envío Manual de Reporte */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-5 py-4 border-b border-slate-700 bg-blue-500/5">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-blue-400" />
+                  Envío Manual de Reporte
+                </h3>
+                <p className="text-slate-400 text-xs mt-1">Envía la situación actual del agua por correo electrónico sin registrar nuevos datos.</p>
+              </div>
+              <div className="p-5">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <input 
+                    value={manualRecipients}
+                    onChange={e => setManualRecipients(e.target.value)}
+                    placeholder="correos@ejemplo.com, otro@ejemplo.com"
+                    className="flex-1 bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  />
+                  <button 
+                    onClick={handleManualSendReport}
+                    disabled={sendingManual || !manualRecipients}
+                    className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    {sendingManual ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Enviar Reporte Ahora
+                  </button>
+                </div>
+                {manualMsg && (
+                  <div className={`mt-3 p-3 rounded-lg text-xs font-medium ${manualMsg.includes('✅') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {manualMsg}
+                  </div>
+                )}
+                <div className="mt-3 flex gap-2">
+                  <button 
+                    onClick={() => setManualRecipients(currentUser?.email || '')}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 underline"
+                  >
+                    Ponerme a mí mismo
+                  </button>
+                  <span className="text-slate-700">|</span>
+                  <button 
+                    onClick={() => setManualRecipients(juntaMembers.map(m => m.email).join(', '))}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 underline"
+                  >
+                    Toda la junta
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabla de Logs de Auditoría */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-5 py-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-amber-400" />
+                  Historial de Eventos del Sistema
+                </h3>
+                <button onClick={loadAuditLogs} className="text-slate-500 hover:text-white transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-700/50 sticky top-0">
+                    <tr>
+                      {['Fecha/Hora', 'Operación', 'Usuario', 'Tipo Entidad', 'Resultado/Mensaje'].map(h => (
+                        <th key={h} className="px-4 py-3 text-left text-slate-400 uppercase font-medium">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/40">
+                    {auditLogs.map((log) => {
+                      const isSuccess = log.operation === 'SUCCESS' || log.operation === 'INSERT';
+                      const isError = log.operation === 'ERROR';
+                      const isWarning = log.operation === 'WARNING';
+
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-700/20">
+                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                            {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss')}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              isSuccess ? 'bg-green-500/10 text-green-400' :
+                              isError ? 'bg-red-500/10 text-red-400' :
+                              isWarning ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-700 text-slate-400'
+                            }`}>
+                              {log.operation}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 truncate max-w-[150px]" title={log.user_email}>
+                            {log.user_email === 'SYSTEM' ? '⚙️ Sistema' : log.user_email}
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 uppercase tracking-tighter">
+                            {log.entity_type}
+                          </td>
+                          <td className="px-4 py-3 text-slate-300">
+                            <div className="truncate max-w-[300px]" title={JSON.stringify(log.data_after)}>
+                              {log.data_after?.message || log.data_after?.error || JSON.stringify(log.data_after)}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {auditLogs.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-slate-600 italic">
+                          No hay eventos registrados recientemente.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            </div>
+            )}
+
   );
 }
