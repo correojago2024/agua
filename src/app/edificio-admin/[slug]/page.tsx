@@ -605,66 +605,76 @@ export default function EdificioAdminPage() {
     const memberEmail = newMemberEmail.trim().toLowerCase();
     const memberNameVal = newMemberName.trim() || null;
     
-    // Check if already exists as member
-    const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
-    if (existing) {
-      // Update to mark as junta
-      const { error: updateError } = await supabase.from('building_members')
-        .update({ 
-          name: memberNameVal, 
-          role: newMemberRole || 'Vocal', 
+    setMemberMsg('⏳ Agregando miembro...');
+    
+    try {
+      // Check if already exists as member
+      const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
+      let error = null;
+
+      if (existing) {
+        // Update to mark as junta
+        const { error: err } = await supabase.from('building_members')
+          .update({ 
+            name: memberNameVal, 
+            role: newMemberRole || 'Vocal', 
+            is_admin: newMemberIsAdmin,
+            enable_email: newMemberEnableEmail,
+            enable_whatsapp: newMemberEnableWhatsapp
+          })
+          .eq('id', existing.id);
+        error = err;
+      } else {
+        const { error: err } = await supabase.from('building_members').insert({
+          building_id: building.id,
+          email: memberEmail,
+          name: memberNameVal,
+          role: newMemberRole || 'Vocal',
           is_admin: newMemberIsAdmin,
           enable_email: newMemberEnableEmail,
           enable_whatsapp: newMemberEnableWhatsapp
-        })
-        .eq('id', existing.id);
-      if (updateError) {
-        console.error('Error updating member:', updateError);
-        setMemberMsg('❌ Error al actualizar: ' + updateError.message);
-        return;
+        });
+        error = err;
       }
-    } else {
-      const { error: insertError } = await supabase.from('building_members').insert({
-        building_id: building.id,
-        email: memberEmail,
-        name: memberNameVal,
-        role: newMemberRole || 'Vocal',
-        is_admin: newMemberIsAdmin,
-        enable_email: newMemberEnableEmail,
-        enable_whatsapp: newMemberEnableWhatsapp
-      });
-      if (insertError) {
-        console.error('Error inserting member:', insertError);
-        setMemberMsg('❌ Error al agregar: ' + insertError.message);
-        return;
-      }
-    }
-    // Send welcome email to new member
-    try {
-      await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'junta-welcome',
-          building: {
-            name: building.name,
-            slug: building.slug,
-            memberEmail: memberEmail,
-            memberName: newMemberName || 'Nuevo Miembro',
-            memberRole: newMemberRole,
-            isAdmin: newMemberIsAdmin,
-          }
-        })
-      });
-    } catch (emailErr) {
-      console.error('Error sending welcome email:', emailErr);
-    }
 
-    setNewMemberEmail(''); setNewMemberName(''); setNewMemberRole('Vocal'); setNewMemberIsAdmin(false);
-    setShowAddMember(false);
-    setMemberMsg('✅ Miembro agregado - Se envió email de invitación');
-    setTimeout(() => setMemberMsg(''), 4000);
-    loadData();
+      if (error) {
+        console.error('Error in Supabase:', error);
+        setMemberMsg('❌ Error BD: ' + error.message + '. Asegúrese de haber ejecutado el script SQL de actualizaciones.');
+        return;
+      }
+
+      // Send welcome email to new member
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'junta-welcome',
+            building: {
+              name: building.name,
+              slug: building.slug,
+              memberEmail: memberEmail,
+              memberName: newMemberName || 'Nuevo Miembro',
+              memberRole: newMemberRole,
+              isAdmin: newMemberIsAdmin,
+            }
+          })
+        });
+      } catch (emailErr) {
+        console.error('Error sending welcome email:', emailErr);
+      }
+
+      setNewMemberEmail(''); setNewMemberName(''); setNewMemberRole('Vocal'); setNewMemberIsAdmin(false);
+      setShowAddMember(false);
+      setMemberMsg('✅ Miembro agregado correctamente a la lista.');
+      setTimeout(() => setMemberMsg(''), 5000);
+      
+      // Forzar recarga de datos
+      await loadData();
+      
+    } catch (err: any) {
+      setMemberMsg('❌ Error crítico: ' + err.message);
+    }
   };
 
   const removeJuntaMember = async (member: JuntaMember) => {
@@ -1484,7 +1494,7 @@ export default function EdificioAdminPage() {
                 <div>
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Emails Enviados</p>
                   <p className="text-2xl font-bold text-white">{stats.totalEmails.toLocaleString()}</p>
-                  <p className="text-slate-400 text-[9px] mt-0.5">Histórico total exitoso</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Éxito en notificaciones</p>
                 </div>
               </div>
               <div className="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex items-center gap-4">
@@ -1494,7 +1504,7 @@ export default function EdificioAdminPage() {
                 <div>
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Mediciones Hoy</p>
                   <p className="text-2xl font-bold text-white">{stats.measurementsToday}</p>
-                  <p className="text-slate-400 text-[9px] mt-0.5">Registradas el día de hoy</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Registros actuales</p>
                 </div>
               </div>
               <div className="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex items-center gap-4">
@@ -1502,25 +1512,50 @@ export default function EdificioAdminPage() {
                   <Users className="w-6 h-6 text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Usuarios Activos</p>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Colaboradores</p>
                   <p className="text-2xl font-bold text-white">{stats.activeUsers}</p>
-                  <p className="text-slate-400 text-[9px] mt-0.5">Personas que han reportado</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Usuarios que han reportado</p>
                 </div>
               </div>
             </div>
 
-            {/* Gráfico de Actividad de Uso */}
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-green-400" />
-                Actividad de Mediciones (Últimos 15 días)
+            {/* Bloque Visual de Estadísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Participación por Usuario */}
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl overflow-hidden">
+                <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-purple-400" />
+                  Participación por Colaborador
+                </h3>
+                <div className="h-[250px]">
+                  <ConsumptionDistributionPieChart data={measurements} />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-4 text-center italic">Proporción de mediciones reportadas por cada miembro.</p>
+              </div>
+
+              {/* Actividad Mensual */}
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl overflow-hidden">
+                <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-green-400" />
+                  Volumen de Reportes Mensuales
+                </h3>
+                <div className="h-[250px]">
+                  <MonthlyHistoryChart data={measurements} />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-4 text-center italic">Cantidad de mediciones registradas por mes.</p>
+              </div>
+            </div>
+
+            {/* Nueva Fila: Gráfico de Barras de Actividad Diaria (Comparativo) */}
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl overflow-hidden">
+              <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-blue-400" />
+                Frecuencia de Registro Diaria (Últimas semanas)
               </h3>
-              <div className="h-[200px] w-full">
+              <div className="h-[280px]">
                 <WeeklyComparisonChart data={measurements} />
               </div>
-              <p className="text-[10px] text-slate-500 mt-3 italic text-center">
-                Muestra la frecuencia de reportes diarios para comparar la constancia de los usuarios.
-              </p>
+              <p className="text-[10px] text-slate-500 mt-4 text-center italic">Compara la cantidad de mediciones diarias entre la semana actual y la anterior.</p>
             </div>
 
             {/* Filtros */}
@@ -1902,12 +1937,21 @@ export default function EdificioAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className="px-5 py-3 bg-slate-900/30 border-t border-slate-700 flex justify-end">
+              <div className="px-5 py-3 bg-slate-900/30 border-t border-slate-700 flex flex-col md:flex-row justify-between items-center gap-3">
+                <div className="flex-1">
+                  {waMsg && (
+                    <div className={`text-xs font-bold px-3 py-1 rounded-lg ${waMsg.includes('❌') ? 'text-red-400 bg-red-400/10' : 'text-green-400 bg-green-400/10'}`}>
+                      {waMsg}
+                    </div>
+                  )}
+                </div>
                 <button 
                   onClick={saveWhatsAppSettings}
-                  className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2"
+                  disabled={waLoading}
+                  className="bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all"
                 >
-                  <Save className="w-3.5 h-3.5" /> Guardar Horario
+                  {waLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Guardar Configuración de Reporte Diario
                 </button>
               </div>
             </div>
