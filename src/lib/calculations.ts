@@ -164,10 +164,10 @@ export interface Indicators {
   );
   const minutesUntil11 = Math.max(0, differenceInMinutes(target11pm, lastTime));
   const projectedLiters = Math.max(0, Math.min(
-    tankCapacity,
+    capacity,
     lastRecord.liters + (currentFlow * minutesUntil11)
   ));
-  const projectedPercentage = (projectedLiters / tankCapacity) * 100;
+  const projectedPercentage = (projectedLiters / capacity) * 100;
 
   // ── Tiempo estimado vaciado/llenado ───────────────────────────────────────
   let timeEstimateText = 'Estable';
