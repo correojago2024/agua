@@ -15,13 +15,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Faltan parámetros: building_id y banner_url son obligatorios' }, { status: 400 });
     }
 
-    // 1. Intentar actualizar en la base de datos
-    console.log(`[VERCEL LOG] 🛠️ Ejecutando UPDATE en tabla 'buildings' para ID: ${building_id}`);
+    // 1. Obtener la URL pública oficial de Supabase
+    const { data: { publicUrl } } = supabase.storage
+      .from('building-banners')
+      .getPublicUrl(body.file_path || `banners/${building_id}.jpg`);
+
+    console.log(`[VERCEL LOG] 🛠️ URL Oficial generada: ${publicUrl}`);
+
+    // 2. Intentar actualizar en la base de datos
     const { data, error } = await supabase
       .from('buildings')
-      .update({ banner_url: banner_url.trim() })
+      .update({ banner_url: publicUrl })
       .eq('id', building_id)
-      .select('id, name, banner_url')
+      .select()
       .single();
 
     if (error) {

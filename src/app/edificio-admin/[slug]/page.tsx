@@ -906,8 +906,17 @@ export default function EdificioAdminPage() {
         throw new Error(result.error || 'Error al guardar el banner en la base de datos');
       }
 
-      // 4. Actualizar Estado Local
-      setBuilding({ ...building, banner_url: publicUrl });
+      // 4. Forzar recarga de datos del edificio desde la BD
+      const { data: updatedBuilding } = await supabase
+        .from('buildings')
+        .select('*')
+        .eq('id', building.id)
+        .single();
+
+      if (updatedBuilding) {
+        setBuilding(updatedBuilding);
+      }
+      
       setBannerMsg('✅ Banner actualizado correctamente');
 
     } catch (e: any) {
@@ -2003,16 +2012,11 @@ export default function EdificioAdminPage() {
                   <div className="space-y-3">
                     <div className="rounded-xl overflow-hidden border border-slate-600 bg-slate-700" style={{minHeight: '100px', maxHeight: '200px'}}>
                       <img 
-                        src={`${building.banner_url}?v=${new Date().getTime()}`} 
-                        alt="Banner actual" 
+                        src={building.banner_url} 
+                        alt="Banner" 
                         className="w-full object-cover" 
                         style={{maxHeight: '200px', display: 'block'}} 
-                        referrerPolicy="no-referrer"
-                        onLoad={() => console.log('✅ Banner cargado en Admin')}
-                        onError={(e) => {
-                          console.error('❌ Error cargando banner en Admin:', e);
-                          (e.target as HTMLImageElement).src = 'https://placehold.co/1200x300/2563eb/white?text=Error+Cargando+Imagen';
-                        }}
+                        key={`${building.banner_url}-${Date.now()}`}
                       />
                     </div>                    <div className="flex gap-2">
                       <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors">
