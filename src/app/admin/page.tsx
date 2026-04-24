@@ -181,11 +181,26 @@ export default function AdminPage() {
   };
 
   const updatePlanPrice = async (planId: string, precio: number) => {
-    const { error } = await supabase.from('plan_precios').update({ precio, updated_at: new Date().toISOString() }).eq('plan_id', planId);
+    const { error } = await supabase
+      .from('plan_precios')
+      .update({ precio, updated_at: new Date().toISOString() })
+      .eq('plan_id', planId);
+
     if (!error) {
-      setPlans(plans.map(p => p.plan_id === planId ? { ...p, precio } : p));
-      setPlansMsg('Precio actualizado ✓');
-      setTimeout(() => setPlansMsg(''), 2000);
+      setPlans(prev => prev.map(p => p.plan_id === planId ? { ...p, precio } : p));
+      setPlansMsg('✅ Precio actualizado correctamente');
+      setTimeout(() => setPlansMsg(''), 3000);
+      
+      // AUDITORÍA: Registrar cambio de precio
+      await logAudit({
+        operation: 'UPDATE',
+        entity_type: 'plan_price',
+        entity_id: planId,
+        data_after: { plan_id: planId, new_price: precio },
+        status: 'SUCCESS'
+      });
+    } else {
+      setPlansMsg('❌ Error al actualizar: ' + error.message);
     }
   };
 
