@@ -546,23 +546,32 @@ const { error: updateError } = await supabase.from('building_members')
     if (!confirm('¿Eliminar esta medición? Esta acción no se puede deshacer.')) return;
     if (demoBlock('⚠️ Modo Demo: no se pueden eliminar registros en la cuenta de demostración.')) return;
 
-    // Actualización optimista: removemos del estado local inmediatamente
+    // Guardamos estado previo por si falla el servidor
     const previousMeasurements = [...measurements];
-    setMeasurements(prev => prev.filter(m => m.id !== id));
-
-    const { error } = await supabase.from('measurements').delete().eq('id', id);
     
-    if (!error) {
-      setMeasMsg('🗑️ Medición eliminada correctamente');
-      setTimeout(() => setMeasMsg(''), 3000);
-      // No necesitamos llamar a loadData() porque ya actualizamos el estado optimísticamente,
-      // pero lo hacemos para asegurar consistencia con cálculos del servidor (caudal, etc)
-      loadData();
-    } else {
-      // Revertir en caso de error
+    try {
+      // Actualización optimista: removemos del estado local inmediatamente para que el usuario vea el cambio
+      setMeasurements(prev => prev.filter(m => m.id !== id));
+      
+      const response = await fetch(`/api/measurements/${id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setMeasMsg('🗑️ Medición eliminada correctamente');
+        setTimeout(() => setMeasMsg(''), 3000);
+        // Refrescamos datos para asegurar que los cálculos (caudal, etc) se actualicen con el nuevo historial
+        loadData();
+      } else {
+        throw new Error(result.error || 'Error desconocido al eliminar');
+      }
+    } catch (err: any) {
+      // Revertimos el cambio visual si hubo error en el servidor
       setMeasurements(previousMeasurements);
-      console.error('Error deleting measurement:', error);
-      setMeasMsg('❌ Error al eliminar: ' + (error.message || 'No tiene permisos para borrar'));
+      console.error('[DELETE_FAIL] ❌ Error:', err.message);
+      setMeasMsg('❌ Error al eliminar: ' + err.message);
       setTimeout(() => setMeasMsg(''), 5000);
     }
   };
