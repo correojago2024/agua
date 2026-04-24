@@ -6,9 +6,10 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''; // Usamo
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  // En Next.js 15/16+, params es una promesa que debe ser esperada
+  const { id } = await params;
 
   if (!id) {
     return NextResponse.json({ error: 'ID de medición requerido' }, { status: 400 });
@@ -32,6 +33,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: 'Registro eliminado' });
 
   } catch (err: any) {
+    console.error('[API_DELETE] ❌ Error inesperado:', err.message);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
