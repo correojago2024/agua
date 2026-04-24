@@ -17,6 +17,44 @@ import { logAudit } from '@/lib/audit';
 import { checkWaterLevelThresholds } from '@/lib/server/whatsapp';
 
 // ════════════════════════════════════════════════════════════════════════════
+// RENDERIZAR TABLA DE CALOR (HEATMAP) EN HTML
+// ════════════════════════════════════════════════════════════════════════════
+function renderHeatmapHtml(matrix: number[][]): string {
+  const days = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  
+  // Encontrar el valor máximo para normalizar colores
+  const maxVal = Math.max(...matrix.map(row => Math.max(...row)), 1);
+
+  let html = `<div style="overflow-x:auto; margin-top:20px;">
+    <h3 style="color:#0f172a; font-size:15px; margin-bottom:10px;">🔥 Mapa de Calor de Consumo (Historico)</h3>
+    <table style="border-collapse:collapse; font-size:9px; width:100%; min-width:500px; text-align:center;">
+      <thead>
+        <tr style="background:#f1f5f9;">
+          <th style="padding:5px; border:1px solid #e2e8f0;">H</th>
+          ${hours.map(h => `<th style="padding:2px; border:1px solid #e2e8f0;">${h}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>`;
+
+  matrix.forEach((row, dayIdx) => {
+    html += `<tr>
+      <td style="padding:5px; border:1px solid #e2e8f0; font-weight:bold; background:#f8fafc;">${days[dayIdx]}</td>`;
+    row.forEach(val => {
+      const intensity = val / maxVal;
+      // Escala de azules: de #f1f5f9 (vacío) a #1e3a8a (lleno)
+      const bgColor = val === 0 ? '#ffffff' : intensity > 0.8 ? '#1e3a8a' : intensity > 0.6 ? '#2563eb' : intensity > 0.4 ? '#60a5fa' : intensity > 0.2 ? '#bfdbfe' : '#eff6ff';
+      const textColor = intensity > 0.5 ? '#ffffff' : '#1e293b';
+      html += `<td style="padding:5px; border:1px solid #e2e8f0; background:${bgColor}; color:${textColor};" title="${Math.round(val)} L">${val > 0 ? '●' : ''}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // HTML del email de reporte (Responsivo 600px)
 // ════════════════════════════════════════════════════════════════════════════
 function buildReportEmailHtml(
@@ -116,6 +154,8 @@ function buildReportEmailHtml(
     ${chartUrls.caudalChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.caudalChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
     ${chartUrls.combinadoChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.combinadoChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
     ${chartUrls.last4WeeksChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.last4WeeksChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
+
+    ${indicators.heatmapData ? renderHeatmapHtml(indicators.heatmapData) : ''}
 
     <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin:25px 0 10px;font-size:16px;">📋 Últimas 10 Mediciones</h3>
     <div style="width:100%; overflow-x:auto;"><table width="100%" style="font-size:10px;border-collapse:collapse;text-align:center;min-width:450px;"><thead><tr style="background:#1e293b;color:white;"><th style="padding:8px;text-align:left;">Fecha</th><th style="padding:8px;">Litros</th><th style="padding:8px;">%</th><th style="padding:8px;">Var.(L)</th><th style="padding:8px;">Caudal</th></tr></thead><tbody>${tableRows}</tbody></table></div>

@@ -51,9 +51,45 @@ export interface Indicators {
   trends: { current: number; previous: number };
   lastUpdate: string;
   reportDate: string;
-}
+  heatmapData?: number[][]; // [dia][hora] -> consumo
+  }
 
-export function calculateIndicators(measurements: Measurement[], tankCapacity: number): Indicators | null {
+  /**
+  * Calcula el consumo por día de la semana y hora (Heatmap)
+  */
+  export function calculateConsumptionHeatmap(measurements: Measurement[]): number[][] {
+  // Inicializar matriz 7x24 con ceros
+  const matrix: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+
+  // Necesitamos al menos 2 mediciones para calcular variaciones (consumo)
+  if (measurements.length < 2) return matrix;
+
+  // Ordenar cronológicamente
+  const sorted = [...measurements].sort((a, b) => 
+    new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+  );
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const curr = sorted[i];
+
+    const diff = prev.liters - curr.liters; // Diferencia (consumo positivo)
+
+    // Solo contamos consumos razonables (no llenados ni errores de sensor)
+    if (diff > 0 && diff < 50000) {
+      const date = new Date(curr.recorded_at);
+      const day = date.getDay(); // 0 (Dom) - 6 (Sab)
+      const hour = date.getHours(); // 0-23
+
+      matrix[day][hour] += diff;
+    }
+  }
+
+  return matrix;
+  }
+
+  export function calculateIndicators(measurements: Measurement[], capacity: number): Indicators | null {
+
   if (measurements.length < 2) return null;
 
   // Asegurar orden ascendente por recorded_at
@@ -167,5 +203,6 @@ export function calculateIndicators(measurements: Measurement[], tankCapacity: n
     trends: { current: filled24h - consumed24h, previous: 0 },
     lastUpdate: format(lastTime, 'dd/MM/yyyy HH:mm'),
     reportDate: format(now, 'dd/MM/yyyy HH:mm'),
+    heatmapData: calculateConsumptionHeatmap(measurements)
   };
 }

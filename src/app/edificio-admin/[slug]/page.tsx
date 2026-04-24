@@ -42,7 +42,8 @@ import {
   FlowHourlyChart,
   ProjectionChart,
   ConsumptionDistributionPieChart,
-  WeekendLitrosChart
+  WeekendLitrosChart,
+  ConsumptionHeatmap
 } from '@/components/DashboardCharts';
 
 import { Measurement } from '@/lib/calculations';
@@ -1027,6 +1028,9 @@ const { error: updateError } = await supabase.from('building_members')
                       <ProjectionChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
                       <ConsumptionDistributionPieChart data={measurements} />
                     </div>
+
+                    {/* Mapa de Calor */}
+                    <ConsumptionHeatmap data={measurements} />
                   </div>
                 ) : (
                   <div className="p-10 text-center text-slate-500">No hay datos para generar gráficos.</div>

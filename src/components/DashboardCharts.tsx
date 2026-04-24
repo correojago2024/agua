@@ -672,3 +672,82 @@ export const WeekendLitrosChart = ({ data }: ChartProps) => {
   );
 };
 
+
+// ── 18. Consumption Heatmap (Matrix) ────────────────────────────────────────
+export const ConsumptionHeatmap = ({ data }: ChartProps) => {
+  const days = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  
+  // Calcular matriz
+  const matrix: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+  const sorted = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const curr = sorted[i];
+    const diff = prev.liters - curr.liters;
+    if (diff > 0 && diff < 50000) {
+      const date = new Date(curr.recorded_at);
+      matrix[date.getDay()][date.getHours()] += diff;
+    }
+  }
+
+  const maxVal = Math.max(...matrix.map(row => Math.max(...row)), 1);
+
+  return (
+    <div className="w-full bg-white p-6 rounded-xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+      <h3 className="text-sm font-bold text-gray-700 mb-6 uppercase flex items-center gap-2 tracking-widest">
+        🔥 Mapa de Calor de Consumo (Historico)
+      </h3>
+      
+      <div className="overflow-x-auto">
+        <div className="min-w-[600px]">
+          {/* Header Horas */}
+          <div className="flex mb-2">
+            <div className="w-12 flex-shrink-0" />
+            <div className="flex-1 grid grid-cols-24 gap-1">
+              {hours.map(h => (
+                <div key={h} className="text-[9px] text-gray-400 text-center font-mono">
+                  {h.toString().padStart(2, '0')}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Filas Días */}
+          <div className="space-y-1">
+            {matrix.map((row, dayIdx) => (
+              <div key={dayIdx} className="flex items-center gap-2">
+                <div className="w-12 text-[10px] font-bold text-gray-500 uppercase">{days[dayIdx]}</div>
+                <div className="flex-1 grid grid-cols-24 gap-1">
+                  {row.map((val, hourIdx) => {
+                    const intensity = val / maxVal;
+                    const bgColor = val === 0 ? '#f9fafb' : intensity > 0.8 ? '#1e3a8a' : intensity > 0.6 ? '#2563eb' : intensity > 0.4 ? '#60a5fa' : intensity > 0.2 ? '#93c5fd' : '#dbeafe';
+                    return (
+                      <div 
+                        key={hourIdx} 
+                        title={`${days[dayIdx]} ${hourIdx}:00 - ${Math.round(val).toLocaleString()} L`}
+                        className="aspect-square rounded-sm transition-all hover:ring-2 hover:ring-blue-400 cursor-help"
+                        style={{ backgroundColor: bgColor }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 flex justify-between items-center text-[9px] text-gray-400 uppercase tracking-tighter">
+            <span>Bajo Consumo</span>
+            <div className="flex gap-1">
+              {['#dbeafe', '#93c5fd', '#60a5fa', '#2563eb', '#1e3a8a'].map(color => (
+                <div key={color} className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
+              ))}
+            </div>
+            <span>Alto Consumo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
