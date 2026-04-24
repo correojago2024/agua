@@ -47,6 +47,12 @@ import {
   ConsumptionHeatmap
 } from '@/components/DashboardCharts';
 
+import {
+  UserParticipationPieChart,
+  MonthlyReportsBarChart,
+  DailyEmailsBarChart
+} from '@/components/SystemStatsCharts';
+
 import { Measurement } from '@/lib/calculations';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
@@ -195,6 +201,23 @@ export default function EdificioAdminPage() {
     return `${maskedLocal}@${domain}`;
   };
 
+  const logClientAudit = async (operation: string, entity_type: string, entity_id: string, data?: any) => {
+    if (!building) return;
+    try {
+      await supabase.from('audit_logs').insert({
+        building_id: building.id,
+        user_email: currentUser?.email || loginEmail || 'ADMIN',
+        operation,
+        entity_type,
+        entity_id,
+        data_after: data,
+      });
+      loadAuditLogs();
+    } catch (e) {
+      console.error('Error logging audit:', e);
+    }
+  };
+
   // ── WhatsApp Logic ────────────────────────────────────────────────────────
   const loadWhatsAppSettings = useCallback(async () => {
     if (!building) return;
@@ -252,6 +275,7 @@ export default function EdificioAdminPage() {
       setWaMsg('❌ Error al guardar: ' + error.message);
     } else {
       setWaMsg('✅ Configuración de WhatsApp y horario guardados');
+      logClientAudit('UPDATE', 'whatsapp_settings', building.id, { service: waService, daily_enabled: waDailyReportEnabled });
       setTimeout(() => setWaMsg(''), 3000);
       loadWhatsAppSettings();
     }
@@ -469,6 +493,7 @@ export default function EdificioAdminPage() {
           setCurrentUser(member);
           setAuthed(true);
           setAuthError('');
+          logClientAudit('LOGIN', 'user', member.email);
           return;
         }
         
@@ -667,10 +692,14 @@ export default function EdificioAdminPage() {
       setNewMemberEmail(''); setNewMemberName(''); setNewMemberRole('Vocal'); setNewMemberIsAdmin(false);
       setShowAddMember(false);
       setMemberMsg('✅ Miembro agregado correctamente a la lista.');
+      
+      // Auditoría
+      logClientAudit('INSERT', 'junta_member', memberEmail, { name: memberNameVal, role: newMemberRole });
+
       setTimeout(() => setMemberMsg(''), 5000);
       
       // Forzar recarga de datos
-      await loadData();
+      loadData();
       
     } catch (err: any) {
       setMemberMsg('❌ Error crítico: ' + err.message);
@@ -839,6 +868,7 @@ export default function EdificioAdminPage() {
     if (!error) {
       setCfgMsg('✅ Configuración guardada');
       setEditingConfig(false);
+      logClientAudit('UPDATE', 'building_config', building.id, { name: cfgName });
       setTimeout(() => setCfgMsg(''), 3000);
       // Reload building
       const { data } = await supabase.from('buildings').select('*').eq('id', building.id).single();
@@ -877,6 +907,7 @@ export default function EdificioAdminPage() {
 
       setBuilding({ ...building, banner_url: publicUrl });
       setBannerMsg('✅ Banner actualizado correctamente');
+      logClientAudit('UPDATE', 'banner', building.id, { url: publicUrl });
     } catch (e: any) {
       setBannerMsg('❌ Error: ' + e.message);
     } finally {
@@ -891,6 +922,7 @@ export default function EdificioAdminPage() {
     await supabase.from('buildings').update({ banner_url: null }).eq('id', building.id);
     setBuilding({ ...building, banner_url: null });
     setBannerMsg('🗑️ Banner eliminado');
+    logClientAudit('DELETE', 'banner', building.id);
     setTimeout(() => setBannerMsg(''), 3000);
   };
 
@@ -1484,8 +1516,21 @@ export default function EdificioAdminPage() {
 
         {/* ── REPORTES TAB ─────────────────────────────────────────────── */}
         {tab === 'reportes' && (
-          <div className="space-y-5">
-            {/* Estadísticas de Uso del Sistema */}
+          <div className="space-y-6">
+            {/* Encabezado de Estadísticas de Operación */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Estadísticas de Operación</h2>
+                <p className="text-slate-400 text-sm">Monitoreo de actividad y rendimiento del sistema AquaSaaS</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={loadData} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                  <RefreshCw className="w-3.5 h-3.5" /> Actualizar Datos
+                </button>
+              </div>
+            </div>
+
+            {/* Tarjetas de Resumen Rápido */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
@@ -1502,9 +1547,9 @@ export default function EdificioAdminPage() {
                   <Activity className="w-6 h-6 text-green-400" />
                 </div>
                 <div>
-                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Mediciones Hoy</p>
-                  <p className="text-2xl font-bold text-white">{stats.measurementsToday}</p>
-                  <p className="text-slate-400 text-[9px] mt-0.5">Registros actuales</p>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Mediciones Totales</p>
+                  <p className="text-2xl font-bold text-white">{measurements.length}</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Histórico del edificio</p>
                 </div>
               </div>
               <div className="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex items-center gap-4">
@@ -1514,89 +1559,74 @@ export default function EdificioAdminPage() {
                 <div>
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Colaboradores</p>
                   <p className="text-2xl font-bold text-white">{stats.activeUsers}</p>
-                  <p className="text-slate-400 text-[9px] mt-0.5">Usuarios que han reportado</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Han reportado al menos una vez</p>
                 </div>
               </div>
             </div>
 
-            {/* Bloque Visual de Estadísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Participación por Usuario */}
-              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl overflow-hidden">
-                <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-purple-400" />
-                  Participación por Colaborador
-                </h3>
-                <div className="h-[250px]">
-                  <ConsumptionDistributionPieChart data={measurements} />
+            {/* Bloque Principal de Gráficos de Sistema */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Gráfico 1: Participación por Colaborador */}
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-white font-bold flex items-center gap-2">
+                    <Users className="w-5 h-5 text-purple-400" />
+                    Participación de la Comunidad
+                  </h3>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-4 text-center italic">Proporción de mediciones reportadas por cada miembro.</p>
+                <UserParticipationPieChart measurements={measurements} />
+                <p className="text-[10px] text-slate-500 mt-4 text-center italic">Distribución porcentual de quién reporta más mediciones.</p>
               </div>
 
-              {/* Actividad Mensual */}
-              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl overflow-hidden">
-                <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-green-400" />
-                  Volumen de Reportes Mensuales
-                </h3>
-                <div className="h-[250px]">
-                  <MonthlyHistoryChart data={measurements} />
+              {/* Gráfico 2: Volumen Mensual de Mediciones */}
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-white font-bold flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-green-400" />
+                    Actividad de Registro Mensual
+                  </h3>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-4 text-center italic">Cantidad de mediciones registradas por mes.</p>
+                <MonthlyReportsBarChart measurements={measurements} />
+                <p className="text-[10px] text-slate-500 mt-4 text-center italic">Cantidad total de mediciones registradas cada mes (último año).</p>
+              </div>
+
+              {/* Gráfico 3: Emails Diarios (Ultimos 30 días) */}
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl lg:col-span-2">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-white font-bold flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-blue-400" />
+                    Volumen de Notificaciones Enviadas (Últimos 30 días)
+                  </h3>
+                </div>
+                <DailyEmailsBarChart logs={auditLogs} />
+                <p className="text-[10px] text-slate-500 mt-4 text-center italic">Cantidad de correos electrónicos de reporte enviados exitosamente cada día.</p>
               </div>
             </div>
 
-            {/* Nueva Fila: Gráfico de Barras de Actividad Diaria (Comparativo) */}
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl overflow-hidden">
-              <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-                Frecuencia de Registro Diaria (Últimas semanas)
+            {/* Sección de Filtros y Exportación */}
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-white font-semibold mb-4 flex items-center gap-2 border-b border-slate-700 pb-3">
+                <FileText className="w-4 h-4 text-blue-400" />
+                Herramientas de Exportación y Filtros
               </h3>
-              <div className="h-[280px]">
-                <WeeklyComparisonChart data={measurements} />
-              </div>
-              <p className="text-[10px] text-slate-500 mt-4 text-center italic">Compara la cantidad de mediciones diarias entre la semana actual y la anterior.</p>
-            </div>
-
-            {/* Filtros */}
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-400" />
-                Filtrar Reporte
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Desde</label>
+                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2">Rango Desde</label>
                   <input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Hasta</label>
+                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2">Rango Hasta</label>
                   <input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                 </div>
-                <div>
-                  <label className="block text-slate-400 text-xs mb-1">Tipo de reporte</label>
-                  <select value={reportType} onChange={e => setReportType(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                    <option value="full">Completo (todas las mediciones)</option>
-                    <option value="daily">Resumen diario (1 por día)</option>
-                    <option value="anomalies">Solo anomalías</option>
-                  </select>
+                <div className="flex flex-col justify-end">
+                  <button onClick={exportCSV}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-green-900/20 active:scale-95 transition-all">
+                    <Download className="w-4 h-4" />
+                    Descargar Datos (CSV)
+                  </button>
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2 bg-blue-600/20 border border-blue-500/30 px-4 py-2 rounded-lg">
-                  <Activity className="w-4 h-4 text-blue-400" />
-                  <span className="text-blue-300 text-sm font-medium">
-                    {filteredMeasurements.length} registros en el período
-                  </span>
-                </div>
-                <button onClick={exportCSV}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                  <Download className="w-4 h-4" />
-                  Exportar CSV
-                </button>
               </div>
             </div>
 
