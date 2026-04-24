@@ -252,149 +252,164 @@ function buildReportEmailHtml(
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Reporte AquaSaaS — ${building.name}</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { padding: 15px !important; }
+      .header { padding: 20px !important; }
+      .header h1 { font-size: 18px !important; }
+      .kpi-card { min-width: 100% !important; padding: 15px !important; }
+      .kpi-title { font-size: 24px !important; }
+      .table-responsive { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+      .mobile-text { font-size: 13px !important; }
+      .indicator-table td { display: block !important; width: 100% !important; box-sizing: border-box !important; padding: 5px 0 !important; }
+      .indicator-table tr { margin-bottom: 10px !important; display: block !important; border-bottom: 1px solid #e2e8f0 !important; padding-bottom: 10px !important; }
+      .observation-list { padding-left: 15px !important; }
+    }
+  </style>
 </head>
-<body style="font-family:Arial,sans-serif;color:#1e293b;max-width:900px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;line-height:1.5;">
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1e293b;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;line-height:1.4;">
 
   <!-- ENCABEZADO -->
-  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:white;padding:30px;text-align:center;">
-    <h1 style="margin:0 0 5px;font-size:24px;">✨ Resumen de las Últimas Mediciones de Agua ✨</h1>
-    <p style="margin:0;opacity:0.8;">Edificio <strong>${building.name}</strong> — Sistema AquaSaaS</p>
-    <p style="margin:5px 0 0;opacity:0.55;font-size:12px;">Generado: ${indicators.reportDate}</p>
+  <div class="header" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:white;padding:25px 20px;text-align:center;">
+    <h1 style="margin:0 0 5px;font-size:20px;line-height:1.2;">✨ Resumen de Mediciones ✨</h1>
+    <p style="margin:0;opacity:0.8;font-size:14px;">Edificio <strong>${building.name}</strong></p>
+    <p style="margin:5px 0 0;opacity:0.55;font-size:11px;">Generado: ${indicators.reportDate}</p>
   </div>
 
-  <div style="padding:28px;">
+  <div class="container" style="padding:20px;">
 
     <!-- INDICADOR DE ALARMA (CSS) -->
-    <div style="text-align:center;margin-bottom:30px;">
-      <div style="display:inline-block; text-align:left; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; min-width:300px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
-        <p style="margin:0 0 8px; font-size:12px; color:#64748b; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Estado de Reserva Actual</p>
-        <p style="margin:0 0 15px; font-size:28px; font-weight:bold; color:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}">
+    <div style="text-align:center;margin-bottom:25px;">
+      <div class="kpi-card" style="display:inline-block; text-align:left; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; width:100%; max-width:400px; box-sizing:border-box; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+        <p style="margin:0 0 8px; font-size:11px; color:#64748b; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Estado de Reserva Actual</p>
+        <p class="kpi-title" style="margin:0 0 12px; font-size:26px; font-weight:bold; color:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}">
           ${percentageInt > 60 ? '✅ ÓPTIMO' : percentageInt > 30 ? '⚠️ REGULAR' : '🚨 CRÍTICO'}
         </p>
-        <div style="width:100%; background:#e2e8f0; border-radius:10px; height:16px; overflow:hidden; margin-bottom:10px;">
+        <div style="width:100%; background:#e2e8f0; border-radius:10px; height:12px; overflow:hidden; margin-bottom:10px;">
           <div style="width:${percentageInt}%; background:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}; height:100%;"></div>
         </div>
-        <p style="margin:0; font-size:18px; font-weight:bold; color:#1e293b;">${percentageInt}% de capacidad</p>
-        <p style="margin:5px 0 0; font-size:12px; color:#64748b;">Aproximadamente ${Math.round(currentLiters).toLocaleString()} Litros</p>
+        <p style="margin:0; font-size:16px; font-weight:bold; color:#1e293b;">${percentageInt}% de capacidad</p>
+        <p style="margin:4px 0 0; font-size:12px; color:#64748b;">Aprox. ${Math.round(currentLiters).toLocaleString()} Litros</p>
       </div>
     </div>
 
     <!-- SALUDO -->
-    <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:18px 20px;margin-bottom:22px;border-radius:0 8px 8px 0;">
-      <p style="font-size:14px;line-height:1.8;margin:0;">
+    <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;">
+      <p class="mobile-text" style="font-size:13px;line-height:1.6;margin:0;">
         Estimado/a Vecino/a,<br><br>
-        Le presentamos el resumen más reciente del nivel de agua en nuestro tanque, basado en los datos aportados por la comunidad.<br>
-        Su participación es clave para mantener un control eficiente del recurso hídrico.
+        Le presentamos el resumen de agua basado en los datos aportados por la comunidad.
       </p>
     </div>
 
     <!-- INDICADORES PRINCIPALES -->
-    <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:18px 20px;margin-bottom:22px;border-radius:0 8px 8px 0;">
-      <h3 style="color:#2563eb;margin:0 0 14px;">💡 Principales Indicadores del Tanque al Día de Hoy 🔍</h3>
-      <p style="font-size:13px;color:#64748b;margin:0 0 10px;">
-        Reporte generado: <strong>${indicators.reportDate}</strong> — Último registro: <strong>${indicators.lastUpdate}</strong> — Nivel: <strong>${percentageInt}%</strong>
-      </p>
-      <table style="font-size:13px;width:100%;border-collapse:collapse;">
+    <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;">
+      <h3 style="color:#2563eb;margin:0 0 12px;font-size:16px;">💡 Indicadores Clave 🔍</h3>
+      
+      <table class="indicator-table" style="font-size:12px;width:100%;border-collapse:collapse;">
         <tr style="background:#e2e8f0;">
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">1️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Balance últimas 24 horas:</td>
-          <td style="padding:8px 10px;font-weight:bold;">
-            Se consumieron <span style="color:#dc2626;">${Math.round(indicators.balance24h.consumed).toLocaleString()} L</span>
-            y se llenaron <span style="color:#16a34a;">${Math.round(indicators.balance24h.filled).toLocaleString()} L</span>.
-            Balance neto: <strong>${Math.round(indicators.balance24h.net).toLocaleString()} L</strong>.
+          <td style="padding:8px;font-weight:bold;color:#1e293b;width:25px;">1️⃣</td>
+          <td style="padding:8px;color:#64748b;">Balance 24h:</td>
+          <td style="padding:8px;font-weight:bold;">
+            Consumo: <span style="color:#dc2626;">${Math.round(indicators.balance24h.consumed).toLocaleString()}L</span> | 
+            Llenado: <span style="color:#16a34a;">${Math.round(indicators.balance24h.filled).toLocaleString()}L</span>
           </td>
         </tr>
         <tr>
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">2️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Caudal promedio últimas 24h:</td>
-          <td style="padding:8px 10px;font-weight:bold;">
+          <td style="padding:8px;font-weight:bold;color:#1e293b;">2️⃣</td>
+          <td style="padding:8px;color:#64748b;">Caudal prom. 24h:</td>
+          <td style="padding:8px;font-weight:bold;">
             ${indicators.avgFlow24h.toFixed(1)} L/h
-            ${indicators.balance24h.net >= 0 ? '(llenado neto)' : '(consumo neto)'}
           </td>
         </tr>
         <tr style="background:#e2e8f0;">
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">3️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Última medición — Caudal:</td>
-          <td style="padding:8px 10px;font-weight:bold;">
+          <td style="padding:8px;font-weight:bold;color:#1e293b;">3️⃣</td>
+          <td style="padding:8px;color:#64748b;">Último Caudal:</td>
+          <td style="padding:8px;font-weight:bold;">
             ${flowDirIcon} ${Math.abs(flowLph).toFixed(1)} L/h (${flowDir})
-            — ${Math.abs(flowLpm).toFixed(2)} L/min
           </td>
         </tr>
         <tr>
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">4️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Nivel actual del tanque:</td>
-          <td style="padding:8px 10px;font-weight:bold;">
-            ${percentageInt}% — ${Math.round(currentLiters).toLocaleString()} L
-            de ${(building.tank_capacity_liters || 169000).toLocaleString()} L de capacidad total
+          <td style="padding:8px;font-weight:bold;color:#1e293b;">4️⃣</td>
+          <td style="padding:8px;color:#64748b;">Nivel Actual:</td>
+          <td style="padding:8px;font-weight:bold;">
+            ${percentageInt}% (${Math.round(currentLiters).toLocaleString()} L)
           </td>
         </tr>
         <tr style="background:#e2e8f0;">
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">5️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Proyección nivel a las 11:00 PM:</td>
-          <td style="padding:8px 10px;font-weight:bold;">
-            Nivel estimado: ${indicators.projection11pm.toFixed(1)}%
-            (${Math.round(indicators.projectedLiters11pm).toLocaleString()} L)
+          <td style="padding:8px;font-weight:bold;color:#1e293b;">5️⃣</td>
+          <td style="padding:8px;color:#64748b;">Proyección 11 PM:</td>
+          <td style="padding:8px;font-weight:bold;">
+            ${indicators.projection11pm.toFixed(1)}% (${Math.round(indicators.projectedLiters11pm).toLocaleString()} L)
           </td>
         </tr>
         <tr>
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">6️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Tiempo estimado hasta ${flowLpm >= 0 ? 'llenado' : 'vaciado'}:</td>
-          <td style="padding:8px 10px;font-weight:bold;">
+          <td style="padding:8px;font-weight:bold;color:#1e293b;">6️⃣</td>
+          <td style="padding:8px;color:#64748b;">Tiempo est. ${flowLpm >= 0 ? 'llenado' : 'vaciado'}:</td>
+          <td style="padding:8px;font-weight:bold;">
             ${indicators.timeEstimate}
-            ${indicators.estimateDate !== 'N/A' ? '— Fecha estimada: ' + indicators.estimateDate : ''}
-          </td>
-        </tr>
-        <tr style="background:#e2e8f0;">
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">7️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Llenado registrado hoy:</td>
-          <td style="padding:8px 10px;font-weight:bold;">
-            ${Math.round(indicators.filledToday).toLocaleString()} L
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:8px 10px;font-weight:bold;color:#1e293b;">8️⃣</td>
-          <td style="padding:8px 10px;color:#64748b;">Variación última medición:</td>
-          <td style="padding:8px 10px;font-weight:bold;color:${varLts > 0 ? '#16a34a' : varLts < 0 ? '#dc2626' : '#64748b'};">
-            ${varLts > 0 ? '+' : ''}${Math.round(varLts).toLocaleString()} L
-            (${varLts > 0 ? 'entrada de agua / llenado' : varLts < 0 ? 'consumo / salida de agua' : 'sin cambio'})
           </td>
         </tr>
       </table>
     </div>
 
     ${isAnomaly ? `
-    <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:18px 20px;margin-bottom:22px;border-radius:0 8px 8px 0;">
-      <h3 style="color:#dc2626;margin:0 0 8px;">⚠️ Alerta: Variación Anormal Detectada</h3>
-      <p style="font-size:14px;margin:0;">Se detectó una variación de <strong>${variationPercentage.toFixed(1)}%</strong> respecto a la medición anterior. Se recomienda verificar el dato ingresado.</p>
+    <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;">
+      <h3 style="color:#dc2626;margin:0 0 8px;font-size:15px;">⚠️ Alerta de Anomalía</h3>
+      <p style="font-size:13px;margin:0;">Variación de <strong>${variationPercentage.toFixed(1)}%</strong> detectada.</p>
     </div>` : ''}
 
-    <!-- GALERÍA DE GRÁFICOS -->
-    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-bottom:15px;">
-      🖼️ Galería de Gráficos de Inteligencia Hídrica
+    <!-- GRÁFICOS -->
+    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin-bottom:15px;font-size:16px;">
+      🖼️ Gráficos de Inteligencia
     </h3>
-    <table width="100%" cellspacing="12" style="margin-bottom:30px;">${chartRows}</table>
+    <div style="text-align:center;">
+       ${chartRows}
+    </div>
 
-    <!-- TABLA COMPLETA -->
-    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-bottom:12px;">
-      📋 Detalle de las Últimas 10 Mediciones
+    <!-- TABLA DETALLE -->
+    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin:25px 0 10px;font-size:16px;">
+      📋 Últimas 10 Mediciones
     </h3>
-    <div style="overflow-x:auto;">
-      <table width="100%" style="font-size:11px;border-collapse:collapse;text-align:center;margin-bottom:16px;min-width:650px;">
+    <div class="table-responsive" style="width:100%; overflow-x:auto;">
+      <table width="100%" style="font-size:10px;border-collapse:collapse;text-align:center;min-width:500px;">
         <thead>
           <tr style="background:#1e293b;color:white;">
-            <th style="padding:9px 8px;border:1px solid #334155;text-align:left;">Fecha y Hora</th>
-            <th style="padding:9px 8px;border:1px solid #334155;">💧 Litros</th>
-            <th style="padding:9px 8px;border:1px solid #334155;">📊 %</th>
-            <th style="padding:9px 8px;border:1px solid #334155;">📈 Variación (L)</th>
-            <th style="padding:9px 8px;border:1px solid #334155;">Caudal (L/min)</th>
-            <th style="padding:9px 8px;border:1px solid #334155;">T. Llenado (d)</th>
-            <th style="padding:9px 8px;border:1px solid #334155;">T. Vaciado (d)</th>
-            <th style="padding:9px 8px;border:1px solid #334155;">👥 Reportado por</th>
+            <th style="padding:8px;border:1px solid #334155;text-align:left;">Fecha</th>
+            <th style="padding:8px;border:1px solid #334155;">Litros</th>
+            <th style="padding:8px;border:1px solid #334155;">%</th>
+            <th style="padding:8px;border:1px solid #334155;">Var. (L)</th>
+            <th style="padding:8px;border:1px solid #334155;">Caudal</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
       </table>
     </div>
+
+    <!-- OBSERVACIONES -->
+    <div style="background:#fffbe6;padding:15px;border-radius:8px;font-size:12px;color:#444;margin:25px 0 20px;">
+      <strong style="font-size:13px;">*** Guía de Gráficos ***</strong><br>
+      <ol class="observation-list" style="margin:8px 0 0;padding-left:18px;line-height:1.6;">
+        <li><strong>Caudal:</strong> Barras <span style="color:#16a34a;">verdes (llenado)</span>, <span style="color:#dc2626;">rojas (consumo)</span>.</li>
+        <li><strong>Evolución Nivel %:</strong> Línea de tiempo del nivel del tanque.</li>
+        <li><strong>Variación (L):</strong> Diferencia neta entre reportes.</li>
+        <li><strong>Umbrales:</strong> Alerta (60%), Racionamiento (40%), Crítico (20%).</li>
+        <li><strong>Patrón Horario:</strong> Consumo histórico en bloques de 2h.</li>
+      </ol>
+    </div>
+
+    <!-- IMPORTANTE -->
+    <div style="background:#f1f5f9;padding:15px;border-radius:8px;font-size:12px;color:#475569;margin-bottom:20px;">
+      <strong style="font-size:13px;color:#1e293b;">📌 Información de Suscripción</strong><br><br>
+      Cada registro de dato con su correo activa los próximos <strong>5 resúmenes</strong>. Para continuar recibiéndolos, simplemente registre un nuevo dato cuando su ciclo termine.
+    </div>
+
+    <p style="font-size:10px;color:#94a3b8;text-align:center;margin-top:25px;line-height:1.4;">
+      Sistema AquaSaaS — Informe automático. 2026 ©<br>
+      No responder a este remitente. Buzón no monitoreado.
+    </p>
+  </div>
+</body>
+</html>`.trim();
 
     <!-- ÚLTIMO REGISTRO DESTACADO -->
     ${ultimoM ? `

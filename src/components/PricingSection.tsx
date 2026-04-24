@@ -184,7 +184,7 @@ export default function PricingSection() {
             </p>
           </div>
           <a 
-            href="mailto:correojago@gmail.com" 
+            href="#contacto" 
             className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-2xl font-bold transition-colors whitespace-nowrap"
           >
             Contactar Soporte
