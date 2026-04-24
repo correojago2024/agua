@@ -872,7 +872,8 @@ export default function EdificioAdminPage() {
 
     try {
       const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const filePath = `banners/${building.id}.${extension}`;
+      const fileName = `${building.id}.${extension}`;
+      const filePath = `banners/${fileName}`;
       
       // 1. Subida a Storage
       const { error: uploadError } = await supabase.storage
@@ -881,14 +882,9 @@ export default function EdificioAdminPage() {
 
       if (uploadError) throw uploadError;
 
-      // 2. Obtener URL Pública garantizada
-      const { data: urlData } = supabase.storage.from('building-banners').getPublicUrl(filePath);
-      let publicUrl = urlData?.publicUrl;
-
-      // Fallback manual si Supabase devuelve una URL incompleta o nula
-      if (!publicUrl || publicUrl.length < 50) {
-        publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${filePath}`;
-      }
+      // 2. Construcción de URL Pública Directa (Sin depender de getPublicUrl)
+      // Reemplazamos la lógica para asegurar que el path sea absoluto
+      const publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${filePath}`;
 
       // 3. Guardar en Base de Datos
       const { error: updateError } = await supabase
@@ -901,7 +897,7 @@ export default function EdificioAdminPage() {
       // 4. Actualizar Estado Local y Auditoría
       setBuilding({ ...building, banner_url: publicUrl });
       setBannerMsg('✅ Banner actualizado correctamente');
-      logClientAudit('UPDATE_BANNER', 'banner', building.id, { full_url: publicUrl });
+      logClientAudit('UPDATE_BANNER', 'banner', building.id, { url: publicUrl });
 
     } catch (e: any) {
       console.error('BANNER ERROR:', e);
