@@ -172,9 +172,11 @@ export default function ResidentForm() {
                }}
                onError={(e) => {
                  const target = e.target as HTMLImageElement;
-                 if (!target.src.includes('retry=')) {
-                    target.src = `${building.banner_url}?retry=${Date.now()}`;
+                 if (!target.src.includes('?')) {
+                    // Primer intento: agregar timestamp para evitar cache
+                    target.src = `${building.banner_url}?v=${Date.now()}`;
                  } else {
+                   // Segundo fallo: ocultar imagen y mostrar fallback
                    target.style.display = 'none';
                    if (target.parentElement) {
                      target.parentElement.classList.add('bg-blue-600');
