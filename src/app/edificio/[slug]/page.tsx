@@ -162,24 +162,20 @@ export default function ResidentForm() {
         {building?.banner_url ? (
           <div className="relative overflow-hidden h-40 md:h-64 bg-slate-900">
             <img
-              src={building.banner_url}
+              src={`${building.banner_url}?v=${new Date().getTime()}`}
               alt={`Banner ${building.name}`}
               className="w-full h-full object-cover relative z-10"
               style={{ display: 'block' }}
               referrerPolicy="no-referrer"
-              key={building.banner_url}
               onLoad={(e) => {
                 const img = e.target as HTMLImageElement;
                 img.style.opacity = '1';
+                console.log('✅ Banner cargado en Formulario Público');
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                console.error('DEBUG BANNER (Public): Error cargando banner desde URL:', target.src, {
-                  banner_url: building?.banner_url,
-                  building_id: building?.id
-                });
+                console.error('❌ Error cargando banner en Formulario Público:', target.src);
                 target.style.display = 'none';
-                // Si la URL guardada falla, intentar fallback a gradiente
                 if (target.parentElement) {
                   target.parentElement.classList.add('bg-blue-600');
                 }

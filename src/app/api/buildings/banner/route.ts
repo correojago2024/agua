@@ -16,15 +16,18 @@ export async function POST(request: Request) {
     }
 
     // 1. Intentar actualizar en la base de datos
+    console.log(`[VERCEL LOG] 🛠️ Ejecutando UPDATE en tabla 'buildings' para ID: ${building_id}`);
     const { data, error } = await supabase
       .from('buildings')
-      .update({ banner_url })
+      .update({ banner_url: banner_url.trim() })
       .eq('id', building_id)
-      .select();
+      .select('id, name, banner_url')
+      .single();
 
     if (error) {
-      console.error(`[VERCEL LOG] ❌ Error de Supabase al actualizar banner: ${error.message}`);
-      
+      console.error(`[VERCEL LOG] ❌ Error de Supabase: ${error.message}`);
+      // ... (resto del logAudit igual)
+
       // Registrar error en la pestaña de Alertas/Auditoría
       await logAudit({
         req: request,

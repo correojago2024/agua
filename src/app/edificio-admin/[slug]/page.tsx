@@ -2001,14 +2001,18 @@ export default function EdificioAdminPage() {
               <div className="p-5 space-y-4">
                 {building?.banner_url ? (
                   <div className="space-y-3">
-                    <div className="rounded-xl overflow-hidden border border-slate-600" style={{maxHeight: '200px'}}>
+                    <div className="rounded-xl overflow-hidden border border-slate-600 bg-slate-700" style={{minHeight: '100px', maxHeight: '200px'}}>
                       <img 
-                        src={building.banner_url} 
+                        src={`${building.banner_url}?v=${new Date().getTime()}`} 
                         alt="Banner actual" 
                         className="w-full object-cover" 
                         style={{maxHeight: '200px', display: 'block'}} 
                         referrerPolicy="no-referrer"
-                        key={building.banner_url}
+                        onLoad={() => console.log('✅ Banner cargado en Admin')}
+                        onError={(e) => {
+                          console.error('❌ Error cargando banner en Admin:', e);
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/1200x300/2563eb/white?text=Error+Cargando+Imagen';
+                        }}
                       />
                     </div>                    <div className="flex gap-2">
                       <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors">
