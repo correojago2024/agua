@@ -112,9 +112,9 @@ function buildReportEmailHtml(
     ${isAnomaly ? `<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;"><h3 style="color:#dc2626;margin:0 0 5px;font-size:15px;">⚠️ Anomalía Detectada</h3><p style="font-size:13px;margin:0;">Variación de ${variationPercentage.toFixed(1)}%.</p></div>` : ''}
 
     <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin:25px 0 15px;font-size:16px;">🖼️ Gráficos de Inteligencia</h3>
-    ${chartUrls.caudalLlenadoConsumoChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.caudalLlenadoConsumoChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
-    ${chartUrls.evolucionNivelChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.evolucionNivelChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
-    ${chartUrls.tendenciaSemanalChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.tendenciaSemanalChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
+    ${chartUrls.caudalChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.caudalChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
+    ${chartUrls.combinadoChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.combinadoChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
+    ${chartUrls.last4WeeksChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.last4WeeksChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
 
     <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin:25px 0 10px;font-size:16px;">📋 Últimas 10 Mediciones</h3>
     <div style="width:100%; overflow-x:auto;"><table width="100%" style="font-size:10px;border-collapse:collapse;text-align:center;min-width:450px;"><thead><tr style="background:#1e293b;color:white;"><th style="padding:8px;text-align:left;">Fecha</th><th style="padding:8px;">Litros</th><th style="padding:8px;">%</th><th style="padding:8px;">Var.(L)</th><th style="padding:8px;">Caudal</th></tr></thead><tbody>${tableRows}</tbody></table></div>
