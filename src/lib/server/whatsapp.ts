@@ -114,7 +114,7 @@ export async function sendWhatsApp(
     // 1. Obtener configuración del edificio
     const { data: settings } = await supabaseAdmin
       .from('building_whatsapp_settings')
-      .select('is_enabled, preferred_service')
+      .select('*')
       .eq('building_id', building_id)
       .single();
 
@@ -123,7 +123,20 @@ export async function sendWhatsApp(
     }
 
     const service = serviceOverride || (settings?.preferred_service as WhatsAppService) || 'GREENAPI';
-    const creds = await getCredentials(service);
+    
+    // Priorizar credenciales del edificio, si no, usar las globales
+    let creds: WhatsAppCredentials;
+    
+    if (settings?.wa_api_token) {
+      creds = {
+        service_type: service,
+        instance_id: settings.wa_instance_id,
+        api_token: settings.wa_api_token,
+        api_url: settings.wa_api_url || (service === 'GREENAPI' ? 'https://api.greenapi.com' : 'https://gate.whapi.cloud')
+      };
+    } else {
+      creds = await getCredentials(service);
+    }
     
     const phoneList = Array.isArray(phones) ? phones : phones.split(',').map(p => p.trim());
     

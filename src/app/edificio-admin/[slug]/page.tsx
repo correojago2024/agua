@@ -130,8 +130,19 @@ export default function EdificioAdminPage() {
   const [waThresholdRationing, setWaThresholdRationing] = useState(40);
   const [waThresholdCritical, setWaThresholdCritical] = useState(20);
   const [waJuntaPhones, setWaJuntaPhones] = useState('');
+  
+  // Credenciales específicas del edificio
+  const [waInstanceId, setWaInstanceId] = useState('');
+  const [waApiToken, setWaApiToken] = useState('');
+  const [waApiUrl, setWaApiUrl] = useState('');
+  
   const [waLoading, setWaLoading] = useState(false);
   const [waMsg, setWaMsg] = useState('');
+  
+  // Prueba de WhatsApp
+  const [testPhone, setTestPhone] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<{success: boolean, msg: string} | null>(null);
 
   // Junta editing
   const [showAddMember, setShowAddMember] = useState(false);
@@ -179,6 +190,9 @@ export default function EdificioAdminPage() {
       setWaThresholdRationing(Number(data.threshold_rationing));
       setWaThresholdCritical(Number(data.threshold_critical));
       setWaJuntaPhones(data.junta_phones || '');
+      setWaInstanceId(data.wa_instance_id || '');
+      setWaApiToken(data.wa_api_token || '');
+      setWaApiUrl(data.wa_api_url || '');
     }
     setWaLoading(false);
   }, [building]);
@@ -198,6 +212,9 @@ export default function EdificioAdminPage() {
         threshold_rationing: waThresholdRationing,
         threshold_critical: waThresholdCritical,
         junta_phones: waJuntaPhones,
+        wa_instance_id: waInstanceId,
+        wa_api_token: waApiToken,
+        wa_api_url: waApiUrl,
         updated_at: new Date().toISOString()
       });
 
@@ -208,6 +225,33 @@ export default function EdificioAdminPage() {
       setTimeout(() => setWaMsg(''), 3000);
     }
     setWaLoading(false);
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!building || !testPhone) return;
+    setTestLoading(true);
+    setTestResult(null);
+
+    try {
+      const res = await fetch('/api/whatsapp/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          phone: testPhone,
+          service: waService
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestResult({ success: true, msg: '¡Mensaje enviado con éxito!' });
+      } else {
+        setTestResult({ success: false, msg: data.error || 'Error desconocido' });
+      }
+    } catch (err: any) {
+      setTestResult({ success: false, msg: err.message });
+    }
+    setTestLoading(false);
   };
 
   // ── Load building ──────────────────────────────────────────────────────────
@@ -1671,39 +1715,96 @@ const { error: updateError } = await supabase.from('building_members')
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Servicio */}
-                  <div className="space-y-2">
-                    <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Servicio de WhatsApp</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button 
-                        onClick={() => waEnabled && setWaService('GREENAPI')}
-                        disabled={!waEnabled}
-                        className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'GREENAPI' ? 'bg-green-600 border-green-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
-                      >
-                        Green API
-                        <span className="block text-[10px] opacity-70">Recomendado</span>
-                      </button>
-                      <button 
-                        onClick={() => waEnabled && setWaService('WHAPI')}
-                        disabled={!waEnabled}
-                        className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'WHAPI' ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
-                      >
-                        Whapi Cloud
-                        <span className="block text-[10px] opacity-70">Alternativa</span>
-                      </button>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Servicio de WhatsApp</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          onClick={() => waEnabled && setWaService('GREENAPI')}
+                          disabled={!waEnabled}
+                          className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'GREENAPI' ? 'bg-green-600 border-green-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
+                        >
+                          Green API
+                          <span className="block text-[10px] opacity-70">Recomendado</span>
+                        </button>
+                        <button 
+                          onClick={() => waEnabled && setWaService('WHAPI')}
+                          disabled={!waEnabled}
+                          className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'WHAPI' ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
+                        >
+                          Whapi Cloud
+                          <span className="block text-[10px] opacity-70">Alternativa</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Credenciales */}
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-700 space-y-3">
+                      <h4 className="text-white text-xs font-bold uppercase flex items-center gap-2">
+                        <Wrench className="w-3 h-3" />
+                        Parámetros de Acceso
+                      </h4>
+                      {waService === 'GREENAPI' && (
+                        <div>
+                          <label className="block text-slate-500 text-[10px] mb-1">ID de Instancia</label>
+                          <input value={waInstanceId} onChange={e => setWaInstanceId(e.target.value)}
+                            disabled={!waEnabled} placeholder="Ej: 7107580078"
+                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500" />
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-slate-500 text-[10px] mb-1">API Token</label>
+                        <input type="password" value={waApiToken} onChange={e => setWaApiToken(e.target.value)}
+                          disabled={!waEnabled} placeholder="Tu token secreto"
+                          className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500" />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 text-[10px] mb-1">URL Base (Opcional)</label>
+                        <input value={waApiUrl} onChange={e => setWaApiUrl(e.target.value)}
+                          disabled={!waEnabled} placeholder={waService === 'GREENAPI' ? 'https://api.greenapi.com' : 'https://gate.whapi.cloud'}
+                          className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Números de la Junta */}
-                  <div className="space-y-2">
-                    <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Números de la Junta</label>
-                    <textarea 
-                      value={waJuntaPhones}
-                      onChange={e => setWaJuntaPhones(e.target.value)}
-                      disabled={!waEnabled}
-                      placeholder="Ej: 584161234567, 584127654321"
-                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-green-500 min-h-[80px]"
-                    />
-                    <p className="text-[10px] text-slate-500">Separados por coma. Incluye código de país (ej. 58 para Venezuela).</p>
+                  {/* Destinatarios y Prueba */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Números de la Junta (Alertas Reales)</label>
+                      <textarea 
+                        value={waJuntaPhones}
+                        onChange={e => setWaJuntaPhones(e.target.value)}
+                        disabled={!waEnabled}
+                        placeholder="Ej: 584161234567, 584127654321"
+                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-green-500 min-h-[80px]"
+                      />
+                      <p className="text-[10px] text-slate-500">Separados por coma. Se les enviará alertas automáticas de nivel.</p>
+                    </div>
+
+                    {/* SECCIÓN DE PRUEBA */}
+                    <div className="bg-blue-500/5 border border-blue-500/20 p-4 rounded-2xl space-y-3">
+                      <h4 className="text-blue-400 text-xs font-bold uppercase flex items-center gap-2">
+                        <Activity className="w-3 h-3" />
+                        Prueba de Conexión
+                      </h4>
+                      <div className="flex gap-2">
+                        <input value={testPhone} onChange={e => setTestPhone(e.target.value)}
+                          disabled={!waEnabled || testLoading} placeholder="Número de prueba (con país)"
+                          className="flex-1 bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500" />
+                        <button 
+                          onClick={handleTestWhatsApp}
+                          disabled={!waEnabled || !testPhone || testLoading}
+                          className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all"
+                        >
+                          {testLoading ? '...' : 'Enviar'}
+                        </button>
+                      </div>
+                      {testResult && (
+                        <div className={`p-2 rounded text-[10px] font-medium ${testResult.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {testResult.msg}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
