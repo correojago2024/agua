@@ -873,15 +873,17 @@ export default function EdificioAdminPage() {
 
     try {
       const ext  = file.name.split('.').pop();
-      const path = `banners/${building.id}.${ext}`;
+      const fileName = `${building.id}.${ext}`;
+      const path = `banners/${fileName}`;
+      
       const { error: uploadError } = await supabase.storage
         .from('building-banners')
         .upload(path, file, { upsert: true, contentType: file.type });
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('building-banners').getPublicUrl(path);
-      const publicUrl = urlData.publicUrl; // Guardar URL base limpia
+      // Construcción manual de URL para evitar truncamiento
+      const publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${path}`;
 
       const { error: updateError } = await supabase
         .from('buildings').update({ banner_url: publicUrl }).eq('id', building.id);

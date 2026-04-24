@@ -159,13 +159,22 @@ export default function ResidentForm() {
         {building?.banner_url ? (
           <div className="relative overflow-hidden h-40 md:h-64 bg-slate-900">
             <img
-              src={`${building.banner_url}?t=${Date.now()}`}
+              src={`${building.banner_url}${building.banner_url.includes('?') ? '&' : '?'}t=${Date.now()}`}
               alt={`Banner ${building.name}`}
               className="w-full h-full object-cover relative z-10"
+              style={{ display: 'block' }}
+              onLoad={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.style.opacity = '1';
+              }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
+                console.error('Error cargando banner:', target.src);
                 target.style.display = 'none';
-                target.parentElement!.classList.add('bg-blue-600');
+                // Si la URL guardada falla, intentar fallback a gradiente
+                if (target.parentElement) {
+                  target.parentElement.classList.add('bg-blue-600');
+                }
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20" />
