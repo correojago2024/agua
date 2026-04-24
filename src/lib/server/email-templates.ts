@@ -188,7 +188,6 @@ export function buildReportEmailHtml(
     <div style="margin-top:50px; text-align:center; font-size:12px; color:#94a3b8;">
       <p style="margin:0;">Saludos cordiales,<br><b>Comisión de Agua del Edificio</b></p>
       <p style="margin:15px 0;">Sistema AquaSaaS — Informe automático. 2026 ©<br><small>Por favor, no responda a este email.</small></p>
-      <p style="margin:0; font-weight:bold; color:#64748b;">aquamanbombas@hotmail.com</p>
     </div>
 
   </div>
