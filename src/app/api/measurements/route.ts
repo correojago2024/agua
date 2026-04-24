@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       
       const chartUrls = getAllImprovedCharts(updHistory || [], building.tank_capacity_liters);
       const emailHtml = buildReportEmailHtml(building, updHistory || [], indicators, liters, percentage, isAnomaly, variationPercentage, chartUrls);
-      const res = await sendEmailViaGmail(recipientEmails, `💧 Reporte Agua: ${Math.round(percentage)}% — ${building.name}`, emailHtml, building_id, 'measurement_report');
+      const res = await sendEmailViaGmail(recipientEmails, `💧 Reporte de Agua: ${Math.round(percentage)}% actual — ${building.name}`, emailHtml, building_id, 'measurement_report');
       
       if (res.success) {
         await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'SUCCESS', entity_type: 'email', entity_id: meas?.id || 'N/A', data_after: { message: 'Emails enviados correctamente', messageId: res.messageId } });

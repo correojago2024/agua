@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     const res = await sendEmailViaGmail(
       recipients, 
-      `💧 Reporte de Agua — ${building.name}`, 
+      `💧 Reporte de Agua: ${Math.round(lastRecord.percentage)}% actual — ${building.name}`, 
       emailHtml, 
       building_id, 
       'manual_report'

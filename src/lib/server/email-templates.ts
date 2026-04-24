@@ -1,6 +1,6 @@
 /**
  * SERVICIO: email-templates.ts
- * DESCRIPCIÓN: Plantilla MAESTRA FINAL con diseño de 2 columnas, Mapa de Calor al inicio y texto 100% literal.
+ * DESCRIPCIÓN: Plantilla MAESTRA FINAL RIGUROSA con 16 gráficos en pares, Mapa de Calor al inicio y texto literal sagrado.
  */
 
 import { Indicators } from '@/lib/calculations';
@@ -79,27 +79,39 @@ export function buildReportEmailHtml(
     </tr>
   `).join('');
 
-  // Lógica de Doble Columna para Gráficos
-  const chartEntries = Object.entries(chartUrls);
-  let chartGalleryHtml = '<table width="100%" border="0" cellspacing="0" cellpadding="10">';
-  for (let i = 0; i < chartEntries.length; i += 2) {
-    const pair = chartEntries.slice(i, i + 2);
+  // Definición de pares de gráficos (16 en total)
+  const chartPairs = [
+    { left: { key: 'caudalChart', label: 'Caudal de llenado y consumo (l/min)' }, right: { key: 'combinadoChart', label: 'Evolucion del nivel del tanque (%)' } },
+    { left: { key: 'variationChart', label: 'Variacion entre mediciones' }, right: { key: 'thresholdChart', label: 'Nivel con umbrales de alerta' } },
+    { left: { key: 'dayOfWeekChart', label: 'consumo promedio por dia de semana' }, right: { key: 'last4WeeksChart', label: 'Nivel % por dia - ultimas 5 semanas' } },
+    { left: { key: 'nightlyLitrosChart', label: 'consumo nocturno estimado' }, right: { key: 'consumoSemanalDoughnut', label: 'Distribucion de consume por dia (historico)' } },
+    { left: { key: 'weekendChart', label: 'consumo fines de semana (5 semanas)' }, right: { key: 'projectionFillingChart', label: 'Proyeccion de llenado/vaciado' } },
+    { left: { key: 'caudalHoraChart', label: 'caudal en litros por hora' }, right: { key: 'historicoMensualChart', label: 'historico mensual - consume y llenado' } },
+    { left: { key: 'weekendLitrosChart', label: 'consumo/llenado sab-dom (5 semanas)' }, right: { key: 'semanaVsAnteriorChart', label: 'consume por dia - semana actual vs anterior' } },
+    { left: { key: 'weekendVariacionChart', label: 'variacion % sab-dom (5 semanas)' }, right: { key: 'franjaHorariaChart', label: 'consume promedio por franja horaria' } }
+  ];
+
+  let chartGalleryHtml = '<table width="100%" border="0" cellspacing="0" cellpadding="5">';
+  chartPairs.forEach(pair => {
     chartGalleryHtml += '<tr>';
-    pair.forEach(([key, url]) => {
-      chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:20px;">
-        <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold; text-transform:uppercase;">${key.replace('Chart', '')}</div>
-        <img src="${url}" style="width:100%; max-width:320px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
-      </td>`;
-    });
-    if (pair.length === 1) chartGalleryHtml += '<td width="50%"></td>';
+    // Lado Izquierdo
+    chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:25px;">
+      <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold;">${pair.left.label}</div>
+      <img src="${chartUrls[pair.left.key]}" style="width:100%; max-width:380px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
+    </td>`;
+    // Lado Derecho
+    chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:25px;">
+      <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold;">${pair.right.label}</div>
+      <img src="${chartUrls[pair.right.key]}" style="width:100%; max-width:380px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
+    </td>`;
     chartGalleryHtml += '</tr>';
-  }
+  });
   chartGalleryHtml += '</table>';
 
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="font-family:Arial,sans-serif;color:#1e293b;max-width:850px;margin:0 auto;background:#fff;line-height:1.6;">
+<body style="font-family:Arial,sans-serif;color:#1e293b;max-width:900px;margin:0 auto;background:#fff;line-height:1.6;">
 
   <div style="padding:20px; border:1px solid #e2e8f0;">
     
@@ -139,7 +151,7 @@ export function buildReportEmailHtml(
       </table>
     </div>
 
-    <!-- MAPA DE CALOR AL INICIO -->
+    <!-- MAPA DE CALOR -->
     ${indicators.heatmapData ? renderHeatmapHtml(indicators.heatmapData) : ''}
 
     <h3 style="color:#0f172a; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:40px; margin-bottom:20px; font-size:18px;">🖼️ Galería de Gráficos de Inteligencia Hídrica</h3>
@@ -158,7 +170,7 @@ export function buildReportEmailHtml(
             <th style="padding:10px;">Caudal (L/min)</th>
             <th style="padding:10px;">T. Llenado</th>
             <th style="padding:10px;">T. Vaciado</th>
-            <th style="padding:10px;">👥 Por</th>
+            <th style="padding:10px;">👥 Reportado por</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
@@ -214,8 +226,8 @@ export function buildReportEmailHtml(
     <div style="background:#f0f7ff; padding:20px; border-radius:12px; margin-top:40px;">
       <h4 style="color:#1e40af; margin:0 0 10px 0;">ℹ️ ¿Cómo interpretar el Caudal?</h4>
       <p style="font-size:13px; margin-bottom:10px;">El caudal neto (L/min) representa la tasa de cambio en el volumen de agua, calculada dividiendo la diferencia de litros entre dos mediciones consecutivas sobre el tiempo transcurrido (en minutos).</p>
-      <p style="font-size:13px; margin-bottom:10px;">Un valor <b>positivo</b> indica que el tanque se está llenando: la entrada de agua supera al consumo.</p>
-      <p style="font-size:13px; margin-bottom:10px;">Un valor <b>negativo</b> señala una disminución en el nivel: el consumo en el edificio supera la entrada de agua, o hay ausencia de suministro desde la red pública.</p>
+      <p style="font-size:13px; margin-bottom:10px;">Un valor <b style="color:#16a34a;">positivo</b> indica que el tanque se está llenando: la entrada de agua supera al consumo.</p>
+      <p style="font-size:13px; margin-bottom:10px;">Un valor <b style="color:#dc2626;">negativo</b> señala una disminución en el nivel: el consumo en el edificio supera la entrada de agua, o hay ausencia de suministro desde la red pública.</p>
       <p style="font-size:13px; margin-bottom:10px;">El tiempo estimado de <b>llenado</b> se basa en los caudales positivos, proyectando el tiempo necesario para alcanzar la capacidad máxima (${building.tank_capacity_liters.toLocaleString()} L).</p>
       <p style="font-size:13px;">El tiempo estimado de <b>vaciado</b> se calcula con los caudales negativos, estimando cuánto tardaría el tanque en vaciarse si el consumo se mantiene en ese ritmo.</p>
     </div>
@@ -231,7 +243,8 @@ export function buildReportEmailHtml(
 
     <div style="margin-top:50px; text-align:center; font-size:12px; color:#94a3b8;">
       <p style="margin:0;">Saludos cordiales,<br><b>Comisión de Agua del Edificio</b></p>
-      <p style="margin:15px 0;">Sistema AquaSaaS — Informe automático. 2026 ©<br><small>Por favor, no responda a este email.</small></p>
+      <p style="margin:15px 0;">Sistema AquaSaaS — Informe automático. 2026 © Todos los derechos reservados.</p>
+      <p style="font-size:11px; margin-top:20px;"><b>NOTA:</b> Por favor, no responder al remitente de este email, ya que esta notificación es enviada en forma automática por nuestros sistemas, y se trata de una dirección que solamente se utiliza para el envío de emails y su buzón de entrada no es monitoreado ni será atendido por ninguna persona.</p>
     </div>
 
   </div>
