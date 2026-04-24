@@ -249,8 +249,9 @@ export default function EdificioAdminPage() {
     if (error) {
       setWaMsg('❌ Error al guardar: ' + error.message);
     } else {
-      setWaMsg('✅ Configuración de WhatsApp guardada');
+      setWaMsg('✅ Configuración de WhatsApp y horario guardados');
       setTimeout(() => setWaMsg(''), 3000);
+      loadWhatsAppSettings();
     }
     setWaLoading(false);
   };
@@ -399,6 +400,11 @@ export default function EdificioAdminPage() {
   }, [building]);
 
   useEffect(() => { if (authed && building) loadData(); }, [authed, building, loadData]);
+
+  useEffect(() => {
+    if (tab === 'alarmas_logs') loadAuditLogs();
+    if (tab === 'configuracion') loadWhatsAppSettings();
+  }, [tab, loadAuditLogs, loadWhatsAppSettings]);
 
   // Hook para generar gráficos cuando las mediciones cambian
   useEffect(() => {
@@ -670,16 +676,31 @@ export default function EdificioAdminPage() {
     loadData();
   };
 
-  const saveEditMember = async () => {
-    if (!editingMember) return;
+  const updateJuntaMember = async (member: any) => {
+    if (!member) return;
     if (demoBlock('⚠️ Modo Demo: los cambios no se guardan en la base de datos.')) { setEditingMember(null); return; }
-    await supabase.from('building_members')
-      .update({ name: editingMember.name, role: editingMember.role, is_admin: editingMember.is_admin })
-      .eq('id', editingMember.id);
-    setEditingMember(null);
-    setMemberMsg('✅ Datos actualizados');
-    setTimeout(() => setMemberMsg(''), 3000);
-    loadData();
+    const { error } = await supabase.from('building_members')
+      .update({ 
+        name: member.name, 
+        role: member.role, 
+        is_admin: member.is_admin,
+        enable_email: member.enable_email !== false,
+        enable_whatsapp: member.enable_whatsapp !== false
+      })
+      .eq('id', member.id);
+
+    if (error) {
+      setMemberMsg('❌ Error al actualizar: ' + error.message);
+    } else {
+      setEditingMember(null);
+      setMemberMsg('✅ Datos actualizados correctamente');
+      setTimeout(() => setMemberMsg(''), 3000);
+      loadData();
+    }
+  };
+
+  const saveEditMember = () => {
+    if (editingMember) updateJuntaMember(editingMember);
   };
 
   // ── Reportes ───────────────────────────────────────────────────────────────
@@ -1319,7 +1340,7 @@ export default function EdificioAdminPage() {
 <table className="w-full text-sm">
                   <thead className="bg-slate-700/50">
                     <tr>
-                      {['Email','Nombre','Cargo','Rol','Emails recibidos','Acciones'].map(h => (
+                      {['Miembro','Cargo','Rol','Notificaciones','Emails','Acciones'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-xs text-slate-400 uppercase">{h}</th>
                       ))}
                     </tr>
@@ -1329,15 +1350,15 @@ export default function EdificioAdminPage() {
                       <tr key={m.id} className="hover:bg-slate-700/20">
                         {editingMember?.id === m.id ? (
                           <>
-                            <td className="px-4 py-3 text-slate-400 text-xs">{m.email}</td>
                             <td className="px-4 py-3">
+                              <p className="text-white font-medium text-xs">{m.email}</p>
                               <input type="text" value={editingMember.name || ''} onChange={e => setEditingMember({...editingMember, name: e.target.value})}
-                                className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-xs w-full" />
+                                className="mt-1 bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-xs w-full" placeholder="Nombre" />
                             </td>
                             <td className="px-4 py-3">
                               <select value={editingMember.role || 'Vocal'} onChange={e => setEditingMember({...editingMember, role: e.target.value})}
                                 className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-xs">
-                                {['Presidente','Viceidente','Secretario/a','Tesorero/a','Vocal','Síndico/a'].map(r => (
+                                {['Presidente','Vice-presidente','Secretario/a','Tesorero/a','Vocal','Síndico/a'].map(r => (
                                   <option key={r} value={r}>{r}</option>
                                 ))}
                               </select>
@@ -1348,50 +1369,67 @@ export default function EdificioAdminPage() {
                                   type="checkbox"
                                   checked={editingMember.is_admin === true}
                                   onChange={e => setEditingMember({...editingMember, is_admin: e.target.checked})}
-                                  className="w-3 h-3"
+                                  className="w-3 h-3 rounded border-slate-500 bg-slate-700 text-purple-500"
                                 />
                                 <span className={editingMember.is_admin ? "text-purple-400 font-medium" : "text-slate-500"}>
                                   {editingMember.is_admin ? "Admin" : "Miembro"}
                                 </span>
                               </label>
                             </td>
-                            <td className="px-4 py-3 text-slate-400 text-xs">Ilimitado</td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => setEditingMember({...editingMember, enable_email: !(editingMember.enable_email !== false)})}
+                                  className={`p-1.5 rounded border transition-all ${editingMember.enable_email !== false ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-600'}`}
+                                  title="Recibir Emails"
+                                >
+                                  <Mail className="w-3 h-3" />
+                                </button>
+                                <button 
+                                  onClick={() => setEditingMember({...editingMember, enable_whatsapp: !(editingMember.enable_whatsapp !== false)})}
+                                  className={`p-1.5 rounded border transition-all ${editingMember.enable_whatsapp !== false ? 'bg-green-500/20 border-green-500/40 text-green-400' : 'bg-slate-800 border-slate-700 text-slate-600'}`}
+                                  title="Recibir WhatsApp"
+                                >
+                                  <MessageSquare className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500 text-xs">Ilimitado</td>
                             <td className="px-4 py-3">
                               <div className="flex gap-1">
-                                <button onClick={saveEditMember} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded"><Save className="w-4 h-4" /></button>
-                                <button onClick={() => setEditingMember(null)} className="p-1.5 text-slate-400 hover:bg-slate-600 rounded"><X className="w-4 h-4" /></button>
+                                <button onClick={() => updateJuntaMember(editingMember)} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded transition-all"><Save className="w-4 h-4" /></button>
+                                <button onClick={() => setEditingMember(null)} className="p-1.5 text-slate-400 hover:bg-slate-600 rounded transition-all"><X className="w-4 h-4" /></button>
                               </div>
                             </td>
                           </>
                         ) : (
                           <>
                             <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-3.5 h-3.5 text-slate-500" />
-                                <span className="text-slate-300 text-xs">{maskEmail(m.email)}</span>
+                              <p className="text-white font-medium text-xs">{m.name || 'Sin nombre'}</p>
+                              <p className="text-slate-500 text-[10px]">{m.email}</p>
+                            </td>
+                            <td className="px-4 py-3 text-slate-300 text-xs">{m.role || 'Vocal'}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${m.is_admin ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-slate-700 text-slate-400'}`}>
+                                {m.is_admin ? 'Admin' : 'Miembro'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <div className={`p-1.5 rounded border ${m.enable_email !== false ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-600 grayscale'}`}>
+                                  <Mail className="w-3 h-3" />
+                                </div>
+                                <div className={`p-1.5 rounded border ${m.enable_whatsapp !== false ? 'bg-green-500/20 border-green-500/40 text-green-400' : 'bg-slate-800 border-slate-700 text-slate-600 grayscale'}`}>
+                                  <MessageSquare className="w-3 h-3" />
+                                </div>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-slate-300 text-xs">{m.name || '—'}</td>
-                            <td className="px-4 py-3">
-                              {m.role && (
-                                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full text-xs">{m.role}</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              {m.is_admin ? (
-                                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium">Admin</span>
-                              ) : (
-                                <span className="px-2 py-0.5 bg-slate-700 text-slate-500 rounded-full text-xs">Miembro</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-green-400 text-xs font-medium">∞ Ilimitado</span>
-                            </td>
+                            <td className="px-4 py-3 text-green-400 text-xs font-medium">∞ Ilimitado</td>
                             <td className="px-4 py-3">
                               {isUserAdmin && (
                                 <div className="flex gap-1">
-                                  <button onClick={() => setEditingMember(m)} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 className="w-4 h-4" /></button>
-                                  <button onClick={() => removeJuntaMember(m)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded"><Trash2 className="w-4 h-4" /></button>
+                                  <button onClick={() => setEditingMember(m)} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-all"><Edit2 className="w-4 h-4" /></button>
+                                  <button onClick={() => removeJuntaMember(m)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-all"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                               )}
                             </td>
@@ -1467,6 +1505,20 @@ export default function EdificioAdminPage() {
                   <p className="text-slate-400 text-[9px] mt-0.5">Personas que han reportado</p>
                 </div>
               </div>
+            </div>
+
+            {/* Gráfico de Actividad de Uso */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-green-400" />
+                Actividad de Mediciones (Últimos 15 días)
+              </h3>
+              <div className="h-[200px] w-full">
+                <WeeklyComparisonChart data={measurements} />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-3 italic text-center">
+                Muestra la frecuencia de reportes diarios para comparar la constancia de los usuarios.
+              </p>
             </div>
 
             {/* Filtros */}
