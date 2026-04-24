@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Info, Sparkles, Zap, ShieldCheck, Rocket, MessageSquare, Clock } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Plan {
@@ -17,116 +17,183 @@ interface Plan {
   activo: boolean;
 }
 
-const defaultPlans: Plan[] = [
-  { id: '1', plan_id: 'basico', nombre: 'Básico', precio: 9, caracteristicas: { suscriptores: 50, alertas_email: true, historial_meses: 3 }, activo: true },
-  { id: '2', plan_id: 'profesional', nombre: 'Profesional', precio: 25, caracteristicas: { suscriptores: 200, alertas_sms: true, historial_ilimitado: true }, activo: true },
-  { id: '3', plan_id: 'empresarial', nombre: 'Empresarial', precio: 49, caracteristicas: { suscriptores: 'ilimitado', api: true, soporte_24_7: true }, activo: true },
-  { id: '4', plan_id: 'ia', nombre: 'IA Intelligence', precio: 79, caracteristicas: { suscriptores: 'ilimitado', ia: true, api: true, soporte_24_7: true }, activo: true },
-];
-
-const getPlanFeatures = (plan: Plan) => {
-  const c = plan.caracteristicas;
-  const features = [];
-  if (c.suscriptores) features.push(`Hasta ${c.suscriptores} suscriptores`);
-  if (c.alertas_email) features.push('Alertas por email');
-  if (c.alertas_sms) features.push('Alertas por SMS');
-  if (c.historial_meses) features.push(`Historial de ${c.historial_meses} meses`);
-  if (c.historial_ilimitado) features.push('Historial ilimitado');
-  if (c.api) features.push('API access');
-  if (c.soporte_24_7) features.push('Soporte 24/7');
-  if (c.ia) features.push('Análisis con IA');
-  return features;
-};
-
 export default function PricingSection() {
-  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
-  const [plans, setPlans] = useState<Plan[]>(defaultPlans);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadPlans = async () => {
-      const { data } = await supabase.from('plan_precios').select('*').order('id');
-      if (data && data.length > 0) setPlans(data);
+      const { data } = await supabase.from('plan_precios').select('*').order('precio', { ascending: true });
+      if (data) setPlans(data);
+      setLoading(false);
     };
     loadPlans();
   }, []);
 
-  const getPlanById = (planId: string) => plans.find(p => p.plan_id === planId);
+  // Características extendidas basadas en el plan_id
+  const getExtendedFeatures = (planId: string) => {
+    switch (planId) {
+      case 'basico':
+        return [
+          { icon: <Users size={16} />, text: 'Hasta 50 vecinos suscritos' },
+          { icon: <Clock size={16} />, text: 'Historial de 30 días' },
+          { icon: <Zap size={16} />, text: 'Gráficos básicos de nivel' },
+          { icon: <ShieldCheck size={16} />, text: 'Alertas Email al 20%' },
+          { icon: <MessageSquare size={16} />, text: 'Entrada de datos manual' },
+        ];
+      case 'profesional':
+        return [
+          { icon: <Users size={16} />, text: 'Hasta 200 vecinos suscritos' },
+          { icon: <Clock size={16} />, text: 'Historial de 1 año' },
+          { icon: <Zap size={16} />, text: 'Dashboard Inteligente Completo' },
+          { icon: <MessageSquare size={16} />, text: 'Alertas WhatsApp (Junta)' },
+          { icon: <ShieldCheck size={16} />, text: 'Detección de fugas y anomalías' },
+          { icon: <Rocket size={16} />, text: 'Reportes PDF para cartelera' },
+        ];
+      case 'ia':
+      case 'empresarial':
+        return [
+          { icon: <Users size={16} />, text: 'Vecinos ilimitados' },
+          { icon: <Clock size={16} />, text: 'Historial de por vida' },
+          { icon: <Sparkles size={16} />, text: 'IA Predictiva: Proyección falta de agua' },
+          { icon: <Rocket size={16} />, text: 'Soporte para sensores IoT' },
+          { icon: <Zap size={16} />, text: 'API de integración' },
+          { icon: <ShieldCheck size={16} />, text: 'Soporte prioritario 24/7' },
+        ];
+      default:
+        return [];
+    }
+  };
 
   return (
-    <section id="planes" className="py-20 bg-slate-900">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Planes flexibles para cada necesidad
-          </h2>
-          <p className="text-slate-400 text-lg">
-            Elige el plan que mejor se adapte a tu edificio
+    <section id="planes" className="py-24 bg-slate-900 relative overflow-hidden">
+      {/* Decoración de fondo */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-10 pointer-events-none">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-10 right-10 w-72 h-72 bg-purple-500 rounded-full blur-[120px]"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-blue-400 font-bold tracking-widest uppercase text-sm mb-3">Inversión Inteligente</h2>
+          <h3 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+            Planes diseñados para proteger su edificio
+          </h3>
+          <p className="text-slate-400 text-lg mb-10">
+            Evite gastos inesperados en cisternas con una gestión eficiente del recurso hídrico.
           </p>
+
+          {/* Toggle Mensual/Anual */}
+          <div className="flex items-center justify-center gap-4">
+            <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}>Mensual</span>
+            <button 
+              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+              className="w-14 h-7 bg-slate-700 rounded-full relative transition-colors duration-300 focus:outline-none ring-2 ring-blue-500/20"
+            >
+              <div className={`absolute top-1 w-5 h-5 bg-blue-500 rounded-full transition-all duration-300 ${billingCycle === 'yearly' ? 'left-8' : 'left-1'}`}></div>
+            </button>
+            <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-white' : 'text-slate-500'}`}>
+              Anual <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full ml-1 font-bold">AHORRA 20%</span>
+            </span>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((plan) => (
-            <div
-              key={plan.plan_id}
-              className={`relative bg-slate-800 rounded-2xl p-6 transition-all ${
-                plan.plan_id === 'profesional'
-                  ? 'ring-2 ring-blue-500 scale-105 shadow-2xl'
-                  : 'hover:scale-102'
-              }`}
-              onMouseEnter={() => setHoveredPlan(plan.plan_id)}
-              onMouseLeave={() => setHoveredPlan(null)}
-            >
-              {plan.plan_id === 'profesional' && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                  Más popular
-                </div>
-              )}
-              
-              {plan.plan_id === 'ia' && (
-                <div className="absolute -top-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                  🤖 IA
-                </div>
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {plans.map((plan) => {
+            const isPro = plan.plan_id === 'profesional';
+            const isIA = plan.plan_id === 'ia' || plan.plan_id === 'empresarial';
+            const price = billingCycle === 'yearly' ? plan.precio * 0.8 : plan.precio;
+            const features = getExtendedFeatures(plan.plan_id);
 
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-white mb-2">{plan.nombre}</h3>
-                <div className="text-4xl font-bold text-white mb-1">
-                  ${plan.precio}
-                </div>
-                <div className="text-slate-400">/mes</div>
-              </div>
-
-              <ul className="space-y-3 mb-6">
-                {getPlanFeatures(plan).map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2 text-slate-300 text-sm">
-                    <Check className={`w-5 h-5 flex-shrink-0 ${plan.plan_id === 'profesional' ? 'text-blue-400' : 'text-green-400'}`} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                className={`w-full py-3 rounded-xl font-medium transition-colors ${
-                  plan.plan_id === 'profesional'
-                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                    : 'bg-slate-700 hover:bg-slate-600 text-white'
+            return (
+              <div
+                key={plan.plan_id}
+                className={`flex flex-col bg-slate-800/50 backdrop-blur-sm rounded-3xl border transition-all duration-500 ${
+                  isPro 
+                    ? 'border-blue-500 shadow-[0_0_40px_-15px_rgba(59,130,246,0.5)] scale-105 z-20 bg-slate-800' 
+                    : 'border-slate-700 hover:border-slate-500 z-10'
                 }`}
               >
-                Comenzar
-              </button>
-            </div>
-          ))}
+                {isPro && (
+                  <div className="bg-blue-500 text-white text-center text-xs font-bold py-1.5 rounded-t-3xl uppercase tracking-widest">
+                    Más Popular
+                  </div>
+                )}
+                
+                {isIA && (
+                  <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-center text-xs font-bold py-1.5 rounded-t-3xl uppercase tracking-widest flex items-center justify-center gap-2">
+                    <Sparkles size={14} /> Próximamente
+                  </div>
+                )}
+
+                <div className="p-8 flex-1 flex flex-col">
+                  <div className="mb-8">
+                    <h4 className="text-white text-xl font-bold mb-2">{plan.nombre}</h4>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-black text-white">${Math.round(price)}</span>
+                      <span className="text-slate-400 text-sm">/ {billingCycle === 'monthly' ? 'mes' : 'mes (pago anual)'}</span>
+                    </div>
+                  </div>
+
+                  <ul className="space-y-4 mb-10 flex-1">
+                    {features.map((feat, i) => (
+                      <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
+                        <div className={`p-1 rounded-full ${isPro ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
+                          <Check size={14} />
+                        </div>
+                        <span className="flex-1">{feat.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    disabled={isIA}
+                    className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                      isIA 
+                        ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                        : isPro
+                          ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
+                          : 'bg-white text-slate-900 hover:bg-slate-200'
+                    }`}
+                  >
+                    {isIA ? 'En Desarrollo' : 'Comenzar ahora'}
+                    {!isIA && <Rocket size={18} />}
+                  </button>
+                  
+                  {isIA && (
+                    <p className="text-[10px] text-slate-500 text-center mt-3 italic flex items-center justify-center gap-1">
+                      <Info size={10} /> Notificarme cuando esté listo
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="text-center mt-12">
-          <p className="text-slate-400 text-sm">
-            ¿Necesitas un plan personalizado?{' '}
-            <a href="mailto:correojago@gmail.com" className="text-blue-400 hover:text-blue-300">
-              Contáctanos
-            </a>
-          </p>
+        <div className="mt-20 bg-slate-800/30 border border-slate-700/50 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="max-w-xl">
+            <h4 className="text-white text-2xl font-bold mb-4 flex items-center gap-3">
+              <MessageSquare className="text-blue-400" />
+              ¿Necesita una solución personalizada?
+            </h4>
+            <p className="text-slate-400">
+              Para conjuntos residenciales de múltiples torres, centros comerciales o integraciones IoT industriales, 
+              diseñamos planes a medida de su infraestructura.
+            </p>
+          </div>
+          <a 
+            href="mailto:correojago@gmail.com" 
+            className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-2xl font-bold transition-colors whitespace-nowrap"
+          >
+            Contactar Soporte
+          </a>
         </div>
       </div>
     </section>
   );
 }
+
+// Sub-componentes de iconos para limpieza
+function Users({ size }: { size: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
