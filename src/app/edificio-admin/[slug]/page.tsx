@@ -886,36 +886,40 @@ export default function EdificioAdminPage() {
 
       if (uploadError) throw uploadError;
 
-      // 2. Construcción de URL Pública
-      const publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${filePath}`;
+       // 2. Construcción de URL Pública
+       const publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${filePath}`;
 
-      // 3. Guardar en Base de Datos vía API (Para logs en Vercel y Alertas)
-      const response = await fetch('/api/buildings/banner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          building_id: building.id,
-          banner_url: publicUrl,
-          user_email: currentUser?.email
-        })
-      });
+       // 3. Guardar en Base de Datos vía API (Para logs en Vercel y Alertas)
+       const response = await fetch('/api/buildings/banner', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+           building_id: building.id,
+           banner_url: publicUrl,
+           file_path: filePath,
+           user_email: currentUser?.email
+         })
+       });
 
-      const result = await response.json();
+       const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al guardar el banner en la base de datos');
-      }
+       if (!response.ok) {
+         throw new Error(result.error || 'Error al guardar el banner en la base de datos');
+       }
 
-      // 4. Forzar recarga de datos del edificio desde la BD
-      const { data: updatedBuilding } = await supabase
-        .from('buildings')
-        .select('*')
-        .eq('id', building.id)
-        .single();
-
-      if (updatedBuilding) {
-        setBuilding(updatedBuilding);
-      }
+       // 4. Actualizar estado local con la URL retornada por el servidor
+       //    (el servidor regenera la URL oficial para asegurar formato correcto)
+       const nuevoUrl = result.data?.banner_url || publicUrl;
+       const updatedBuilding = { ...building, banner_url: nuevoUrl };
+       setBuilding(updatedBuilding);
+       
+       // Opcional: recargar desde BD para máxima coherencia
+       const { data: reloaded } = await supabase
+         .from('buildings')
+         .select('*')
+         .eq('id', building.id)
+         .single();
+       if (reloaded) setBuilding(reloaded);
       
       setBannerMsg('✅ Banner actualizado correctamente');
 
