@@ -609,7 +609,7 @@ export const ConsumptionDistributionPieChart = ({ data }: ChartProps) => {
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value: number) => `${value.toLocaleString()} L`} />
+          <Tooltip formatter={(value: any) => `${Number(value || 0).toLocaleString()} L`} />
           <Legend verticalAlign="bottom" height={36}/>
         </PieChart>
       </ResponsiveContainer>
