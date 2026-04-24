@@ -290,6 +290,7 @@ export const MonthlyHistoryChart = ({ data }: ChartProps) => {
 
 // ── 8. AGREGADO: Flow Comparison Chart ──────────────────────────────────────
 export const FlowComparisonChart = ({ data }: ChartProps) => {
+  // Ultimas 15 mediciones exactas
   const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-15);
   const formattedData = chartData.map(m => {
     const flow = (m.flow_lpm ?? m.caudal_lts_min ?? 0) as number;
@@ -302,11 +303,11 @@ export const FlowComparisonChart = ({ data }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Caudal Llenado vs Consumo (L/min)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Caudal Llenado vs Consumo (L/min) - Recientes 15</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="fecha" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="fecha" tick={{fontSize: 8}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
@@ -320,9 +321,15 @@ export const FlowComparisonChart = ({ data }: ChartProps) => {
 
 // ── 9. AGREGADO: Thresholds Chart ───────────────────────────────────────────
 export const ThresholdsChart = ({ data, capacity = 169000 }: ChartProps) => {
-  const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-30);
+  // Últimos 3 meses (90 días)
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setDate(threeMonthsAgo.getDate() - 90);
+
+  const filteredData = data.filter(m => new Date(m.recorded_at) >= threeMonthsAgo);
+  const chartData = [...filteredData].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
+  
   const formattedData = chartData.map(m => ({
-    fecha: format(new Date(m.recorded_at), 'dd/MM/yyyy'),
+    fecha: format(new Date(m.recorded_at), 'dd/MM'),
     litros: Math.round(m.liters),
     u60: Math.round(capacity * 0.6),
     u40: Math.round(capacity * 0.4),
@@ -331,11 +338,11 @@ export const ThresholdsChart = ({ data, capacity = 169000 }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Nivel con Umbrales de Alerta (Litros)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Nivel con Umbrales de Alerta (Litros) - Últimos 3 Meses</h3>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="fecha" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="fecha" tick={{fontSize: 8}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />

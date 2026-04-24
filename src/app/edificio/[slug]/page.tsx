@@ -264,16 +264,21 @@ export default function ResidentForm() {
 
             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               <div className="md:col-span-2">
-                <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1.5">
-                  Indique la Fecha y hora de la medición
+                <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1.5 flex justify-between">
+                  <span>Indique la Fecha y hora de la medición</span>
+                  <span className="text-blue-600 font-normal">Formato: DD/MM/YYYY</span>
                 </label>
                 <input
                   type="datetime-local"
                   required
-                  className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all text-black font-medium text-sm md:text-base"
+                  className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all text-black font-medium text-sm md:text-base appearance-none"
+                  style={{ colorScheme: 'light' }}
                   value={formData.recorded_at}
                   onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
                 />
+                <p className="text-[10px] text-slate-500 mt-1 italic">
+                  * Si el selector de su navegador muestra Mes/Día/Año, por favor asegúrese de ingresar los datos correctamente según el calendario.
+                </p>
               </div>
 
               <div>
