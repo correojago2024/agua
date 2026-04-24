@@ -77,6 +77,8 @@ interface JuntaMember {
   is_junta?: boolean;
   is_admin?: boolean;
   password?: string;
+  enable_email?: boolean;
+  enable_whatsapp?: boolean;
 }
 
 export default function EdificioAdminPage() {
