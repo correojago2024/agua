@@ -21,7 +21,7 @@ import {
   Droplets, Users, BarChart3, Download, Plus, Trash2, Edit2, Save,
   X, RefreshCw, AlertTriangle, CheckCircle2, Mail, Calendar,
   TrendingDown, TrendingUp, Activity, FileText, Settings, LogOut,
-  ChevronDown, ChevronUp, Image, Wrench, Upload
+  ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare
 } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -123,6 +123,16 @@ export default function EdificioAdminPage() {
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerMsg, setBannerMsg]   = useState('');
 
+  // WhatsApp settings
+  const [waEnabled, setWaEnabled] = useState(false);
+  const [waService, setWaService] = useState<'GREENAPI' | 'WHAPI'>('GREENAPI');
+  const [waThresholdCaution, setWaThresholdCaution] = useState(60);
+  const [waThresholdRationing, setWaThresholdRationing] = useState(40);
+  const [waThresholdCritical, setWaThresholdCritical] = useState(20);
+  const [waJuntaPhones, setWaJuntaPhones] = useState('');
+  const [waLoading, setWaLoading] = useState(false);
+  const [waMsg, setWaMsg] = useState('');
+
   // Junta editing
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
@@ -150,6 +160,54 @@ export default function EdificioAdminPage() {
     const [local, domain] = email.split('@');
     const maskedLocal = local.length > 2 ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] : local;
     return `${maskedLocal}@${domain}`;
+  };
+
+  // ── WhatsApp Logic ────────────────────────────────────────────────────────
+  const loadWhatsAppSettings = useCallback(async () => {
+    if (!building) return;
+    setWaLoading(true);
+    const { data, error } = await supabase
+      .from('building_whatsapp_settings')
+      .select('*')
+      .eq('building_id', building.id)
+      .single();
+    
+    if (data) {
+      setWaEnabled(data.is_enabled);
+      setWaService(data.preferred_service);
+      setWaThresholdCaution(Number(data.threshold_caution));
+      setWaThresholdRationing(Number(data.threshold_rationing));
+      setWaThresholdCritical(Number(data.threshold_critical));
+      setWaJuntaPhones(data.junta_phones || '');
+    }
+    setWaLoading(false);
+  }, [building]);
+
+  const saveWhatsAppSettings = async () => {
+    if (!building) return;
+    if (demoBlock()) return;
+
+    setWaLoading(true);
+    const { error } = await supabase
+      .from('building_whatsapp_settings')
+      .upsert({
+        building_id: building.id,
+        is_enabled: waEnabled,
+        preferred_service: waService,
+        threshold_caution: waThresholdCaution,
+        threshold_rationing: waThresholdRationing,
+        threshold_critical: waThresholdCritical,
+        junta_phones: waJuntaPhones,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      setWaMsg('❌ Error al guardar: ' + error.message);
+    } else {
+      setWaMsg('✅ Configuración de WhatsApp guardada');
+      setTimeout(() => setWaMsg(''), 3000);
+    }
+    setWaLoading(false);
   };
 
   // ── Load building ──────────────────────────────────────────────────────────
@@ -1591,6 +1649,105 @@ const { error: updateError } = await supabase.from('building_members')
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Configuración de WhatsApp */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-5 py-4 border-b border-slate-700 flex justify-between items-center bg-green-500/5">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-green-400" />
+                  Alertas de WhatsApp
+                </h3>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={waEnabled} onChange={e => setWaEnabled(e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  <span className="ml-3 text-sm font-medium text-slate-300">{waEnabled ? 'Activado' : 'Desactivado'}</span>
+                </label>
+              </div>
+              
+              <div className={`p-5 space-y-6 transition-opacity ${!waEnabled ? 'opacity-50 grayscale' : ''}`}>
+                {waMsg && <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-2 rounded-lg text-sm">{waMsg}</div>}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Servicio */}
+                  <div className="space-y-2">
+                    <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Servicio de WhatsApp</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => waEnabled && setWaService('GREENAPI')}
+                        disabled={!waEnabled}
+                        className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'GREENAPI' ? 'bg-green-600 border-green-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
+                      >
+                        Green API
+                        <span className="block text-[10px] opacity-70">Recomendado</span>
+                      </button>
+                      <button 
+                        onClick={() => waEnabled && setWaService('WHAPI')}
+                        disabled={!waEnabled}
+                        className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${waService === 'WHAPI' ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-650'}`}
+                      >
+                        Whapi Cloud
+                        <span className="block text-[10px] opacity-70">Alternativa</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Números de la Junta */}
+                  <div className="space-y-2">
+                    <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Números de la Junta</label>
+                    <textarea 
+                      value={waJuntaPhones}
+                      onChange={e => setWaJuntaPhones(e.target.value)}
+                      disabled={!waEnabled}
+                      placeholder="Ej: 584161234567, 584127654321"
+                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-green-500 min-h-[80px]"
+                    />
+                    <p className="text-[10px] text-slate-500">Separados por coma. Incluye código de país (ej. 58 para Venezuela).</p>
+                  </div>
+                </div>
+
+                {/* Umbrales */}
+                <div className="space-y-4">
+                  <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">Umbrales de Alerta (Porcentaje)</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-700">
+                      <p className="text-yellow-400 text-xs font-bold mb-2 flex items-center gap-1">🟡 Precaución</p>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={waThresholdCaution} onChange={e => setWaThresholdCaution(Number(e.target.value))}
+                          disabled={!waEnabled} className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 text-xl font-bold focus:outline-none" />
+                        <span className="text-slate-400 font-bold">%</span>
+                      </div>
+                    </div>
+                    <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-700">
+                      <p className="text-orange-400 text-xs font-bold mb-2 flex items-center gap-1">🟠 Racionamiento</p>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={waThresholdRationing} onChange={e => setWaThresholdRationing(Number(e.target.value))}
+                          disabled={!waEnabled} className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 text-xl font-bold focus:outline-none" />
+                        <span className="text-slate-400 font-bold">%</span>
+                      </div>
+                    </div>
+                    <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-700">
+                      <p className="text-red-400 text-xs font-bold mb-2 flex items-center gap-1">🔴 Crítico</p>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={waThresholdCritical} onChange={e => setWaThresholdCritical(Number(e.target.value))}
+                          disabled={!waEnabled} className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 text-xl font-bold focus:outline-none" />
+                        <span className="text-slate-400 font-bold">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button 
+                    onClick={saveWhatsAppSettings}
+                    disabled={waLoading}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95"
+                  >
+                    {waLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Guardar Configuración de WhatsApp
+                  </button>
+                </div>
               </div>
             </div>
           </div>

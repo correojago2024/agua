@@ -14,6 +14,7 @@ import { calculateIndicators, Indicators } from '@/lib/calculations';
 import { getAllImprovedCharts } from '@/lib/charts';
 import { sendEmailViaGmail } from '@/lib/server/email';
 import { logAudit } from '@/lib/audit';
+import { checkWaterLevelThresholds } from '@/lib/server/whatsapp';
 
 // ════════════════════════════════════════════════════════════════════════════
 // HTML del email de reporte (Responsivo 600px)
@@ -176,6 +177,15 @@ export async function POST(request: Request) {
     }]).select().single();
 
     if (meas) await logAudit({ req: request, building_id, user_email: email || collaborator_name || 'Anónimo', operation: 'INSERT', entity_type: 'measurement', entity_id: meas.id, data_after: meas });
+
+    // --- INTEGRACIÓN WHATSAPP ---
+    // Verificar umbrales de nivel y enviar alertas si es necesario
+    try {
+      await checkWaterLevelThresholds(building_id, building.name, percentage, liters);
+    } catch (waErr: any) {
+      console.error('[WHATSAPP ALERT ERROR]', waErr.message);
+    }
+    // ----------------------------
 
     const { data: updHistory } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });
     const indicators: Indicators = calculateIndicators(updHistory || [], building.tank_capacity_liters) || {
