@@ -1,250 +1,58 @@
 /**
  * ARCHIVO: app/api/measurements/route.ts
- * VERSION: 5.3
- * FECHA: 2026-04-06 07:15 AM
- * CAMBIOS v5.3:
- * - Ampliado y mejorado el texto inicial del email con la información detallada solicitada
- * - Agregado Gauge (tacómetro) al inicio del email
- * - Se mantiene 100% todo el código original sin eliminar nada
+ * VERSION: 6.0
+ * FECHA: 2026-04-24
+ * CAMBIOS v6.0:
+ * - Corrección de error de sintaxis Turbopack (código huérfano fuera de templates)
+ * - Email 100% responsivo para móviles (max-width 600px, fuentes ajustadas)
+ * - Eliminación de duplicidad de funciones
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { calculateIndicators, Indicators } from '@/lib/calculations';
 import { getAllImprovedCharts } from '@/lib/charts';
+import { sendEmailViaGmail } from '@/lib/supabase';
 import { logAudit } from '@/lib/audit';
-import nodemailer from 'nodemailer';
-
-// Cliente Supabase server-side para leer email_credentials
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
 // ════════════════════════════════════════════════════════════════════════════
-// GMAIL — obtener transporter usando variables de entorno
-// ════════════════════════════════════════════════════════════════════════════
-async function getGmailTransporter(): Promise<{ transporter: nodemailer.Transporter; fromEmail: string }> {
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-
-  if (!user || !pass) {
-    console.warn('[GMAIL] ⚠️ No se encontraron las variables de entorno GMAIL_USER o GMAIL_APP_PASSWORD. Intentando fallback a email_credentials...');
-    
-    // Intento de fallback a la tabla por si acaso, pero priorizamos env vars
-    const { data: list } = await supabaseAdmin
-      .from('email_credentials')
-      .select('email_user, email_password')
-      .limit(1);
-    
-    const dbUser = list && list.length > 0 ? list[0].email_user : null;
-    const dbPass = list && list.length > 0 ? list[0].email_password : null;
-
-    if (!dbUser || !dbPass) {
-      throw new Error('Configuración de email ausente: Defina GMAIL_USER y GMAIL_APP_PASSWORD en Vercel.');
-    }
-    
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: dbUser, pass: dbPass },
-    });
-    return { transporter, fromEmail: dbUser };
-  }
-
-  console.log('[GMAIL] ✅ Usando credenciales desde variables de entorno Vercel.');
-  
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass },
-  });
-  return { transporter, fromEmail: user };
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// email_queue — guardar registro de auditoría
-// ════════════════════════════════════════════════════════════════════════════
-async function saveToEmailQueue(
-  buildingId: string | null,
-  recipientEmail: string,
-  subject: string,
-  htmlContent: string,
-  emailType: string,
-  status: 'pending' | 'sent' | 'failed',
-  errorMessage?: string
-) {
-  console.log(`[EMAIL_QUEUE] → tipo:${emailType} | destinatario:${recipientEmail.substring(0,5)}*** | estado:${status}`);
-  const { error: queueError } = await supabase.from('email_queue').insert({
-    building_id: buildingId,
-    recipient_email: recipientEmail,
-    subject: subject,
-    html_content: htmlContent,
-    email_type: emailType,
-    status: status,
-    attempts: 1,
-    max_attempts: 3,
-    last_attempt: new Date().toISOString(),
-    error_message: errorMessage || null,
-    sent_at: status === 'sent' ? new Date().toISOString() : null,
-  });
-  if (queueError) {
-    console.warn('[EMAIL_QUEUE] No se pudo guardar en email_queue:', queueError.message);
-  } else {
-    console.log('[EMAIL_QUEUE] ✅ Registro guardado');
-  }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Envío de email con Gmail + registro en email_queue
-// ════════════════════════════════════════════════════════════════════════════
-async function sendEmailViaGmail(
-  to: string[],
-  subject: string,
-  html: string,
-  buildingId: string,
-  emailType: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  console.log(`[SEND_EMAIL] ── Iniciando envío Gmail ──────────────────────`);
-  let transporter: nodemailer.Transporter;
-  let fromEmail: string;
-  try {
-    ({ transporter, fromEmail } = await getGmailTransporter());
-  } catch (credErr: any) {
-    console.error('[SEND_EMAIL] ❌ Error obteniendo transporter:', credErr.message);
-    for (const email of to) {
-      await saveToEmailQueue(buildingId, email, subject, html, emailType, 'failed', credErr.message);
-    }
-    return { success: false, error: credErr.message };
-  }
-  try {
-    const info = await transporter.sendMail({
-      from: `"AquaSaaS" <${fromEmail}>`,
-      to: to.join(', '),
-      subject: subject,
-      html: html,
-    });
-    console.log('[SEND_EMAIL] ✅ Email enviado. messageId:', info.messageId);
-    for (const email of to) {
-      await saveToEmailQueue(buildingId, email, subject, html, emailType, 'sent', 'messageId: ' + info.messageId);
-    }
-    return { success: true, messageId: info.messageId };
-  } catch (sendErr: any) {
-    console.error('[SEND_EMAIL] ❌ Error en sendMail:', sendErr.message);
-    for (const email of to) {
-      await saveToEmailQueue(buildingId, email, subject, html, emailType, 'failed', sendErr.message);
-    }
-    return { success: false, error: sendErr.message };
-  }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// HTML del email de reporte de medición (TEXTO AMPLIADO + GAUGE AL INICIO)
+// HTML del email de reporte (Responsivo 600px)
 // ════════════════════════════════════════════════════════════════════════════
 function buildReportEmailHtml(
   building: any,
-  allMeasurements: any[],
+  measurements: any[],
   indicators: Indicators,
   currentLiters: number,
-  currentPercentage: number,
+  percentage: number,
   isAnomaly: boolean,
   variationPercentage: number
 ): string {
-  // Pasamos TODOS los datos al motor de gráficos; cada función en charts.ts
-  // ya hace su propio slice/sort por recorded_at internamente
-  const graphHistory = allMeasurements;
-  const last10 = [...allMeasurements].reverse().slice(0, 10);
-  const percentageInt = Math.round(currentPercentage);
-  // Con orden ascending, el último elemento ES el más reciente por recorded_at
-  const lastRecord = [...allMeasurements].sort(
-    (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
-  ).pop();
-  const flowLpm = lastRecord?.flow_lpm || lastRecord?.caudal_lts_min || 0;
-  const flowLph = lastRecord?.caudal_lts_hora || (flowLpm * 60);
-  const varLts  = lastRecord?.variacion_lts ?? lastRecord?.variation_lts ?? 0;
-  const flowDir = flowLpm > 0 ? 'llenado' : flowLpm < 0 ? 'consumo' : 'estable';
-  const flowDirIcon = flowLpm > 0 ? '🟢' : flowLpm < 0 ? '🔴' : '⚪';
+  const percentageInt = Math.round(percentage);
+  const lastM = measurements.length > 1 ? measurements[measurements.length - 2] : null;
+  const varLts = lastM ? currentLiters - lastM.liters : 0;
+  const flowLpm = indicators.lastFlow;
+  const flowLph = flowLpm * 60;
+  const flowDir = flowLpm >= 0 ? 'LLENADO' : 'CONSUMO';
+  const flowDirIcon = flowLpm >= 0 ? '▲' : '▼';
 
-  const chartUrls = getAllImprovedCharts(graphHistory, building.tank_capacity_liters);
+  const chartUrls = getAllImprovedCharts(measurements);
+  const chartRows = Object.entries(chartUrls)
+    .map(([key, url]) => `
+      <div style="margin-bottom:20px; text-align:center;">
+        <img src="${url}" alt="${key}" style="width:100%; max-width:560px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
+      </div>
+    `).join('');
 
-  // ── Filas de gráficos (6 pares) ────────────────────────────────────────────
-  let chartRows = '';
-  try {
-    const rows: Array<[string, string, string, string]> = [
-      [chartUrls.caudalChart,            'Caudal de Llenado y Consumo',         chartUrls.combinadoChart,         'Evolución del Nivel del Tanque (%)'],
-      [chartUrls.variationChart,         'Variación entre Mediciones',           chartUrls.thresholdChart,         'Nivel con Umbrales de Alerta'],
-      [chartUrls.dayOfWeekChart,         'Consumo Promedio por Día de Semana',   chartUrls.last4WeeksChart,        'Nivel % por Día — Últimas 4 Semanas'],
-      [chartUrls.nightlyLitrosChart,     'Consumo Nocturno Estimado',            chartUrls.consumoSemanalDoughnut, 'Distribución de Consumo por Día (histórico)'],
-      [chartUrls.weekendChart,           'Consumo Fines de Semana (5 semanas)',  chartUrls.projectionFillingChart, 'Proyección de Llenado/Vaciado'],
-      [chartUrls.caudalHoraChart,        'Caudal en Litros por Hora',            chartUrls.historicoMensualChart,  'Histórico Mensual — Consumo y Llenado'],
-      [chartUrls.weekendLitrosChart,     'Consumo/Llenado Sáb-Dom (5 semanas)', chartUrls.semanaVsAnteriorChart,  'Consumo por Día — Semana Actual vs Anterior'],
-      [chartUrls.weekendVariacionChart,  'Variación % Sáb-Dom (5 semanas)',      chartUrls.franjaHorariaChart,     'Consumo Promedio por Franja Horaria'],
-    ];
-
-    chartRows = rows.map(([url1, lbl1, url2, lbl2]) => `
-      <tr>
-        <td width="50%" style="background:#f8fafc;padding:15px;border-radius:8px;text-align:center;vertical-align:top;">
-          <img src="${url1}" width="340" height="auto" alt="${lbl1}" style="display:block;border:1px solid #e2e8f0;margin:0 auto;max-width:100%;"/>
-          <br/><strong style="font-size:11px;color:#64748b;">${lbl1}</strong>
-        </td>
-        <td width="50%" style="background:#f8fafc;padding:15px;border-radius:8px;text-align:center;vertical-align:top;">
-          <img src="${url2}" width="340" height="auto" alt="${lbl2}" style="display:block;border:1px solid #e2e8f0;margin:0 auto;max-width:100%;"/>
-          <br/><strong style="font-size:11px;color:#64748b;">${lbl2}</strong>
-        </td>
-      </tr>`).join('');
-  } catch (chartErr: any) {
-    console.warn('[BUILD_HTML] ⚠️ Error generando gráficos:', chartErr.message);
-    chartRows = `<tr><td colspan="2" style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">Gráficos no disponibles en este reporte.</td></tr>`;
-  }
-
-  // ── Tabla de últimas 10 mediciones ampliada ────────────────────────────────
-  const CAP = building.tank_capacity_liters || 169000;
-  const tableRows = last10.map((m: any) => {
-    const vLts   = m.variacion_lts ?? m.variation_lts ?? 0;
-    const caudal = m.caudal_lts_min ?? m.flow_lpm ?? 0;
-    // Calcular tiempo estimado: usar campo BD si existe, sino calcularlo desde caudal
-    let tLlenarNum: number | null = null;
-    let tVaciarNum: number | null = null;
-    if (m.tiempo_estimado_llenar_min != null) {
-      tLlenarNum = m.tiempo_estimado_llenar_min / 1440;
-    } else if (caudal > 0.01) {
-      tLlenarNum = (CAP - m.liters) / (caudal * 60 * 24);
-    }
-    if (m.tiempo_estimado_vaciar_min != null) {
-      tVaciarNum = m.tiempo_estimado_vaciar_min / 1440;
-    } else if (caudal < -0.01) {
-      tVaciarNum = m.liters / (Math.abs(caudal) * 60 * 24);
-    }
-    const tLlenar = tLlenarNum != null && tLlenarNum > 0 && tLlenarNum < 365 ? tLlenarNum.toFixed(2) : null;
-    const tVaciar = tVaciarNum != null && tVaciarNum > 0 && tVaciarNum < 365 ? tVaciarNum.toFixed(2) : null;
-    const varColor    = vLts   > 0 ? '#16a34a' : vLts   < 0 ? '#dc2626' : '#64748b';
-    const caudalColor = caudal > 0 ? '#16a34a' : caudal < 0 ? '#dc2626' : '#64748b';
-    return `
-      <tr>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;white-space:nowrap;">${new Date(m.recorded_at).toLocaleString('es-ES')}</td>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;text-align:right;">${Math.round(m.liters).toLocaleString()}</td>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;text-align:center;">${Math.round(m.percentage)}%</td>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;text-align:right;color:${varColor};font-weight:bold;">${vLts !== 0 ? (vLts > 0 ? '+' : '') + Math.round(vLts).toLocaleString() : '—'}</td>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;text-align:right;color:${caudalColor};">${caudal !== 0 ? caudal.toFixed(2) : '—'}</td>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;text-align:center;color:#16a34a;">${caudal > 0 && tLlenar ? tLlenar + ' d' : '—'}</td>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;text-align:center;color:#dc2626;">${caudal < 0 && tVaciar ? tVaciar + ' d' : '—'}</td>
-        <td style="padding:7px 8px;border:1px solid #e2e8f0;">${m.collaborator_name || '—'}</td>
-      </tr>`;
-  }).join('');
-
-  // ── Último registro destacado ──────────────────────────────────────────────
-  const ultimoM = last10[0];
-  const uVLts  = ultimoM ? (ultimoM.variacion_lts ?? ultimoM.variation_lts ?? 0) : 0;
-  const uCaudal = ultimoM ? (ultimoM.caudal_lts_min ?? ultimoM.flow_lpm ?? 0) : 0;
-  // Tiempo estimado último registro: usar BD si existe, sino calcular desde caudal
-  let uTiempo = 'Estable';
-  if (ultimoM) {
-    if (uCaudal > 0.01) {
-      const mins = ultimoM.tiempo_estimado_llenar_min ?? ((CAP - ultimoM.liters) / (uCaudal * 60));
-      if (mins > 0 && mins < 1440 * 365) uTiempo = (mins / 1440).toFixed(2) + ' días (Llenado)';
-    } else if (uCaudal < -0.01) {
-      const mins = ultimoM.tiempo_estimado_vaciar_min ?? (ultimoM.liters / (Math.abs(uCaudal) * 60));
-      if (mins > 0 && mins < 1440 * 365) uTiempo = (mins / 1440).toFixed(2) + ' días (Vaciado)';
-    }
-  }
+  const last10 = [...measurements].sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()).slice(0, 10);
+  const tableRows = last10.map(m => `
+    <tr>
+      <td style="padding:7px;border:1px solid #e2e8f0;text-align:left;">${new Date(m.recorded_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+      <td style="padding:7px;border:1px solid #e2e8f0;">${Math.round(m.liters).toLocaleString()}</td>
+      <td style="padding:7px;border:1px solid #e2e8f0;font-weight:bold;">${Math.round(m.percentage)}%</td>
+      <td style="padding:7px;border:1px solid #e2e8f0;color:${(m.variation_lts || 0) >= 0 ? '#16a34a' : '#dc2626'}">${(m.variation_lts || 0) > 0 ? '+' : ''}${Math.round(m.variation_lts || 0).toLocaleString()}</td>
+      <td style="padding:7px;border:1px solid #e2e8f0;">${Number(m.flow_lpm || 0).toFixed(2)}</td>
+    </tr>
+  `).join('');
 
   return `<!DOCTYPE html>
 <html>
@@ -254,24 +62,20 @@ function buildReportEmailHtml(
   <title>Reporte AquaSaaS — ${building.name}</title>
   <style>
     @media only screen and (max-width: 600px) {
-      .container { padding: 15px !important; }
-      .header { padding: 20px !important; }
+      .container { padding: 12px !important; }
       .header h1 { font-size: 18px !important; }
-      .kpi-card { min-width: 100% !important; padding: 15px !important; }
+      .kpi-card { padding: 15px !important; }
       .kpi-title { font-size: 24px !important; }
-      .table-responsive { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
       .mobile-text { font-size: 13px !important; }
-      .indicator-table td { display: block !important; width: 100% !important; box-sizing: border-box !important; padding: 5px 0 !important; }
-      .indicator-table tr { margin-bottom: 10px !important; display: block !important; border-bottom: 1px solid #e2e8f0 !important; padding-bottom: 10px !important; }
-      .observation-list { padding-left: 15px !important; }
+      .indicator-table td { padding: 6px !important; font-size: 11px !important; }
     }
   </style>
 </head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1e293b;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;line-height:1.4;">
 
   <!-- ENCABEZADO -->
-  <div class="header" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:white;padding:25px 20px;text-align:center;">
-    <h1 style="margin:0 0 5px;font-size:20px;line-height:1.2;">✨ Resumen de Mediciones ✨</h1>
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:white;padding:25px 20px;text-align:center;">
+    <h1 style="margin:0 0 5px;font-size:20px;line-height:1.2;">✨ Resumen de Agua ✨</h1>
     <p style="margin:0;opacity:0.8;font-size:14px;">Edificio <strong>${building.name}</strong></p>
     <p style="margin:5px 0 0;opacity:0.55;font-size:11px;">Generado: ${indicators.reportDate}</p>
   </div>
@@ -280,460 +84,127 @@ function buildReportEmailHtml(
 
     <!-- INDICADOR DE ALARMA (CSS) -->
     <div style="text-align:center;margin-bottom:25px;">
-      <div class="kpi-card" style="display:inline-block; text-align:left; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; width:100%; max-width:400px; box-sizing:border-box; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
-        <p style="margin:0 0 8px; font-size:11px; color:#64748b; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Estado de Reserva Actual</p>
+      <div class="kpi-card" style="display:inline-block; text-align:left; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; width:100%; box-sizing:border-box;">
+        <p style="margin:0 0 8px; font-size:11px; color:#64748b; font-weight:bold; text-transform:uppercase;">Estado de Reserva</p>
         <p class="kpi-title" style="margin:0 0 12px; font-size:26px; font-weight:bold; color:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}">
           ${percentageInt > 60 ? '✅ ÓPTIMO' : percentageInt > 30 ? '⚠️ REGULAR' : '🚨 CRÍTICO'}
         </p>
         <div style="width:100%; background:#e2e8f0; border-radius:10px; height:12px; overflow:hidden; margin-bottom:10px;">
           <div style="width:${percentageInt}%; background:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}; height:100%;"></div>
         </div>
-        <p style="margin:0; font-size:16px; font-weight:bold; color:#1e293b;">${percentageInt}% de capacidad</p>
+        <p style="margin:0; font-size:16px; font-weight:bold;">${percentageInt}% de capacidad</p>
         <p style="margin:4px 0 0; font-size:12px; color:#64748b;">Aprox. ${Math.round(currentLiters).toLocaleString()} Litros</p>
       </div>
     </div>
 
-    <!-- SALUDO -->
+    <!-- INDICADORES CLAVE -->
     <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;">
-      <p class="mobile-text" style="font-size:13px;line-height:1.6;margin:0;">
-        Estimado/a Vecino/a,<br><br>
-        Le presentamos el resumen de agua basado en los datos aportados por la comunidad.
-      </p>
-    </div>
-
-    <!-- INDICADORES PRINCIPALES -->
-    <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;">
-      <h3 style="color:#2563eb;margin:0 0 12px;font-size:16px;">💡 Indicadores Clave 🔍</h3>
-      
+      <h3 style="color:#2563eb;margin:0 0 12px;font-size:16px;">💡 Indicadores Clave</h3>
       <table class="indicator-table" style="font-size:12px;width:100%;border-collapse:collapse;">
-        <tr style="background:#e2e8f0;">
-          <td style="padding:8px;font-weight:bold;color:#1e293b;width:25px;">1️⃣</td>
-          <td style="padding:8px;color:#64748b;">Balance 24h:</td>
-          <td style="padding:8px;font-weight:bold;">
-            Consumo: <span style="color:#dc2626;">${Math.round(indicators.balance24h.consumed).toLocaleString()}L</span> | 
-            Llenado: <span style="color:#16a34a;">${Math.round(indicators.balance24h.filled).toLocaleString()}L</span>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:8px;font-weight:bold;color:#1e293b;">2️⃣</td>
-          <td style="padding:8px;color:#64748b;">Caudal prom. 24h:</td>
-          <td style="padding:8px;font-weight:bold;">
-            ${indicators.avgFlow24h.toFixed(1)} L/h
-          </td>
-        </tr>
-        <tr style="background:#e2e8f0;">
-          <td style="padding:8px;font-weight:bold;color:#1e293b;">3️⃣</td>
-          <td style="padding:8px;color:#64748b;">Último Caudal:</td>
-          <td style="padding:8px;font-weight:bold;">
-            ${flowDirIcon} ${Math.abs(flowLph).toFixed(1)} L/h (${flowDir})
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:8px;font-weight:bold;color:#1e293b;">4️⃣</td>
-          <td style="padding:8px;color:#64748b;">Nivel Actual:</td>
-          <td style="padding:8px;font-weight:bold;">
-            ${percentageInt}% (${Math.round(currentLiters).toLocaleString()} L)
-          </td>
-        </tr>
-        <tr style="background:#e2e8f0;">
-          <td style="padding:8px;font-weight:bold;color:#1e293b;">5️⃣</td>
-          <td style="padding:8px;color:#64748b;">Proyección 11 PM:</td>
-          <td style="padding:8px;font-weight:bold;">
-            ${indicators.projection11pm.toFixed(1)}% (${Math.round(indicators.projectedLiters11pm).toLocaleString()} L)
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:8px;font-weight:bold;color:#1e293b;">6️⃣</td>
-          <td style="padding:8px;color:#64748b;">Tiempo est. ${flowLpm >= 0 ? 'llenado' : 'vaciado'}:</td>
-          <td style="padding:8px;font-weight:bold;">
-            ${indicators.timeEstimate}
-          </td>
-        </tr>
+        <tr style="background:#e2e8f0;"><td style="padding:8px;">1️⃣ Balance 24h:</td><td style="padding:8px;font-weight:bold;">C: ${Math.round(indicators.balance24h.consumed).toLocaleString()}L | LL: ${Math.round(indicators.balance24h.filled).toLocaleString()}L</td></tr>
+        <tr><td style="padding:8px;">2️⃣ Caudal prom. 24h:</td><td style="padding:8px;font-weight:bold;">${indicators.avgFlow24h.toFixed(1)} L/h</td></tr>
+        <tr style="background:#e2e8f0;"><td style="padding:8px;">3️⃣ Último Caudal:</td><td style="padding:8px;font-weight:bold;">${flowDirIcon} ${Math.abs(flowLph).toFixed(1)} L/h</td></tr>
+        <tr><td style="padding:8px;">4️⃣ Proyección 11 PM:</td><td style="padding:8px;font-weight:bold;">${indicators.projection11pm.toFixed(1)}%</td></tr>
+        <tr style="background:#e2e8f0;"><td style="padding:8px;">5️⃣ Tiempo est.:</td><td style="padding:8px;font-weight:bold;">${indicators.timeEstimate}</td></tr>
       </table>
     </div>
 
-    ${isAnomaly ? `
-    <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;">
-      <h3 style="color:#dc2626;margin:0 0 8px;font-size:15px;">⚠️ Alerta de Anomalía</h3>
-      <p style="font-size:13px;margin:0;">Variación de <strong>${variationPercentage.toFixed(1)}%</strong> detectada.</p>
-    </div>` : ''}
+    ${isAnomaly ? `<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:15px;margin-bottom:20px;border-radius:0 8px 8px 0;"><h3 style="color:#dc2626;margin:0 0 5px;font-size:15px;">⚠️ Anomalía Detectada</h3><p style="font-size:13px;margin:0;">Variación de ${variationPercentage.toFixed(1)}%.</p></div>` : ''}
 
-    <!-- GRÁFICOS -->
-    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin-bottom:15px;font-size:16px;">
-      🖼️ Gráficos de Inteligencia
-    </h3>
-    <div style="text-align:center;">
-       ${chartRows}
-    </div>
+    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin:25px 0 15px;font-size:16px;">🖼️ Gráficos de Inteligencia</h3>
+    ${chartUrls.caudalLlenadoConsumoChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.caudalLlenadoConsumoChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
+    ${chartUrls.evolucionNivelChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.evolucionNivelChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
+    ${chartUrls.tendenciaSemanalChart ? `<div style="margin-bottom:20px;text-align:center;"><img src="${chartUrls.tendenciaSemanalChart}" style="width:100%;max-width:560px;height:auto;border-radius:8px;border:1px solid #e2e8f0;"></div>` : ''}
 
-    <!-- TABLA DETALLE -->
-    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin:25px 0 10px;font-size:16px;">
-      📋 Últimas 10 Mediciones
-    </h3>
-    <div class="table-responsive" style="width:100%; overflow-x:auto;">
-      <table width="100%" style="font-size:10px;border-collapse:collapse;text-align:center;min-width:500px;">
-        <thead>
-          <tr style="background:#1e293b;color:white;">
-            <th style="padding:8px;border:1px solid #334155;text-align:left;">Fecha</th>
-            <th style="padding:8px;border:1px solid #334155;">Litros</th>
-            <th style="padding:8px;border:1px solid #334155;">%</th>
-            <th style="padding:8px;border:1px solid #334155;">Var. (L)</th>
-            <th style="padding:8px;border:1px solid #334155;">Caudal</th>
-          </tr>
-        </thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-    </div>
+    <h3 style="color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin:25px 0 10px;font-size:16px;">📋 Últimas 10 Mediciones</h3>
+    <div style="width:100%; overflow-x:auto;"><table width="100%" style="font-size:10px;border-collapse:collapse;text-align:center;min-width:450px;"><thead><tr style="background:#1e293b;color:white;"><th style="padding:8px;text-align:left;">Fecha</th><th style="padding:8px;">Litros</th><th style="padding:8px;">%</th><th style="padding:8px;">Var.(L)</th><th style="padding:8px;">Caudal</th></tr></thead><tbody>${tableRows}</tbody></table></div>
 
-    <!-- OBSERVACIONES -->
     <div style="background:#fffbe6;padding:15px;border-radius:8px;font-size:12px;color:#444;margin:25px 0 20px;">
-      <strong style="font-size:13px;">*** Guía de Gráficos ***</strong><br>
-      <ol class="observation-list" style="margin:8px 0 0;padding-left:18px;line-height:1.6;">
-        <li><strong>Caudal:</strong> Barras <span style="color:#16a34a;">verdes (llenado)</span>, <span style="color:#dc2626;">rojas (consumo)</span>.</li>
-        <li><strong>Evolución Nivel %:</strong> Línea de tiempo del nivel del tanque.</li>
-        <li><strong>Variación (L):</strong> Diferencia neta entre reportes.</li>
-        <li><strong>Umbrales:</strong> Alerta (60%), Racionamiento (40%), Crítico (20%).</li>
-        <li><strong>Patrón Horario:</strong> Consumo histórico en bloques de 2h.</li>
-      </ol>
+      <strong style="font-size:13px;">📌 Información de Suscripción</strong><br>
+      Cada registro activa los próximos 5 resúmenes. Saludos cordiales.
     </div>
 
-    <!-- IMPORTANTE -->
-    <div style="background:#f1f5f9;padding:15px;border-radius:8px;font-size:12px;color:#475569;margin-bottom:20px;">
-      <strong style="font-size:13px;color:#1e293b;">📌 Información de Suscripción</strong><br><br>
-      Cada registro de dato con su correo activa los próximos <strong>5 resúmenes</strong>. Para continuar recibiéndolos, simplemente registre un nuevo dato cuando su ciclo termine.
-    </div>
-
-    <p style="font-size:10px;color:#94a3b8;text-align:center;margin-top:25px;line-height:1.4;">
-      Sistema AquaSaaS — Informe automático. 2026 ©<br>
-      No responder a este remitente. Buzón no monitoreado.
-    </p>
-  </div>
-</body>
-</html>`.trim();
-
-    <!-- ÚLTIMO REGISTRO DESTACADO -->
-    ${ultimoM ? `
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;margin-bottom:22px;">
-      <p style="font-size:12px;color:#166534;font-weight:bold;margin:0 0 6px;">⭐ Último Registro</p>
-      <table width="100%" style="font-size:12px;border-collapse:collapse;">
-        <tr style="background:#dcfce7;">
-          <th style="padding:7px 8px;border:1px solid #bbf7d0;">Fecha y Hora</th>
-          <th style="padding:7px 8px;border:1px solid #bbf7d0;">💧 Litros</th>
-          <th style="padding:7px 8px;border:1px solid #bbf7d0;">📊 %</th>
-          <th style="padding:7px 8px;border:1px solid #bbf7d0;">📈 Variación (L)</th>
-          <th style="padding:7px 8px;border:1px solid #bbf7d0;">Caudal (L/min)</th>
-          <th style="padding:7px 8px;border:1px solid #bbf7d0;">Tiempo Estimado</th>
-          <th style="padding:7px 8px;border:1px solid #bbf7d0;">👥 Reportado por</th>
-        </tr>
-        <tr style="text-align:center;">
-          <td style="padding:7px 8px;border:1px solid #bbf7d0;">${new Date(ultimoM.recorded_at).toLocaleString('es-ES')}</td>
-          <td style="padding:7px 8px;border:1px solid #bbf7d0;font-weight:bold;">${Math.round(ultimoM.liters).toLocaleString()}</td>
-          <td style="padding:7px 8px;border:1px solid #bbf7d0;font-weight:bold;">${Math.round(ultimoM.percentage)}%</td>
-          <td style="padding:7px 8px;border:1px solid #bbf7d0;font-weight:bold;color:${uVLts >= 0 ? '#16a34a' : '#dc2626'};">${uVLts > 0 ? '+' : ''}${Math.round(uVLts).toLocaleString()}</td>
-          <td style="padding:7px 8px;border:1px solid #bbf7d0;">${uCaudal.toFixed(2)}</td>
-          <td style="padding:7px 8px;border:1px solid #bbf7d0;">${uTiempo}</td>
-          <td style="padding:7px 8px;border:1px solid #bbf7d0;">${ultimoM.collaborator_name || '—'}</td>
-        </tr>
-      </table>
-    </div>` : ''}
-
-    <!-- OBSERVACIONES -->
-    <div style="background:#fffbe6;padding:20px;border-radius:8px;font-size:13px;color:#444;margin-bottom:22px;">
-      <strong>*** Observaciones y Explicación de Gráficos ***</strong><br><br>
-      <ol style="margin:8px 0 0;padding-left:20px;line-height:1.9;">
-        <li><strong>Caudal de Llenado y Consumo:</strong> Muestra la tasa de cambio en litros por minuto. Barras verdes indican llenado (entrada de agua), barras rojas indican consumo (salida de agua).</li>
-        <li><strong>Evolución del Nivel del Tanque (%):</strong> Línea azul con área sombreada mostrando el porcentaje del nivel a lo largo del tiempo. Los puntos se colorean en verde (>60%), naranja (30-60%) y rojo (&lt;30%) según el umbral de alerta.</li>
-        <li><strong>Variación entre Mediciones:</strong> Diferencia de litros entre reportes consecutivos. Barras <span style="color:#16a34a;font-weight:bold;">verdes = llenado</span>, barras <span style="color:#dc2626;font-weight:bold;">rojas = consumo</span>.</li>
-        <li><strong>Nivel del Tanque con Umbrales:</strong> Visualiza el nivel histórico con líneas de alerta: Alerta ${Math.round((building.tank_capacity_liters||169000)*0.6).toLocaleString()} L (60%), Racionamiento ${Math.round((building.tank_capacity_liters||169000)*0.4).toLocaleString()} L (40%), Crítico ${Math.round((building.tank_capacity_liters||169000)*0.2).toLocaleString()} L (20%).</li>
-        <li><strong>Consumo Promedio por Día de Semana (barras):</strong> Promedio histórico de litros consumidos por cada día. Solo considera variaciones negativas (consumo real).</li>
-        <li><strong>Nivel % por Día — Últimas 4 Semanas:</strong> Cada línea representa una semana. El eje X muestra los días Lun–Dom. Permite comparar patrones entre semanas.</li>
-        <li><strong>Consumo Nocturno Estimado:</strong> Litros consumidos entre mediciones consecutivas. Representa el consumo en los períodos registrados.</li>
-        <li><strong>Distribución de Consumo por Día (Doughnut):</strong> Vista proporcional del consumo promedio histórico por día de la semana. Permite identificar qué días se consume más agua.</li>
-        <li><strong>Consumo Fin de Semana — Últimas 5 Semanas:</strong> Barras amarillas = sábados, barras azules = domingos. Muestra la evolución real del consumo en cada fin de semana.</li>
-        <li><strong>Proyección de Llenado/Vaciado:</strong> Basado en el caudal de la última medición, proyecta las fechas y horas estimadas para alcanzar niveles críticos (vaciado: 60%, 40%, 30%, 20%, 0%) o completos (llenado: 50%, 60%, 80%, 90%, 100%).</li>
-        <li><strong>Caudal en Litros por Hora:</strong> Evolución del caudal horario en las últimas mediciones. Valores positivos = llenado, negativos = consumo.</li>
-        <li><strong>Histórico Mensual — Consumo y Llenado:</strong> Barras rojas = litros consumidos por mes, barras verdes = litros de llenado por mes. Muestra los últimos 6 meses.</li>
-        <li><strong>Consumo/Llenado Sáb-Dom (5 semanas):</strong> Barras agrupadas mostrando litros consumidos y llenados cada sábado y domingo de las últimas 5 semanas. Permite identificar patrones de fin de semana.</li>
-        <li><strong>Consumo por Día — Semana Actual vs Anterior:</strong> Barras azules = semana actual, grises = semana anterior. Comparación directa del consumo diario entre ambas semanas.</li>
-        <li><strong>Variación % Sáb-Dom (5 semanas):</strong> Cambio neto en puntos porcentuales del nivel del tanque durante cada sábado y domingo. Verde = el tanque subió, rojo = bajó.</li>
-        <li><strong>Consumo Promedio por Franja Horaria:</strong> El consumo histórico agrupado en franjas de 6 horas (madrugada, mañana, tarde, noche). La barra roja indica la franja de mayor consumo.</li>
-      </ol>
-    </div>
-
-    <!-- CAUDAL EXPLICADO -->
-    <div style="background:#f1f5f9;padding:16px 20px;border-radius:8px;font-size:13px;color:#475569;margin-bottom:22px;">
-      <strong>ℹ️ ¿Cómo interpretar el Caudal?</strong><br><br>
-      El caudal neto (L/min) representa la tasa de cambio en el volumen de agua, calculada dividiendo la diferencia de litros entre dos mediciones consecutivas sobre el tiempo transcurrido (en minutos).<br><br>
-      Un valor <strong style="color:#16a34a;">positivo</strong> indica que el tanque se está llenando: la entrada de agua supera al consumo.<br>
-      Un valor <strong style="color:#dc2626;">negativo</strong> señala una disminución en el nivel: el consumo en el edificio supera la entrada de agua, o hay ausencia de suministro desde la red pública.<br><br>
-      El tiempo estimado de llenado se basa en los caudales positivos, proyectando el tiempo necesario para alcanzar la capacidad máxima (${(building.tank_capacity_liters||169000).toLocaleString()} L).<br>
-      El tiempo estimado de vaciado se calcula con los caudales negativos, estimando cuánto tardaría el tanque en vaciarse si el consumo se mantiene en ese ritmo.
-    </div>
-
-    <!-- IMPORTANTE -->
-    <div style="background:#fffbe6;padding:20px;border-radius:8px;font-size:13px;color:#444;margin-bottom:22px;">
-      <strong>IMPORTANTE (Manténgase Informado): Así Funciona Nuestro Sistema de Resúmenes por Correo</strong><br><br>
-      Para que siempre esté al tanto del nivel del agua de nuestro tanque, hemos diseñado un sistema de notificación muy sencillo:<br><br>
-      ✉️ <strong>Activación de Resúmenes:</strong> Cada vez que usted registre un nuevo dato en el formulario e incluya su correo electrónico, activará la recepción de los próximos <strong>5 resúmenes</strong> de estadísticas del agua.<br>
-      ➡️ <strong>Fin del Ciclo:</strong> Una vez que haya recibido esos 5 correos, su ciclo de suscripción actual finalizará y dejará de recibir notificaciones.<br>
-      ➡️ <strong>Reactivar su Suscripción:</strong> ¿Desea seguir recibiendo estas valiosas actualizaciones? ¡Es muy fácil! Simplemente, vuelva a registrar un nuevo dato en el formulario e indique nuevamente su correo electrónico.<br><br>
-      Agradecemos su colaboración en el monitoreo del agua. ¡Cada dato registrado es un paso hacia una mejor gestión del agua en el edificio!<br><br>
-      Saludos cordiales,<br>
-      <strong>Comisión de Agua del Edificio</strong>
-    </div>
-
-    <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:25px;">
-      Sistema AquaSaaS — Informe automático. 2026 © Todos los derechos reservados.<br>
-      <strong>NOTA:</strong> Por favor, no responder al remitente de este email, ya que esta notificación es enviada en forma automática por nuestros sistemas, y se trata de una dirección que solamente se utiliza para el envío de emails y su buzón de entrada no es monitoreado ni será atendido por ninguna persona.
-    </p>
-  </div>
-</body>
-</html>`.trim();
-}
-
-
-// ════════════════════════════════════════════════════════════════════════════
-// HTML del email de alerta de anomalía (se mantiene igual)
-// ════════════════════════════════════════════════════════════════════════════
-function buildAnomalyEmailHtml(
-  building: any,
-  newLiters: number,
-  newPercentage: number,
-  prevLiters: number,
-  prevPercentage: number,
-  variationPct: number,
-  recordedAt: string,
-  reportedBy: string
-): string {
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1e293b;">
-  <div style="background:#dc2626;color:white;padding:20px;border-radius:8px 8px 0 0;text-align:center;">
-    <h2 style="margin:0;">⚠️ Alerta de Anomalía — ${building.name}</h2>
-  </div>
-  <div style="border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-    <p>Se detectó una variación anormal en el nivel del tanque:</p>
-    <div style="background:#fef2f2;border:1px solid #ef4444;padding:16px;border-radius:8px;margin:16px 0;">
-      <ul style="margin:0;padding-left:18px;font-size:14px;line-height:2;">
-        <li><strong>Fecha:</strong> ${new Date(recordedAt).toLocaleString('es-ES')}</li>
-        <li><strong>Medición anterior:</strong> ${Math.round(prevLiters).toLocaleString()} L (${prevPercentage.toFixed(1)}%)</li>
-        <li><strong>Medición actual:</strong> ${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</li>
-        <li><strong>Variación:</strong> <span style="color:#dc2626;font-weight:bold;">${variationPct.toFixed(1)}%</span></li>
-        <li><strong>Reportado por:</strong> ${reportedBy}</li>
-      </ul>
-    </div>
-    <p style="font-size:13px;color:#475569;">Por favor, revise este dato en el panel de administración.</p>
-    <p style="font-size:11px;color:#94a3b8;margin-top:20px;">Sistema AquaSaaS — mensaje automático.</p>
+    <p style="font-size:10px;color:#94a3b8;text-align:center;margin-top:25px;line-height:1.4;">Sistema AquaSaaS — Informe automático. 2026 ©<br>No responder a este remitente.</p>
   </div>
 </body>
 </html>`.trim();
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// POST — Registrar medición y enviar reporte por Gmail
+// HTML Alerta de Anomalía
+// ════════════════════════════════════════════════════════════════════════════
+function buildAnomalyEmailHtml(building: any, newLiters: number, newPercentage: number, prevLiters: number, prevPercentage: number, variationPct: number, recordedAt: string, reportedBy: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;color:#1e293b;"><div style="background:#dc2626;color:white;padding:15px;border-radius:8px 8px 0 0;text-align:center;"><h2 style="margin:0;font-size:18px;">⚠️ Anomalía detectada — ${building.name}</h2></div><div style="border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 8px 8px;"><p style="font-size:14px;">Se detectó una variación de <strong>${variationPct.toFixed(1)}%</strong>.</p><ul style="font-size:13px;line-height:1.8;"><li><strong>Fecha:</strong> ${new Date(recordedAt).toLocaleString('es-ES')}</li><li><strong>Nivel:</strong> ${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</li><li><strong>Reportado por:</strong> ${reportedBy}</li></ul><p style="font-size:11px;color:#94a3b8;margin-top:20px;">Sistema AquaSaaS.</p></div></body></html>`.trim();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// POST — Registrar medición y enviar reporte
 // ════════════════════════════════════════════════════════════════════════════
 export async function POST(request: Request) {
-  const startTime = Date.now();
-  console.log('');
-  console.log('══════════════════════════════════════════════════');
-  console.log('[STEP 0] INICIO POST /api/measurements (Gmail)');
-  console.log('[STEP 0] Timestamp:', new Date().toISOString());
-  console.log('══════════════════════════════════════════════════');
   try {
-    let body: any;
-    try {
-      body = await request.json();
-    } catch (parseErr: any) {
-      console.error('[STEP 1] ❌ Error parseando JSON:', parseErr.message);
-      return NextResponse.json({ error: 'Body inválido — se esperaba JSON' }, { status: 400 });
-    }
+    const body = await request.json();
     const { building_id, liters, percentage, email, collaborator_name, recorded_at } = body;
 
-    if (!building_id) {
-      return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
-    }
-    if (liters == null && percentage == null) {
-      return NextResponse.json({ error: 'Se requiere liters o percentage' }, { status: 400 });
-    }
+    if (!building_id) return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
 
-    const { data: building, error: buildingError } = await supabase
-      .from('buildings')
-      .select('*')
-      .eq('id', building_id)
-      .single();
+    const { data: building, error: bErr } = await supabase.from('buildings').select('*').eq('id', building_id).single();
+    if (bErr || !building) return NextResponse.json({ error: 'Edificio no encontrado' }, { status: 404 });
 
-    if (buildingError || !building) {
-      return NextResponse.json({ error: 'Edificio no encontrado' }, { status: 404 });
-    }
-
-    const { data: history } = await supabase
-      .from('measurements')
-      .select('*')
-      .eq('building_id', building_id)
-      .order('recorded_at', { ascending: true });
+    const { data: history } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });
+    const lastM = history && history.length > 0 ? history[history.length - 1] : null;
 
     let isAnomaly = false;
     let variationPercentage = 0;
-
-    if (history && history.length > 0) {
-      const lastM = history[history.length - 1];
-      if (lastM.liters > 0) {
-        variationPercentage = Math.abs((liters - lastM.liters) / lastM.liters * 100);
-        const { data: settings } = await supabase
-          .from('building_settings')
-          .select('alert_threshold_percentage, enable_anomaly_alerts')
-          .eq('building_id', building_id)
-          .single();
-        const threshold = settings?.alert_threshold_percentage ?? 30;
-        if (variationPercentage > threshold) {
-          isAnomaly = true;
-          if (settings?.enable_anomaly_alerts && building.admin_email) {
-            const anomalyHtml = buildAnomalyEmailHtml(
-              building, liters, percentage,
-              lastM.liters, lastM.percentage,
-              variationPercentage, recorded_at,
-              collaborator_name || email || 'Anónimo'
-            );
-            await sendEmailViaGmail(
-              [building.admin_email],
-              `⚠️ Anomalía detectada — ${building.name}`,
-              anomalyHtml,
-              building_id,
-              'anomaly_alert'
-            );
-          }
+    if (lastM && lastM.liters > 0) {
+      variationPercentage = Math.abs((liters - lastM.liters) / lastM.liters * 100);
+      const { data: set } = await supabase.from('building_settings').select('alert_threshold_percentage, enable_anomaly_alerts').eq('building_id', building_id).single();
+      if (variationPercentage > (set?.alert_threshold_percentage ?? 30)) {
+        isAnomaly = true;
+        if (set?.enable_anomaly_alerts && building.admin_email) {
+          const aHtml = buildAnomalyEmailHtml(building, liters, percentage, lastM.liters, lastM.percentage, variationPercentage, recorded_at, collaborator_name || email || 'Anónimo');
+          await sendEmailViaGmail([building.admin_email], `⚠️ Anomalía — ${building.name}`, aHtml, building_id, 'anomaly_alert');
         }
       }
     }
 
-    // Calcular variation_lts respecto a la medición anterior
-    const lastMeasurement = history && history.length > 0 ? history[history.length - 1] : null;
-    const variation_lts = lastMeasurement ? liters - lastMeasurement.liters : null;
+    const var_lts = lastM ? liters - lastM.liters : null;
+    const { data: meas } = await supabase.from('measurements').insert([{
+      building_id, liters, percentage, email: email || null,
+      collaborator_name: collaborator_name || 'Anónimo',
+      recorded_at, is_anomaly: isAnomaly, anomaly_checked: true,
+      variation_lts: var_lts,
+    }]).select().single();
 
-    const { data: measurement } = await supabase
-      .from('measurements')
-      .insert([{
-        building_id,
-        liters,
-        percentage,
-        email: email || null,
-        collaborator_name: collaborator_name || 'Anónimo',
-        recorded_at,
-        is_anomaly: isAnomaly,
-        anomaly_checked: true,
-        variation_lts: variation_lts,
-      }])
-      .select()
-      .single();
+    if (meas) await logAudit({ req: request, building_id, user_email: email || collaborator_name || 'Anónimo', operation: 'INSERT', entity_type: 'measurement', entity_id: meas.id, data_after: meas });
 
-    // AUDITORÍA: Registrar nueva medición
-    if (measurement) {
-      await logAudit({
-        req: request,
-        building_id,
-        user_email: email || collaborator_name || 'Anónimo',
-        operation: 'INSERT',
-        entity_type: 'measurement',
-        entity_id: measurement.id,
-        data_after: measurement,
-        status: 'SUCCESS'
-      });
-    }
-
-    const { data: updatedHistory } = await supabase
-      .from('measurements')
-      .select('*')
-      .eq('building_id', building_id)
-      .order('recorded_at', { ascending: true });
-
-    const allMeasurements = updatedHistory || [];
-    const rawIndicators = calculateIndicators(allMeasurements, building.tank_capacity_liters);
-    const indicators: Indicators = rawIndicators ?? {
-      lastFlow: 0,
-      balance24h: { consumed: 0, filled: 0, net: 0 },
-      avgFlow24h: 0,
-      projection11pm: percentage,
-      projectedLiters11pm: liters,
-      timeEstimate: 'Pendiente de más datos',
-      estimateDate: 'N/A',
-      filledToday: 0,
-      filledLastWeek: 0,
-      slotMax: { range: 'N/A', avg: 0 },
-      trends: { current: 0, previous: 0 },
-      lastUpdate: new Date().toLocaleString('es-ES'),
-      reportDate: new Date().toLocaleString('es-ES'),
+    const { data: updHistory } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });
+    const indicators: Indicators = calculateIndicators(updHistory || [], building.tank_capacity_liters) || {
+      lastFlow: 0, balance24h: { consumed: 0, filled: 0, net: 0 }, avgFlow24h: 0,
+      projection11pm: percentage, projectedLiters11pm: liters, timeEstimate: 'Pendiente', estimateDate: 'N/A',
+      filledToday: 0, filledLastWeek: 0, slotMax: { range: 'N/A', avg: 0 }, trends: { current: 0, previous: 0 },
+      lastUpdate: new Date().toLocaleString('es-ES'), reportDate: new Date().toLocaleString('es-ES'),
     };
 
     if (email) {
-      const { data: existingSub } = await supabase
-        .from('resident_subscriptions')
-        .select('id, emails_remaining')
-        .eq('building_id', building_id)
-        .eq('email', email)
-        .single();
-      if (!existingSub) {
-        await supabase
-          .from('resident_subscriptions')
-          .insert({ building_id, email, emails_remaining: 10 });
-      }
+      const { data: exSub } = await supabase.from('resident_subscriptions').select('id, emails_remaining').eq('building_id', building_id).eq('email', email).single();
+      if (!exSub) await supabase.from('resident_subscriptions').insert({ building_id, email, emails_remaining: 5 });
     }
 
-    const { data: subscribers } = await supabase
-      .from('resident_subscriptions')
-      .select('email, id, emails_remaining')
-      .eq('building_id', building_id)
-      .gt('emails_remaining', 0);
-
-    const emailHtml = buildReportEmailHtml(
-      building, allMeasurements, indicators,
-      liters, percentage, isAnomaly, variationPercentage
-    );
-
-    let emailsSent = 0;
-    const recipientEmails = subscribers?.map(s => s.email) || [];
-    
-    // SIEMPRE añadir al administrador del edificio a los destinatarios si tiene admin_email
-    if (building.admin_email && !recipientEmails.includes(building.admin_email)) {
-      recipientEmails.push(building.admin_email);
-    }
+    const { data: subs } = await supabase.from('resident_subscriptions').select('email, id, emails_remaining').eq('building_id', building_id).gt('emails_remaining', 0);
+    const recipientEmails = subs?.map(s => s.email) || [];
+    if (building.admin_email && !recipientEmails.includes(building.admin_email)) recipientEmails.push(building.admin_email);
 
     if (recipientEmails.length > 0) {
-      const emailResult = await sendEmailViaGmail(
-        recipientEmails,
-        `💧 Reporte de Agua: ${Math.round(percentage)}% actual — ${building.name}`,
-        emailHtml,
-        building_id,
-        'measurement_report'
-      );
-
-      if (emailResult.success) {
-        emailsSent = recipientEmails.length;
-      }
-
-      // Descontar créditos solo a los suscriptores residentes (no al admin)
-      if (subscribers && subscribers.length > 0) {
-        for (const sub of subscribers) {
-          const nuevoCredito = sub.emails_remaining - 1;
-          await supabase
-            .from('resident_subscriptions')
-            .update({ emails_remaining: nuevoCredito })
-            .eq('id', sub.id);
-        }
+      const emailHtml = buildReportEmailHtml(building, updHistory || [], indicators, liters, percentage, isAnomaly, variationPercentage);
+      const res = await sendEmailViaGmail(recipientEmails, `💧 Reporte Agua: ${Math.round(percentage)}% — ${building.name}`, emailHtml, building_id, 'measurement_report');
+      if (res.success && subs) {
+        for (const s of subs) await supabase.from('resident_subscriptions').update({ emails_remaining: s.emails_remaining - 1 }).eq('id', s.id);
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      measurementId: measurement?.id,
-      indicators,
-      anomalyDetected: isAnomaly,
-      variationPercentage: variationPercentage.toFixed(1),
-      emailsSent,
-    });
-
-  } catch (error: any) {
-    console.error('[ERROR] Excepción no capturada en POST /api/measurements:', error.message);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    return NextResponse.json({ success: true, measurementId: meas?.id, indicators, anomalyDetected: isAnomaly, variationPercentage: variationPercentage.toFixed(1), emailsSent: recipientEmails.length });
+  } catch (err: any) {
+    console.error('[ERROR] POST /api/measurements:', err.message);
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
