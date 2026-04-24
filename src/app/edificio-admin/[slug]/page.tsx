@@ -863,37 +863,48 @@ export default function EdificioAdminPage() {
 
   // ── Banner upload ──────────────────────────────────────────────────────────
   const uploadBanner = async (file: File) => {
-    if (!file) return;
-    if (demoBlock('⚠️ Modo Demo: no se puede subir banner en la cuenta de demostración.')) return;
+    if (!file || !building) return;
+    if (demoBlock('⚠️ Modo Demo: no se puede subir banner.')) return;
     if (file.size > 2 * 1024 * 1024) { setBannerMsg('❌ La imagen debe ser menor a 2MB'); return; }
-    if (!file.type.startsWith('image/')) { setBannerMsg('❌ Solo se permiten imágenes'); return; }
 
     setBannerUploading(true);
-    setBannerMsg('Subiendo imagen...');
+    setBannerMsg('📤 Subiendo imagen...');
 
     try {
-      const ext  = file.name.split('.').pop();
-      const fileName = `${building.id}.${ext}`;
-      const path = `banners/${fileName}`;
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const filePath = `banners/${building.id}.${extension}`;
       
+      // 1. Subida a Storage
       const { error: uploadError } = await supabase.storage
         .from('building-banners')
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(filePath, file, { upsert: true, contentType: file.type });
 
       if (uploadError) throw uploadError;
 
-      // Construcción manual de URL para evitar truncamiento
-      const publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${path}`;
+      // 2. Obtener URL Pública garantizada
+      const { data: urlData } = supabase.storage.from('building-banners').getPublicUrl(filePath);
+      let publicUrl = urlData?.publicUrl;
 
+      // Fallback manual si Supabase devuelve una URL incompleta o nula
+      if (!publicUrl || publicUrl.length < 50) {
+        publicUrl = `https://vhvynlhbgpittimyopue.supabase.co/storage/v1/object/public/building-banners/${filePath}`;
+      }
+
+      // 3. Guardar en Base de Datos
       const { error: updateError } = await supabase
-        .from('buildings').update({ banner_url: publicUrl }).eq('id', building.id);
+        .from('buildings')
+        .update({ banner_url: publicUrl })
+        .eq('id', building.id);
 
       if (updateError) throw updateError;
 
+      // 4. Actualizar Estado Local y Auditoría
       setBuilding({ ...building, banner_url: publicUrl });
       setBannerMsg('✅ Banner actualizado correctamente');
-      logClientAudit('UPDATE', 'banner', building.id, { url: publicUrl });
+      logClientAudit('UPDATE_BANNER', 'banner', building.id, { full_url: publicUrl });
+
     } catch (e: any) {
+      console.error('BANNER ERROR:', e);
       setBannerMsg('❌ Error: ' + e.message);
     } finally {
       setBannerUploading(false);
@@ -1062,12 +1073,12 @@ export default function EdificioAdminPage() {
       <div className="bg-slate-800/80 border-b border-slate-700 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto flex gap-1 px-4 overflow-x-auto scrollbar-hide">
           {([
-            { id: 'dashboard',     label: 'Dashboard',     Icon: BarChart3, color: 'blue' },
-            { id: 'junta',         label: 'Mi Junta',      Icon: Users,     color: 'purple' },
-            { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,  color: 'amber' },
+            { id: 'dashboard',     label: 'Dashboard',     Icon: BarChart3,     color: 'blue' },
+            { id: 'junta',         label: 'Mi Junta',      Icon: Users,        color: 'purple' },
+            { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,     color: 'amber' },
             { id: 'reportes',      label: 'Estadísticas y Reportes', Icon: FileText, color: 'green' },
-            { id: 'configuracion', label: 'Config.',       Icon: Settings,  color: 'cyan' },
             { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' },
+            { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' },
           ] as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-2 my-1.5 rounded-lg text-xs font-semibold transition-all ${
