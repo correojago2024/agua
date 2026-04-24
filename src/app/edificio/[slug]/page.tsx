@@ -161,28 +161,27 @@ export default function ResidentForm() {
         {/* Header del edificio — con banner personalizado si existe */}
         {building?.banner_url ? (
           <div className="relative overflow-hidden h-40 md:h-64 bg-slate-900">
-            <img
-              src={building.banner_url}
-              alt={`Banner ${building.name}`}
-              className="w-full h-full object-cover relative z-10"
-              style={{ display: 'block' }}
-              crossOrigin="anonymous"
-              onLoad={(e) => {
-                const img = e.target as HTMLImageElement;
-                img.style.opacity = '1';
-              }}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                if (!target.src.includes('retry=')) {
-                   target.src = `${building.banner_url}?retry=${Date.now()}`;
-                } else {
-                  target.style.display = 'none';
-                  if (target.parentElement) {
-                    target.parentElement.classList.add('bg-blue-600');
-                  }
-                }
-              }}
-            />
+             <img
+               src={building.banner_url}
+               alt={`Banner ${building.name}`}
+               className="w-full h-full object-cover relative z-10"
+               style={{ display: 'block' }}
+               onLoad={(e) => {
+                 const img = e.target as HTMLImageElement;
+                 img.style.opacity = '1';
+               }}
+               onError={(e) => {
+                 const target = e.target as HTMLImageElement;
+                 if (!target.src.includes('retry=')) {
+                    target.src = `${building.banner_url}?retry=${Date.now()}`;
+                 } else {
+                   target.style.display = 'none';
+                   if (target.parentElement) {
+                     target.parentElement.classList.add('bg-blue-600');
+                   }
+                 }
+               }}
+             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20" />
             <div className="absolute bottom-0 left-0 right-0 p-4 z-30">
               <div className="flex items-center gap-3">
