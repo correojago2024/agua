@@ -53,7 +53,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpi
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'bitacora';
+type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'alarmas_logs';
 
 // Helper: lee variation_lts o variacion_lts (ambos nombres posibles en BD)
 const getVariation = (m: Measurement): number =>
@@ -101,6 +101,7 @@ export default function EdificioAdminPage() {
   const [allSubscribers, setAllSubscribers] = useState<JuntaMember[]>([]);
   const [chartUrls, setChartUrls] = useState<any>(null);
   const [chartsLoading, setChartsLoading] = useState(true);
+  const [stats, setStats] = useState({ totalEmails: 0, measurementsToday: 0, activeUsers: 0 });
 
 
   // Report filters
@@ -121,6 +122,9 @@ export default function EdificioAdminPage() {
   const [cfgCapacity, setCfgCapacity] = useState('');
   const [cfgAdminEmail, setCfgAdminEmail] = useState('');
   const [cfgThreshold, setCfgThreshold]   = useState('30');
+  const [cfgSilenceStart, setCfgSilenceStart] = useState('22:00');
+  const [cfgSilenceEnd, setCfgSilenceEnd] = useState('06:00');
+  const [cfgEnableResidentNotifications, setCfgEnableResidentNotifications] = useState(true);
   const [cfgMsg, setCfgMsg]         = useState('');
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerMsg, setBannerMsg]   = useState('');
@@ -132,6 +136,11 @@ export default function EdificioAdminPage() {
   const [waThresholdRationing, setWaThresholdRationing] = useState(40);
   const [waThresholdCritical, setWaThresholdCritical] = useState(20);
   const [waJuntaPhones, setWaJuntaPhones] = useState('');
+  
+  // Daily Report Settings
+  const [waDailyReportEnabled, setWaDailyReportEnabled] = useState(false);
+  const [waDailyReportTime, setWaDailyReportTime] = useState('19:00');
+  const [waDailyReportDays, setWaDailyReportDays] = useState('1,2,3,4,5,6,0');
   
   // Credenciales específicas del edificio
   const [waInstanceId, setWaInstanceId] = useState('');
@@ -159,6 +168,8 @@ export default function EdificioAdminPage() {
   const [newMemberName, setNewMemberName]   = useState('');
   const [newMemberRole, setNewMemberRole]   = useState('Vocal');
   const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false);
+  const [newMemberEnableEmail, setNewMemberEnableEmail] = useState(true);
+  const [newMemberEnableWhatsapp, setNewMemberEnableWhatsapp] = useState(true);
   const [editingMember, setEditingMember]   = useState<JuntaMember | null>(null);
   const [memberMsg, setMemberMsg]           = useState('');
 
@@ -203,6 +214,9 @@ export default function EdificioAdminPage() {
       setWaApiToken(data.wa_api_token || '');
       setWaApiUrl(data.wa_api_url || '');
       setWaBusinessPhoneId(data.wa_business_phone_number_id || '');
+      setWaDailyReportEnabled(data.daily_report_enabled || false);
+      setWaDailyReportTime(data.daily_report_time || '19:00');
+      setWaDailyReportDays(data.daily_report_days || '1,2,3,4,5,6,0');
     }
     setWaLoading(false);
   }, [building]);
@@ -226,6 +240,9 @@ export default function EdificioAdminPage() {
         wa_api_token: waApiToken,
         wa_api_url: waApiUrl,
         wa_business_phone_number_id: waBusinessPhoneId,
+        daily_report_enabled: waDailyReportEnabled,
+        daily_report_time: waDailyReportTime,
+        daily_report_days: waDailyReportDays,
         updated_at: new Date().toISOString()
       });
 
@@ -314,6 +331,20 @@ export default function EdificioAdminPage() {
         ? await supabase.from('buildings').select('*').eq('id', slugParam).single()
         : await supabase.from('buildings').select('*').eq('slug', slugParam).single();
       setBuilding(data);
+      if (data) {
+        setCfgName(data.name || '');
+        setCfgCapacity(data.tank_capacity_liters?.toString() || '');
+        setCfgAdminEmail(data.admin_email || '');
+        
+        // Cargar settings adicionales
+        const { data: set } = await supabase.from('building_settings').select('*').eq('building_id', data.id).single();
+        if (set) {
+          setCfgThreshold(set.alert_threshold_percentage?.toString() || '30');
+          setCfgSilenceStart(set.silence_start_time || '22:00');
+          setCfgSilenceEnd(set.silence_end_time || '06:00');
+          setCfgEnableResidentNotifications(set.enable_resident_notifications !== false);
+        }
+      }
       // Si viene con ?authed=1 desde el login de page.tsx, ya está autenticado
       if (searchParams.get('authed') === '1') {
         setAuthed(true);
@@ -339,14 +370,26 @@ export default function EdificioAdminPage() {
       measurementsQueryBuildingId = REAL_BUILDING_ID; // Redirect measurements for demo
     }
 
-    const [{ data: ms }, { data: members }] = await Promise.all([
+    const [{ data: ms }, { data: members }, { count: emailCount }] = await Promise.all([
       supabase.from('measurements').select('*').eq('building_id', measurementsQueryBuildingId)
         .order('recorded_at', { ascending: false }).limit(200),
       supabase.from('building_members').select('*').eq('building_id', subscriptionsQueryBuildingId),
+      supabase.from('notification_logs').select('*', { count: 'exact', head: true }).eq('building_id', subscriptionsQueryBuildingId).eq('success', true)
     ]);
     
     const sortedMs = (ms || []).slice().reverse();
     setMeasurements(sortedMs);
+
+    // Calculate daily stats
+    const today = new Date().toISOString().split('T')[0];
+    const msToday = sortedMs.filter(m => m.recorded_at.startsWith(today)).length;
+    const users = new Set(sortedMs.map(m => m.collaborator_name || m.email)).size;
+
+    setStats({
+      totalEmails: emailCount || 0,
+      measurementsToday: msToday,
+      activeUsers: users
+    });
 
     const allMembers = members || [];
     setAllSubscribers(allMembers);
@@ -558,8 +601,14 @@ export default function EdificioAdminPage() {
     const existing = allSubscribers.find(s => s.email.toLowerCase() === memberEmail);
     if (existing) {
       // Update to mark as junta
-const { error: updateError } = await supabase.from('building_members')
-        .update({ name: memberNameVal, role: newMemberRole || 'Vocal', is_admin: newMemberIsAdmin })
+      const { error: updateError } = await supabase.from('building_members')
+        .update({ 
+          name: memberNameVal, 
+          role: newMemberRole || 'Vocal', 
+          is_admin: newMemberIsAdmin,
+          enable_email: newMemberEnableEmail,
+          enable_whatsapp: newMemberEnableWhatsapp
+        })
         .eq('id', existing.id);
       if (updateError) {
         console.error('Error updating member:', updateError);
@@ -573,6 +622,8 @@ const { error: updateError } = await supabase.from('building_members')
         name: memberNameVal,
         role: newMemberRole || 'Vocal',
         is_admin: newMemberIsAdmin,
+        enable_email: newMemberEnableEmail,
+        enable_whatsapp: newMemberEnableWhatsapp
       });
       if (insertError) {
         console.error('Error inserting member:', insertError);
@@ -580,7 +631,6 @@ const { error: updateError } = await supabase.from('building_members')
         return;
       }
     }
-
     // Send welcome email to new member
     try {
       await fetch('/api/send-email', {
@@ -963,11 +1013,11 @@ const { error: updateError } = await supabase.from('building_members')
         <div className="max-w-6xl mx-auto flex gap-1 px-4 overflow-x-auto scrollbar-hide">
           {([
             { id: 'dashboard',     label: 'Dashboard',     Icon: BarChart3, color: 'blue' },
-            { id: 'junta',         label: 'Junta',         Icon: Users,     color: 'purple' },
+            { id: 'junta',         label: 'Mi Junta',      Icon: Users,     color: 'purple' },
             { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,  color: 'amber' },
-            { id: 'reportes',      label: 'Reportes',      Icon: FileText,  color: 'green' },
+            { id: 'reportes',      label: 'Estadísticas y Reportes', Icon: FileText, color: 'green' },
             { id: 'configuracion', label: 'Config.',       Icon: Settings,  color: 'cyan' },
-            { id: 'bitacora',      label: 'Bitácora',      Icon: ClipboardList, color: 'amber' },
+            { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' },
           ] as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-2 my-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -1210,6 +1260,32 @@ const { error: updateError } = await supabase.from('building_members')
                       ))}
                     </select>
                   </div>
+                  <div className="flex flex-col md:flex-row gap-4 mb-3">
+                    <div className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex-1">
+                      <input
+                        type="checkbox"
+                        id="newMemberEnableEmail"
+                        checked={newMemberEnableEmail}
+                        onChange={e => setNewMemberEnableEmail(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500"
+                      />
+                      <label htmlFor="newMemberEnableEmail" className="text-sm text-blue-300 flex items-center gap-2">
+                        <Mail className="w-4 h-4" /> Recibir Emails
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex-1">
+                      <input
+                        type="checkbox"
+                        id="newMemberEnableWhatsapp"
+                        checked={newMemberEnableWhatsapp}
+                        onChange={e => setNewMemberEnableWhatsapp(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-green-500 focus:ring-green-500"
+                      />
+                      <label htmlFor="newMemberEnableWhatsapp" className="text-sm text-green-300 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" /> Recibir WhatsApp
+                      </label>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-3 mb-3 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
                     <input
                       type="checkbox"
@@ -1359,6 +1435,40 @@ const { error: updateError } = await supabase.from('building_members')
         {/* ── REPORTES TAB ─────────────────────────────────────────────── */}
         {tab === 'reportes' && (
           <div className="space-y-5">
+            {/* Estadísticas de Uso del Sistema */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                  <Mail className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Emails Enviados</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalEmails.toLocaleString()}</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Histórico total exitoso</p>
+                </div>
+              </div>
+              <div className="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
+                  <Activity className="w-6 h-6 text-green-400" />
+                </div>
+                <div>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Mediciones Hoy</p>
+                  <p className="text-2xl font-bold text-white">{stats.measurementsToday}</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Registradas el día de hoy</p>
+                </div>
+              </div>
+              <div className="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Usuarios Activos</p>
+                  <p className="text-2xl font-bold text-white">{stats.activeUsers}</p>
+                  <p className="text-slate-400 text-[9px] mt-0.5">Personas que han reportado</p>
+                </div>
+              </div>
+            </div>
+
             {/* Filtros */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
               <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
@@ -1638,7 +1748,115 @@ const { error: updateError } = await supabase.from('building_members')
             {cfgMsg && <div className="bg-slate-700 border border-slate-600 text-white px-4 py-3 rounded-xl text-sm">{cfgMsg}</div>}
             {bannerMsg && <div className="bg-slate-700 border border-slate-600 text-white px-4 py-3 rounded-xl text-sm">{bannerMsg}</div>}
 
-            {/* Banner */}
+            {/* Envío Manual de Reporte (Movido desde Bitácora) */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-5 py-4 border-b border-slate-700 bg-blue-500/5">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-blue-400" />
+                  Envío Manual de Reporte
+                </h3>
+                <p className="text-slate-400 text-xs mt-1">Envía la situación actual del agua por correo electrónico sin registrar nuevos datos.</p>
+              </div>
+              <div className="p-5">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <input 
+                    value={manualRecipients}
+                    onChange={e => setManualRecipients(e.target.value)}
+                    placeholder="correos@ejemplo.com, otro@ejemplo.com"
+                    className="flex-1 bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  />
+                  <button 
+                    onClick={handleManualSendReport}
+                    disabled={sendingManual || !manualRecipients}
+                    className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    {sendingManual ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Enviar Reporte Ahora
+                  </button>
+                </div>
+                {manualMsg && (
+                  <div className={`mt-3 p-3 rounded-lg text-xs font-medium ${manualMsg.includes('✅') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {manualMsg}
+                  </div>
+                )}
+                <div className="mt-3 flex gap-2">
+                  <button 
+                    onClick={() => setManualRecipients(currentUser?.email || '')}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 underline"
+                  >
+                    Ponerme a mí mismo
+                  </button>
+                  <span className="text-slate-700">|</span>
+                  <button 
+                    onClick={() => setManualRecipients(juntaMembers.map(m => m.email).join(', '))}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 underline"
+                  >
+                    Toda la junta
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Reporte Diario Programado */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-5 py-4 border-b border-slate-700 bg-amber-500/5">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white font-semibold flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-amber-400" />
+                    Reporte Diario Programado
+                  </h3>
+                  <div className="flex items-center gap-2 bg-slate-700 p-1 rounded-lg">
+                    <button 
+                      onClick={() => setWaDailyReportEnabled(true)}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${waDailyReportEnabled ? 'bg-amber-600 text-white' : 'text-slate-400'}`}
+                    >ACTIVADO</button>
+                    <button 
+                      onClick={() => setWaDailyReportEnabled(false)}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${!waDailyReportEnabled ? 'bg-slate-600 text-white' : 'text-slate-400'}`}
+                    >DESACTIVADO</button>
+                  </div>
+                </div>
+                <p className="text-slate-400 text-xs mt-1">Envía automáticamente un resumen de la situación a la junta en el horario establecido.</p>
+              </div>
+              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-slate-500 text-[10px] mb-1 font-bold">HORA DE ENVÍO (24H)</label>
+                  <input type="time" value={waDailyReportTime} onChange={e => setWaDailyReportTime(e.target.value)}
+                    disabled={!waDailyReportEnabled}
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-lg font-bold focus:outline-none focus:border-amber-500" />
+                </div>
+                <div>
+                  <label className="block text-slate-500 text-[10px] mb-1 font-bold">DÍAS DE SEMANA (0-6)</label>
+                  <div className="flex gap-1 mt-1">
+                    {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => {
+                      const isSelected = waDailyReportDays.split(',').includes(i.toString());
+                      return (
+                        <button 
+                          key={i}
+                          disabled={!waDailyReportEnabled}
+                          onClick={() => {
+                            const days = waDailyReportDays.split(',').filter(x => x !== '');
+                            const newDays = isSelected ? days.filter(x => x !== i.toString()) : [...days, i.toString()];
+                            setWaDailyReportDays(newDays.join(','));
+                          }}
+                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${isSelected ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-500 hover:bg-slate-600'}`}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="px-5 py-3 bg-slate-900/30 border-t border-slate-700 flex justify-end">
+                <button 
+                  onClick={saveWhatsAppSettings}
+                  className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2"
+                >
+                  <Save className="w-3.5 h-3.5" /> Guardar Horario
+                </button>
+              </div>
+            </div>
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-700">
                 <h3 className="text-white font-semibold flex items-center gap-2">
@@ -1963,58 +2181,10 @@ const { error: updateError } = await supabase.from('building_members')
             </div>
             )}
 
-            {/* ── BITÁCORA TAB ─────────────────────────────────────────────── */}
-            {tab === 'bitacora' && (
+            {/* ── ALARMAS/LOGS TAB ─────────────────────────────────────────────── */}
+            {tab === 'alarmas_logs' && (
             <div className="space-y-6">
-            {/* Envío Manual de Reporte */}
-            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
-              <div className="px-5 py-4 border-b border-slate-700 bg-blue-500/5">
-                <h3 className="text-white font-semibold flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-blue-400" />
-                  Envío Manual de Reporte
-                </h3>
-                <p className="text-slate-400 text-xs mt-1">Envía la situación actual del agua por correo electrónico sin registrar nuevos datos.</p>
-              </div>
-              <div className="p-5">
-                <div className="flex flex-col md:flex-row gap-3">
-                  <input 
-                    value={manualRecipients}
-                    onChange={e => setManualRecipients(e.target.value)}
-                    placeholder="correos@ejemplo.com, otro@ejemplo.com"
-                    className="flex-1 bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  />
-                  <button 
-                    onClick={handleManualSendReport}
-                    disabled={sendingManual || !manualRecipients}
-                    className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2"
-                  >
-                    {sendingManual ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    Enviar Reporte Ahora
-                  </button>
-                </div>
-                {manualMsg && (
-                  <div className={`mt-3 p-3 rounded-lg text-xs font-medium ${manualMsg.includes('✅') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {manualMsg}
-                  </div>
-                )}
-                <div className="mt-3 flex gap-2">
-                  <button 
-                    onClick={() => setManualRecipients(currentUser?.email || '')}
-                    className="text-[10px] text-slate-500 hover:text-slate-300 underline"
-                  >
-                    Ponerme a mí mismo
-                  </button>
-                  <span className="text-slate-700">|</span>
-                  <button 
-                    onClick={() => setManualRecipients(juntaMembers.map(m => m.email).join(', '))}
-                    className="text-[10px] text-slate-500 hover:text-slate-300 underline"
-                  >
-                    Toda la junta
-                  </button>
-                </div>
-              </div>
-            </div>
-
+            
             {/* Tabla de Logs de Auditoría */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
               <div className="px-5 py-4 border-b border-slate-700 flex justify-between items-center">
