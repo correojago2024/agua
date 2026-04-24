@@ -15,12 +15,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Faltan parámetros: building_id y banner_url son obligatorios' }, { status: 400 });
     }
 
-    // 1. Obtener la URL pública oficial de Supabase
-    const { data: { publicUrl } } = supabase.storage
-      .from('building-banners')
-      .getPublicUrl(body.file_path || `banners/${building_id}.jpg`);
+    // 1. Usar la banner_url enviada por el cliente (ya contiene la extensión correcta)
+    //    en lugar de reconstruirla con una extensión hardcoded (.jpg)
+    const publicUrl = banner_url;
 
-    console.log(`[VERCEL LOG] 🛠️ URL Oficial generada: ${publicUrl}`);
+    console.log(`[VERCEL LOG] 🛠️ URL Oficial recibida: ${publicUrl}`);
 
     // 2. Intentar actualizar en la base de datos
     const { data, error } = await supabase
