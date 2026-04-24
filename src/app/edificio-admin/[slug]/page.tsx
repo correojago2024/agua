@@ -24,11 +24,11 @@ import {
   ChevronDown, ChevronUp, Image, Wrench, Upload
 } from 'lucide-react';
 
+import { format } from 'date-fns';
 import { getAllImprovedCharts } from '@/lib/charts';
 import { 
   CombinedTrendChart, 
   FlowComparisonChart, 
-  TankLevelGauge, 
   ThresholdsChart, 
   StatusIndicator,
   DayOfWeekConsumptionChart,
@@ -40,7 +40,9 @@ import {
   NightlyConsumptionChart,
   VariationChart,
   FlowHourlyChart,
-  ProjectionChart
+  ProjectionChart,
+  ConsumptionDistributionPieChart,
+  WeekendLitrosChart
 } from '@/components/DashboardCharts';
 
 import { Measurement } from '@/lib/calculations';
@@ -386,9 +388,10 @@ export default function EdificioAdminPage() {
       consumed24h,
       filled24h,
       avgPct,
-      lastDate: new Date(latest.recorded_at).toLocaleString('es-ES'),
+      lastDate: format(new Date(latest.recorded_at), 'dd/MM/yyyy hh:mm aa'),
       totalReadings: measurements.length,
-    };
+      };
+
   })();
 
   // ── Junta CRUD ─────────────────────────────────────────────────────────────
@@ -547,6 +550,9 @@ const { error: updateError } = await supabase.from('building_members')
       setMeasMsg('🗑️ Medición eliminada');
       setTimeout(() => setMeasMsg(''), 3000);
       loadData();
+    } else {
+      setMeasMsg('❌ Error al eliminar: ' + error.message);
+      setTimeout(() => setMeasMsg(''), 5000);
     }
   };
 
@@ -867,35 +873,34 @@ const { error: updateError } = await supabase.from('building_members')
                   </div>
                 ) : measurements.length > 0 ? (
                   <div className="space-y-6 p-6">
-                    {/* Fila Principal: Solo Velocímetro centrado */}
-                    <div className="flex justify-center">
-                      <div className="w-full max-w-md">
-                        <TankLevelGauge percentage={measurements[0]?.percentage ?? 0} />
-                      </div>
+                    {/* Fila Principal: Nivel y Caudal Llenado/Consumo */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
+                      <FlowComparisonChart data={measurements} />
                     </div>
 
-                    {/* Cuadrícula de todos los gráficos (13 en total) */}
+                    {/* Cuadrícula de todos los gráficos */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <CombinedTrendChart data={measurements} />
                       <ThresholdsChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
                       
-                      <DayOfWeekConsumptionChart data={measurements} />
                       <LastWeeksTrendChart data={measurements} />
+                      <WeeklyComparisonChart data={measurements} />
                       
-                      <WeekendConsumptionChart data={measurements} />
+                      <DayOfWeekConsumptionChart data={measurements} />
                       <MonthlyHistoryChart data={measurements} />
                       
                       <HourlyConsumptionChart data={measurements} />
-                      <FlowComparisonChart data={measurements} />
-                      
-                      <WeeklyComparisonChart data={measurements} />
                       <NightlyConsumptionChart data={measurements} />
 
-                      <VariationChart data={measurements} />
+                      <WeekendConsumptionChart data={measurements} />
+                      <WeekendLitrosChart data={measurements} />
+
                       <FlowHourlyChart data={measurements} />
+                      <VariationChart data={measurements} />
 
                       <ProjectionChart data={measurements} capacity={building?.tank_capacity_liters ?? 169000} />
-                      <StatusIndicator percentage={measurements[0]?.percentage ?? 0} />
+                      <ConsumptionDistributionPieChart data={measurements} />
                     </div>
                   </div>
                 ) : (
@@ -939,7 +944,7 @@ const { error: updateError } = await supabase.from('building_members')
                       return (
                         <tr key={m.id} className="hover:bg-slate-700/20">
                           <td className="px-4 py-3 text-slate-300 text-xs whitespace-nowrap">
-                            {new Date(m.recorded_at).toLocaleString('es-ES')}
+                            {format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa')}
                           </td>
                           <td className="px-4 py-3 text-white font-medium">{Math.round(m.liters).toLocaleString()}</td>
                           <td className="px-4 py-3">
@@ -973,12 +978,12 @@ const { error: updateError } = await supabase.from('building_members')
                   <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
                     <p className="text-slate-400 text-xs mb-2">📉 Mínimo histórico</p>
                     <p className="text-red-400 font-bold text-2xl">{Math.round(min.percentage)}%</p>
-                    <p className="text-slate-500 text-xs">{new Date(min.recorded_at).toLocaleDateString('es-ES')}</p>
+                    <p className="text-slate-500 text-xs">{format(new Date(min.recorded_at), 'dd/MM/yyyy hh:mm aa')}</p>
                   </div>
                   <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
                     <p className="text-slate-400 text-xs mb-2">📈 Máximo histórico</p>
                     <p className="text-green-400 font-bold text-2xl">{Math.round(max.percentage)}%</p>
-                    <p className="text-slate-500 text-xs">{new Date(max.recorded_at).toLocaleDateString('es-ES')}</p>
+                    <p className="text-slate-500 text-xs">{format(new Date(max.recorded_at), 'dd/MM/yyyy hh:mm aa')}</p>
                   </div>
                 </div>
               );
@@ -1305,7 +1310,7 @@ const { error: updateError } = await supabase.from('building_members')
                       const v = getVariation(m);
                       return (
                         <tr key={m.id} className="hover:bg-slate-700/20">
-                          <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{new Date(m.recorded_at).toLocaleString('es-ES')}</td>
+                          <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa')}</td>
                           <td className="px-4 py-2 text-white">{Math.round(m.liters).toLocaleString()}</td>
                           <td className="px-4 py-2">
                             <span className={m.percentage > 60 ? 'text-green-400' : m.percentage > 30 ? 'text-amber-400' : 'text-red-400'}>
@@ -1377,7 +1382,7 @@ const { error: updateError } = await supabase.from('building_members')
                         return (
                           <tr key={m.id} className={`hover:bg-slate-700/20 ${m.is_anomaly ? 'bg-red-500/5 border-l-2 border-red-500/50' : ''}`}>
                             <td className="px-3 py-2 text-slate-300 whitespace-nowrap">
-                              {new Date(m.recorded_at).toLocaleString('es-ES')}
+                              {format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa')}
                               {m.is_anomaly && !m.anomaly_checked && (
                                 <span className="ml-1 text-red-400 text-xs">⚠️ Anomalía</span>
                               )}

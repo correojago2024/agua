@@ -95,7 +95,7 @@ export const TankLevelGauge = ({ percentage }: { percentage: number }) => {
 export const CombinedTrendChart = ({ data }: ChartProps) => {
   const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-20);
   const formattedData = chartData.map(m => ({
-    fecha: format(new Date(m.recorded_at), 'dd/MM HH:mm'),
+    fecha: format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa'),
     nivel: Math.round(m.percentage),
   }));
 
@@ -111,7 +111,7 @@ export const CombinedTrendChart = ({ data }: ChartProps) => {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="fecha" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="fecha" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
           <YAxis domain={[0, 100]} tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <Tooltip />
           <Area type="monotone" dataKey="nivel" stroke="#3b82f6" fillOpacity={1} fill="url(#colorNivel)" name="Nivel %" />
@@ -142,13 +142,13 @@ export const DayOfWeekConsumptionChart = ({ data }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Consumo Promedio por Día</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Consumo Promedio Histórico por Día</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Tooltip />
           <Bar dataKey="consumo" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Litros" />
         </BarChart>
       </ResponsiveContainer>
@@ -156,20 +156,24 @@ export const DayOfWeekConsumptionChart = ({ data }: ChartProps) => {
   );
 };
 
-// ── 5. Last 4 Weeks Trend ──────────────────────────────────────────────────
+// ── 5. Last 6 Weeks Trend ──────────────────────────────────────────────────
 export const LastWeeksTrendChart = ({ data }: ChartProps) => {
   const now = new Date();
   const diasLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const datasets: { name: string; data: (number | null)[] }[] = [];
+  const datasets: { name: string; label: string; data: (number | null)[] }[] = [];
 
-  for (let w = 3; w >= 0; w--) {
+  for (let w = 5; w >= 0; w--) {
     const weekStart = startOfWeek(subWeeks(now, w), { weekStartsOn: 1 });
+    const weekEnd = addDays(weekStart, 6);
     const weekData = diasLabels.map((_, d) => {
       const dayStr = format(addDays(weekStart, d), 'yyyy-MM-dd');
       const dayMs = data.filter(m => format(new Date(m.recorded_at), 'yyyy-MM-dd') === dayStr);
       return dayMs.length > 0 ? Math.round(dayMs.reduce((a, m) => a + m.percentage, 0) / dayMs.length) : null;
     });
-    datasets.push({ name: w === 0 ? 'Esta Sem' : `Sem -${w}`, data: weekData });
+    
+    // Legend format: Sem. del 13 al 19/04
+    const label = `Sem. del ${format(weekStart, 'dd')} al ${format(weekEnd, 'dd/MM')}`;
+    datasets.push({ name: `w${w}`, label, data: weekData });
   }
 
   const chartData = diasLabels.map((label, i) => {
@@ -180,7 +184,7 @@ export const LastWeeksTrendChart = ({ data }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Tendencia Últimas 4 Semanas (%)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Tendencia Últimas 6 Semanas (%)</h3>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -189,7 +193,7 @@ export const LastWeeksTrendChart = ({ data }: ChartProps) => {
           <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
           {datasets.map((ds, i) => (
-            <Line key={ds.name} type="monotone" dataKey={ds.name} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{r: 3}} connectNulls />
+            <Line key={ds.name} type="monotone" dataKey={ds.name} name={ds.label} stroke={COLORS[i % COLORS.length]} strokeWidth={i === 5 ? 3 : 2} dot={{r: 3}} connectNulls />
           ))}
         </LineChart>
       </ResponsiveContainer>
@@ -204,8 +208,10 @@ export const WeekendConsumptionChart = ({ data }: ChartProps) => {
 
   for (let w = 4; w >= 0; w--) {
     const weekStart = startOfWeek(subWeeks(now, w), { weekStartsOn: 1 });
-    const sabStr = format(addDays(weekStart, 5), 'yyyy-MM-dd');
-    const domStr = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+    const sabStart = addDays(weekStart, 5);
+    const domStart = addDays(weekStart, 6);
+    const sabStr = format(sabStart, 'yyyy-MM-dd');
+    const domStr = format(domStart, 'yyyy-MM-dd');
     
     const getDayCons = (dayStr: string) => {
       const ms = data.filter(m => format(new Date(m.recorded_at), 'yyyy-MM-dd') === dayStr);
@@ -213,7 +219,7 @@ export const WeekendConsumptionChart = ({ data }: ChartProps) => {
     };
 
     chartData.push({
-      name: format(weekStart, 'dd/MM'),
+      name: `Del ${format(sabStart, 'dd')} al ${format(domStart, 'dd/MM')}`,
       Sabado: getDayCons(sabStr),
       Domingo: getDayCons(domStr)
     });
@@ -221,13 +227,13 @@ export const WeekendConsumptionChart = ({ data }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Consumo Fines de Semana (5 Sem)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Consumo Sábados vs Domingos (5 Sem)</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="name" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
           <Bar dataKey="Sabado" fill="#f59e0b" radius={[4, 4, 0, 0]} />
           <Bar dataKey="Domingo" fill="#3b82f6" radius={[4, 4, 0, 0]} />
@@ -258,7 +264,7 @@ export const MonthlyHistoryChart = ({ data }: ChartProps) => {
     });
 
     chartData.push({
-      name: format(mStart, 'MMM', { locale: es }),
+      name: format(mStart, 'MMM yyyy', { locale: es }),
       Consumo: Math.round(cons),
       Llenado: Math.round(llen)
     });
@@ -266,13 +272,13 @@ export const MonthlyHistoryChart = ({ data }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Histórico Mensual (Litros)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Histórico Mensual de Consumo y Llenado</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
           <Bar dataKey="Consumo" fill="#ef4444" radius={[4, 4, 0, 0]} />
           <Bar dataKey="Llenado" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -288,7 +294,7 @@ export const FlowComparisonChart = ({ data }: ChartProps) => {
   const formattedData = chartData.map(m => {
     const flow = (m.flow_lpm ?? m.caudal_lts_min ?? 0) as number;
     return {
-      fecha: format(new Date(m.recorded_at), 'dd/MM'),
+      fecha: format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa'),
       llenado: flow > 0 ? Number(flow.toFixed(1)) : 0,
       consumo: flow < 0 ? Number(Math.abs(flow).toFixed(1)) : 0,
     };
@@ -300,9 +306,9 @@ export const FlowComparisonChart = ({ data }: ChartProps) => {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="fecha" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="fecha" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
           <Bar dataKey="llenado" fill="#10b981" radius={[4, 4, 0, 0]} name="Llenado" />
           <Bar dataKey="consumo" fill="#ef4444" radius={[4, 4, 0, 0]} name="Consumo" />
@@ -316,7 +322,7 @@ export const FlowComparisonChart = ({ data }: ChartProps) => {
 export const ThresholdsChart = ({ data, capacity = 169000 }: ChartProps) => {
   const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-30);
   const formattedData = chartData.map(m => ({
-    fecha: format(new Date(m.recorded_at), 'dd/MM'),
+    fecha: format(new Date(m.recorded_at), 'dd/MM/yyyy'),
     litros: Math.round(m.liters),
     u60: Math.round(capacity * 0.6),
     u40: Math.round(capacity * 0.4),
@@ -325,11 +331,11 @@ export const ThresholdsChart = ({ data, capacity = 169000 }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Nivel con Umbrales (Litros)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Nivel con Umbrales de Alerta (Litros)</h3>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="fecha" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="fecha" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
@@ -345,21 +351,35 @@ export const ThresholdsChart = ({ data, capacity = 169000 }: ChartProps) => {
 
 // ── 11. AGREGADO: Consumo Nocturno (Litros) ──────────────────────────────────
 export const NightlyConsumptionChart = ({ data }: ChartProps) => {
-  const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-15);
+  // Consumo nocturno: 11:00 pm a 06:00 am del día siguiente
+  // Días específicos: Viernes-Sábado, Sábado-Domingo, Domingo-Lunes
+  
+  const nightlyMs = data.filter(m => {
+    const date = new Date(m.recorded_at);
+    const day = date.getDay(); // 0: Dom, 5: Vie, 6: Sáb, 1: Lun
+    const hour = date.getHours();
+    
+    const isNightTime = hour >= 23 || hour < 6;
+    const isWeekendNight = (day === 5 && hour >= 23) || (day === 6) || (day === 0) || (day === 1 && hour < 6);
+    
+    return isNightTime && isWeekendNight;
+  });
+
+  const chartData = [...nightlyMs].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-15);
   const formattedData = chartData.map(m => ({
-    name: format(new Date(m.recorded_at), 'dd/MM HH:mm'),
+    name: format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa'),
     litros: getVar(m) < 0 ? Math.abs(getVar(m)) : 0
   }));
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Consumo Nocturno (Litros)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Consumo Nocturno (11pm-6am Vie-Lun)</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="name" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="name" tick={{fontSize: 8}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Tooltip />
           <Bar dataKey="litros" fill="#1e293b" radius={[4, 4, 0, 0]} name="Litros" />
         </BarChart>
       </ResponsiveContainer>
@@ -372,6 +392,12 @@ export const WeeklyComparisonChart = ({ data }: ChartProps) => {
   const now = new Date();
   const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+  const getWeekRange = (offset: number) => {
+    const start = startOfWeek(subWeeks(now, offset), { weekStartsOn: 1 });
+    const end = addDays(start, 6);
+    return `Sem. del ${format(start, 'dd/MM')} al ${format(end, 'dd/MM')}`;
+  };
+
   const getWeekData = (offset: number) => {
     const weekStart = startOfWeek(subWeeks(now, offset), { weekStartsOn: 1 });
     return DIAS.map((_, d) => {
@@ -381,6 +407,8 @@ export const WeeklyComparisonChart = ({ data }: ChartProps) => {
     });
   };
 
+  const currentWeekLabel = getWeekRange(0);
+  const previousWeekLabel = getWeekRange(1);
   const currentWeek = getWeekData(0);
   const previousWeek = getWeekData(1);
 
@@ -392,16 +420,16 @@ export const WeeklyComparisonChart = ({ data }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Semana Actual vs Anterior (L)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Semana Actual vs Anterior (Litros)</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-          <Tooltip cursor={{fill: '#f8fafc'}} />
+          <Tooltip />
           <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
-          <Bar dataKey="Actual" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="Anterior" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Actual" name={currentWeekLabel} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Anterior" name={previousWeekLabel} fill="#94a3b8" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -414,21 +442,21 @@ export const VariationChart = ({ data }: ChartProps) => {
   const formattedData = chartData.map(m => {
     const v = getVar(m);
     return {
-      name: format(new Date(m.recorded_at), 'dd/MM'),
+      name: format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa'),
       valor: v
     };
   });
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Variación entre Mediciones (L)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Diferencia entre Mediciones Consecutivas (L)</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="name" tick={{fontSize: 8}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
-          <Tooltip cursor={{fill: '#f8fafc'}} />
-          <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
+          <Tooltip />
+          <Bar dataKey="valor" radius={[4, 4, 0, 0]} name="Variación Lts">
             {formattedData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.valor >= 0 ? '#10b981' : '#ef4444'} />
             ))}
@@ -443,17 +471,17 @@ export const VariationChart = ({ data }: ChartProps) => {
 export const FlowHourlyChart = ({ data }: ChartProps) => {
   const chartData = [...data].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()).slice(-15);
   const formattedData = chartData.map(m => ({
-    name: format(new Date(m.recorded_at), 'dd/MM HH:mm'),
+    name: format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa'),
     caudal: Math.abs(+(((m.caudal_lts_hora ?? 0) || (m.flow_lpm ?? 0) * 60)).toFixed(1))
   }));
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Caudal (Litros por Hora)</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Caudal Instantáneo (Litros por Hora)</h3>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="name" tick={{fontSize: 9}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="name" tick={{fontSize: 8}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <Tooltip />
           <Area type="monotone" dataKey="caudal" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} name="L/h" />
@@ -490,7 +518,7 @@ export const ProjectionChart = ({ data, capacity = 169000 }: ChartProps) => {
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Proyección de Nivel</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Proyección de Tiempo Estimado</h3>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={points}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -505,40 +533,50 @@ export const ProjectionChart = ({ data, capacity = 169000 }: ChartProps) => {
 };
 
 
-// ── 10. AGREGADO: Hourly Consumption Pattern ───────────────────────────────
-export const HourlyConsumptionChart = ({ data }: ChartProps) => {
-  const bins = ['00-04h', '04-08h', '08-12h', '12-16h', '16-20h', '20-24h'];
-  const sums = Array(6).fill(0), counts = Array(6).fill(0);
+// ── 17. AGREGADO: Consumo/Llenado Sáb-Dom (5 semanas) ───────────────────────
+export const WeekendLitrosChart = ({ data }: ChartProps) => {
+  const now = new Date();
+  const chartData: { name: string; Consumo: number; Llenado: number }[] = [];
 
-  data.forEach(m => {
-    const v = getVar(m);
-    if (v < 0) {
-      const hour = new Date(m.recorded_at).getHours();
-      const idx = Math.floor(hour / 4);
-      sums[idx] += Math.abs(v);
-      counts[idx]++;
-    }
-  });
+  for (let w = 4; w >= 0; w--) {
+    const weekStart = startOfWeek(subWeeks(now, w), { weekStartsOn: 1 });
+    const sab = addDays(weekStart, 5);
+    const dom = addDays(weekStart, 6);
+    
+    const weekendMs = data.filter(m => {
+      const d = format(new Date(m.recorded_at), 'yyyy-MM-dd');
+      return d === format(sab, 'yyyy-MM-dd') || d === format(dom, 'yyyy-MM-dd');
+    });
 
-  const chartData = bins.map((label, i) => ({
-    name: label,
-    promedio: counts[i] > 0 ? Math.round(sums[i] / counts[i]) : 0
-  }));
+    let cons = 0, llen = 0;
+    weekendMs.forEach(m => {
+      const v = getVar(m);
+      if (v < 0) cons += Math.abs(v);
+      else if (v > 0) llen += v;
+    });
+
+    chartData.push({
+      name: `Sáb ${format(sab, 'dd')} - Dom ${format(dom, 'dd/MM')}`,
+      Consumo: Math.round(cons),
+      Llenado: Math.round(llen)
+    });
+  }
 
   return (
     <div className="h-[300px] w-full bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Patrón de Consumo por Hora</h3>
+      <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase">Balance Sáb-Dom (Últimas 5 Semanas)</h3>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData}>
+        <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-          <XAxis dataKey="name" tick={{fontSize: 10}} tickLine={false} axisLine={false} />
+          <XAxis dataKey="name" tick={{fontSize: 8}} tickLine={false} axisLine={false} />
           <YAxis tick={{fontSize: 10}} tickLine={false} axisLine={false} />
           <Tooltip />
-          <Area type="monotone" dataKey="promedio" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} name="Lts Promedio" />
-        </AreaChart>
+          <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
+          <Bar dataKey="Consumo" fill="#ef4444" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Llenado" fill="#10b981" radius={[4, 4, 0, 0]} />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
 };
-
 

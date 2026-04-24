@@ -159,15 +159,16 @@ export function getThresholdChartUrl(measurements: Measurement[], capacity: numb
   }, 600, 300);
 }
 
-// ── 6. Tendencia 4 Semanas — líneas por semana, eje X = Lun-Dom ──────────────
+// ── 6. Tendencia 6 Semanas — líneas por semana, eje X = Lun-Dom ──────────────
 export function getLast4WeeksChartUrl(measurements: Measurement[]) {
   const now = new Date();
   const diasLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-  const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7'];
+  const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#06b6d4'];
   const datasets: any[] = [];
 
-  for (let w = 2; w >= 0; w--) { // Reducimos a 3 semanas para acortar URL
+  for (let w = 5; w >= 0; w--) {
     const weekStart = startOfWeek(subWeeks(now, w), { weekStartsOn: 1 });
+    const weekEnd = addDays(weekStart, 6);
     const weekData: (number | null)[] = [];
     for (let d = 0; d < 7; d++) {
       const dayStr = format(addDays(weekStart, d), 'yyyy-MM-dd');
@@ -180,11 +181,11 @@ export function getLast4WeeksChartUrl(measurements: Measurement[]) {
       );
     }
     datasets.push({
-      label: w === 0 ? 'Actual' : `Sem -${w}`,
+      label: `Sem ${format(weekStart, 'dd')}-${format(weekEnd, 'dd/MM')}`,
       data: weekData,
-      borderColor: COLORS[2 - w],
+      borderColor: COLORS[5 - w],
       backgroundColor: 'transparent',
-      borderWidth: 2,
+      borderWidth: w === 0 ? 3 : 2,
       spanGaps: true
     });
   }
@@ -192,7 +193,7 @@ export function getLast4WeeksChartUrl(measurements: Measurement[]) {
     type: 'line',
     data: { labels: diasLabels, datasets },
     options: {
-      plugins: { title: { display: true, text: 'Nivel % Últimas 3 Sem' } },
+      plugins: { title: { display: true, text: 'Tendencia Nivel % (Últimas 6 Semanas)' } },
       scales: { y: { min: 0, max: 100 } }
     }
   }, 600, 300);
@@ -200,14 +201,23 @@ export function getLast4WeeksChartUrl(measurements: Measurement[]) {
 
 // ── 7. Consumo Nocturno ──────────────────────────────────────────────────────
 export function getNightlyLitrosChartUrl(measurements: Measurement[]) {
-  const data = lastN(measurements, 20);
+  const nightlyMs = measurements.filter(m => {
+    const date = new Date(m.recorded_at);
+    const day = date.getDay(); 
+    const hour = date.getHours();
+    const isNightTime = hour >= 23 || hour < 6;
+    const isWeekendNight = (day === 5 && hour >= 23) || (day === 6) || (day === 0) || (day === 1 && hour < 6);
+    return isNightTime && isWeekendNight;
+  });
+
+  const data = lastN(nightlyMs, 15);
   return enc({
     type: 'bar',
     data: {
       labels: data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm')),
       datasets: [{ label: 'Consumo (L)', data: data.map(m => { const v = getVar(m); return v < 0 ? +Math.abs(v).toFixed(0) : 0; }), backgroundColor: '#1e293b' }]
     },
-    options: { plugins: { title: { display: true, text: 'Consumo Nocturno Estimado (Litros)' } } }
+    options: { plugins: { title: { display: true, text: 'Consumo Nocturno Estimado (11pm-6am Vie-Lun)' } } }
   });
 }
 
@@ -497,43 +507,34 @@ export function getWeekendVariacionPctChartUrl(measurements: Measurement[]) {
   });
 }
 
-// N4. Consumo promedio por franja horaria (0-6h, 6-12h, 12-18h, 18-24h) ──────
+// N4. Consumo promedio por franja horaria (bloques de 2 horas) ────────────────
 export function getConsumoFranjaHorariaChartUrl(measurements: Measurement[]) {
-  // Bloques de 4 horas: 0-4, 4-8, 8-12, 12-16, 16-20, 20-24
-  const franjas = ['00-04h', '04-08h', '08-12h', '12-16h', '16-20h', '20-24h'];
-  const NUM = 6;
-  const now = new Date();
-  const cutoffSemana = new Date(now.getTime() - 7  * 24 * 60 * 60 * 1000);
-  const cutoffMes    = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  const sumsS  = Array(NUM).fill(0), cntS = Array(NUM).fill(0);
-  const sumsM  = Array(NUM).fill(0), cntM = Array(NUM).fill(0);
+  const franjas = ['0-2h', '2-4h', '4-6h', '6-8h', '8-10h', '10-12h', '12-14h', '14-16h', '16-18h', '18-20h', '20-22h', '22-24h'];
+  const NUM = 12;
+  
+  const sums  = Array(NUM).fill(0), cnt = Array(NUM).fill(0);
 
   measurements.forEach(m => {
     const v = getVar(m);
     if (v >= 0) return; // solo consumo (negativo)
     const t = new Date(m.recorded_at);
-    const idx = Math.min(Math.floor(t.getHours() / 4), NUM - 1);
-    const abs = Math.abs(v);
-    if (t >= cutoffSemana) { sumsS[idx] += abs; cntS[idx]++; }
-    if (t >= cutoffMes)    { sumsM[idx] += abs; cntM[idx]++; }
+    const idx = Math.min(Math.floor(t.getHours() / 2), NUM - 1);
+    sums[idx] += Math.abs(v); cnt[idx]++;
   });
 
-  const avgS = sumsS.map((s, i) => cntS[i] > 0 ? Math.round(s / cntS[i]) : 0);
-  const avgM = sumsM.map((s, i) => cntM[i] > 0 ? Math.round(s / cntM[i]) : 0);
+  const promedios = sums.map((s, i) => cnt[i] > 0 ? Math.round(s / cnt[i]) : 0);
 
   return enc({
     type: 'bar',
     data: {
       labels: franjas,
       datasets: [
-        { label: 'Última semana (L prom)',   data: avgS, backgroundColor: '#3b82f6' },
-        { label: 'Último mes (L prom)',       data: avgM, backgroundColor: '#94a3b8' },
+        { label: 'Lts promedio', data: promedios, backgroundColor: '#8b5cf6' },
       ]
     },
     options: {
-      plugins: { title: { display: true, text: 'Consumo Promedio por Franja Horaria — Última Semana vs Mes' } },
-      scales: { y: { title: { display: true, text: 'Litros promedio' } } }
+      plugins: { title: { display: true, text: 'Patrón de Consumo por Franja (Promedio Histórico)' } },
+      scales: { y: { title: { display: true, text: 'Litros' } } }
     }
   });
 }

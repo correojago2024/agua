@@ -36,7 +36,12 @@ export default function ResidentForm() {
   const [error, setError]         = useState('');
 
   const [formData, setFormData] = useState({
-    recorded_at:       new Date().toISOString().slice(0, 16),
+    recorded_at: (() => {
+      const now = new Date();
+      // Ajuste para Venezuela (UTC-4)
+      const vzlaTime = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+      return vzlaTime.toISOString().slice(0, 16);
+    })(),
     liters:            '',
     percentage:        '',
     email:             '',
