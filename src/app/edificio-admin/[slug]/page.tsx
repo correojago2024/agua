@@ -1164,7 +1164,7 @@ export default function EdificioAdminPage() {
             { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,     color: 'amber' },
             { id: 'reportes',      label: 'Estadísticas y Reportes', Icon: FileText, color: 'green' },
             isUserAdmin ? { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' } : null,
-            isUserAdmin ? { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' } : null,
+            { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' },
           ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-2 my-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -2075,6 +2075,7 @@ export default function EdificioAdminPage() {
                 </button>
               </div>
             </div>
+            {isUserAdmin && (
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-700">
                 <h3 className="text-white font-semibold flex items-center gap-2">
@@ -2129,8 +2130,10 @@ export default function EdificioAdminPage() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Datos del edificio */}
+            {isUserAdmin && (
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-700 flex justify-between items-center">
                 <h3 className="text-white font-semibold flex items-center gap-2">
@@ -2198,8 +2201,10 @@ export default function EdificioAdminPage() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Configuración de WhatsApp */}
+            {isUserAdmin && (
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
               <div className="px-5 py-4 border-b border-slate-700 flex justify-between items-center bg-green-500/5">
                 <h3 className="text-white font-semibold flex items-center gap-2">
@@ -2408,6 +2413,7 @@ export default function EdificioAdminPage() {
                 </div>
               </div>
             </div>
+            )}
             </div>
             )}
 
