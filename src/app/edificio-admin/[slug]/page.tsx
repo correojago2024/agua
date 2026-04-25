@@ -59,7 +59,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpi
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'alarmas_logs' | 'planes';
+type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'alarmas_logs';
 
 // Helper: lee variation_lts o variacion_lts (ambos nombres posibles en BD)
 const getVariation = (m: Measurement): number =>
@@ -352,34 +352,7 @@ export default function EdificioAdminPage() {
     loadAuditLogs();
   };
 
-  // PLANES CONFIG (para el admin central)
-  const [allPlans, setAllPlans] = useState<any[]>([]);
-  const [plansLoading, setPlansLoading] = useState(false);
-  const [plansMsg, setPlansMsg] = useState('');
 
-  const loadAllPlans = async () => {
-    setPlansLoading(true);
-    const { data } = await supabase.from('plan_precios').select('*').order('precio', { ascending: true });
-    if (data) setAllPlans(data);
-    setPlansLoading(false);
-  };
-
-  const updatePlanPrice = async (planId: string, precio: number) => {
-    const { error } = await supabase
-      .from('plan_precios')
-      .update({ precio, updated_at: new Date().toISOString() })
-      .eq('plan_id', planId);
-
-    if (!error) {
-      setAllPlans(prev => prev.map(p => p.plan_id === planId ? { ...p, precio } : p));
-      setPlansMsg('✅ Precio actualizado');
-      setTimeout(() => setPlansMsg(''), 3000);
-    }
-  };
-
-  useEffect(() => {
-    if (tab === 'planes') loadAllPlans();
-  }, [tab]);
 
 
   // ── Load building ──────────────────────────────────────────────────────────
@@ -640,7 +613,6 @@ export default function EdificioAdminPage() {
   // Helper: check if current user is admin
   // Permisos: Admin real del edificio (o el admin central correojago)
   const isUserAdmin = !currentUser || currentUser.is_admin === true;
-  const isSuperAdmin = currentUser?.email === 'correojago@gmail.com';
   const isObserver = currentUser?.role === 'Observador';
 
   // Helper para enmascarar email - Ahora siempre enmascara si NO es admin, o si es la pestaña Junta
@@ -1193,7 +1165,6 @@ export default function EdificioAdminPage() {
             { id: 'reportes',      label: 'Estadísticas y Reportes', Icon: FileText, color: 'green' },
             isUserAdmin ? { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' } : null,
             isUserAdmin ? { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' } : null,
-            isSuperAdmin ? { id: 'planes',        label: 'Planes (Admin)', Icon: CreditCard,    color: 'blue' } : null,
           ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-2 my-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -1394,100 +1365,7 @@ export default function EdificioAdminPage() {
           </div>
         )}
 
-        {/* ── PLANES TAB (Configuración Central) ───────────────────────── */}
-        {tab === 'planes' && (
-          <div className="space-y-6">
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <CreditCard className="w-6 h-6 text-blue-400" />
-                <h2 className="text-xl font-bold text-white">Configuración de Tarifas de Planes</h2>
-              </div>
-              <p className="text-slate-400 text-sm mb-6">
-                Desde aquí puedes gestionar los precios base de los planes que se muestran en la página principal.
-              </p>
-              
-              {plansMsg && (
-                <div className="mb-4 p-3 bg-green-600/20 text-green-400 border border-green-500/30 rounded-lg text-sm">
-                  {plansMsg}
-                </div>
-              )}
 
-              {plansLoading ? (
-                <div className="flex items-center gap-3 text-slate-400 py-10 justify-center">
-                  <RefreshCw className="w-5 h-5 animate-spin" /> Cargando planes...
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {allPlans.map((plan) => (
-                    <div key={plan.plan_id} className="bg-slate-700/30 border border-slate-700 rounded-xl p-5 hover:border-slate-600 transition-all">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-white font-bold">{plan.nombre}</h3>
-                          <p className="text-slate-500 text-xs font-mono">{plan.plan_id}</p>
-                        </div>
-                        <div className={`p-2 rounded-lg ${plan.activo ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                          <CheckCircle2 className="w-4 h-4" />
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-slate-400 text-xs mb-1.5 uppercase tracking-wider font-bold">Precio Mensual ($)</label>
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="number" 
-                              step="0.01"
-                              defaultValue={plan.precio}
-                              onBlur={(e) => {
-                                const newVal = parseFloat(e.target.value);
-                                if (!isNaN(newVal) && newVal !== plan.precio) {
-                                  updatePlanPrice(plan.plan_id, newVal);
-                                }
-                              }}
-                              className="bg-slate-900 border border-slate-700 text-white px-4 py-2 rounded-lg font-bold text-lg w-full focus:outline-none focus:border-blue-500"
-                            />
-                            <div className="bg-slate-800 p-2 rounded-lg text-slate-500">
-                              <Save className="w-5 h-5" />
-                            </div>
-                          </div>
-                          <p className="text-[10px] text-slate-500 mt-2">
-                            * El precio anual se calcula automáticamente aplicando un 20% de descuento.
-                          </p>
-                        </div>
-
-                        <div className="pt-4 border-t border-slate-700">
-                          <p className="text-slate-400 text-xs mb-2 font-bold uppercase">Características:</p>
-                          <div className="space-y-1.5">
-                             <p className="text-slate-500 text-xs flex items-center gap-2">
-                               <Users className="w-3 h-3" /> {plan.caracteristicas?.suscriptores || '0'} miembros
-                             </p>
-                             <p className="text-slate-500 text-xs flex items-center gap-2">
-                               <Mail className="w-3 h-3" /> {plan.caracteristicas?.alertas_email ? 'Emails ilimitados' : 'Límite emails'}
-                             </p>
-                             {plan.caracteristicas?.alertas_sms && (
-                               <p className="text-slate-500 text-xs flex items-center gap-2">
-                                 <MessageSquare className="w-3 h-3" /> Alertas WhatsApp
-                               </p>
-                             )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-6">
-              <h4 className="text-blue-400 font-bold mb-2 flex items-center gap-2 italic">
-                <TrendingUp className="w-4 h-4" /> Nota de Administración
-              </h4>
-              <p className="text-slate-400 text-sm">
-                Esta pestaña solo es visible para su usuario. Los cambios realizados aquí impactan directamente en la oferta comercial de la página de inicio para todos los nuevos visitantes.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* ── JUNTA TAB ────────────────────────────────────────────────── */}
         {tab === 'junta' && (
