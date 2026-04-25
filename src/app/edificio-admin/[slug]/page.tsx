@@ -15,7 +15,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import {
   Droplets, Users, BarChart3, Download, Plus, Trash2, Edit2, Save,
@@ -90,6 +90,7 @@ interface JuntaMember {
 export default function EdificioAdminPage() {
   const { slug } = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [building, setBuilding] = useState<any>(null);
   const [loading, setLoading]   = useState(true);
   const [authed, setAuthed]     = useState(false);
