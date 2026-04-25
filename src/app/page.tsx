@@ -23,7 +23,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, X as XIcon } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
