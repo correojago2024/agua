@@ -27,7 +27,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, X as XIcon } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
-import { Droplets, Building, Mail, Lock, AlertCircle, ArrowRight, ArrowLeft, Phone, Users, BarChart3, CheckCircle, User, MessageSquare, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Droplets, Building, Mail, Lock, AlertCircle, ArrowRight, ArrowLeft, Phone, Users, BarChart3, CheckCircle, User, MessageSquare, KeyRound, Eye, EyeOff, X } from 'lucide-react';
 import PricingSection from '@/components/PricingSection';
 import FAQSection from '@/components/FAQSection';
 
@@ -1141,8 +1141,187 @@ export default function HomePage() {
       </section>
 
       {/* PLANES */}
-      <PricingSection />
+      <section id="planes" className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">Planes: AquaSaaS 2026</h2>
+            <p className="text-xl text-blue-400">Control inteligente para comunidades que valoran cada gota.</p>
+          </div>
 
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+            {/* Plan ESENCIAL */}
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all">
+              <h3 className="text-2xl font-bold text-white mb-2">1. Plan ESENCIAL</h3>
+              <p className="text-blue-400 font-medium mb-4">"La base de la tranquilidad comunitaria."</p>
+              <p className="text-slate-400 text-sm mb-6">Ideal para juntas de condominio que necesitan orden en la comunicación y dejar de depender de rumores.</p>
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow">
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas Inmediatas: Notificaciones vía email al reportante y a la Junta al instante. (Límite 50/mes).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Dashboard de Control: Visualización en tiempo real del nivel actual y la última medición registrada.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Memoria de Datos: Historial de registros de 60 días para auditorías básicas.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Marca Estándar: Formulario de envío optimizado con el sello de confianza AquaSaaS.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Comunidad: Gestión de hasta 5 miembros administrativos.</li>
+              </ul>
+            </div>
+
+            {/* Plan PROFESIONAL */}
+            <div className="bg-slate-800/50 border border-blue-500/30 rounded-2xl p-8 flex flex-col hover:border-blue-500/50 transition-all relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">MÁS POPULAR</div>
+              <h3 className="text-2xl font-bold text-white mb-2">2. Plan PROFESIONAL</h3>
+              <p className="text-blue-400 font-medium mb-4">"Gestión activa y transparencia vecinal."</p>
+              <p className="text-slate-400 text-sm mb-6">Diseñado para edificios que buscan análisis y una imagen más institucional.</p>
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow">
+                <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Esencial, más:</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Reportes Manuales a un clic: Envía reportes de estado personalizados a miembros seleccionados en cualquier momento.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Módulo de Estadísticas: Acceso a gráficos de participación y volumen de consumo mensual.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Exportación Inteligente: Descarga de datos en formato CSV para presentaciones en asambleas.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Personalización Visual: Sube el Banner Exclusivo de tu Edificio en el formulario de registro (Branding comunitario).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Capacidad Ampliada: Soporte para 150 emails/mes y hasta 10 miembros administrativos.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Historial Extendido: 120 días de registros acumulados.</li>
+              </ul>
+            </div>
+
+            {/* Plan PREMIUM */}
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all">
+              <h3 className="text-2xl font-bold text-white mb-2">3. Plan PREMIUM</h3>
+              <p className="text-blue-400 font-medium mb-4">"Inteligencia hidráulica y respuesta crítica."</p>
+              <p className="text-slate-400 text-sm mb-6">Para condominios que exigen eficiencia máxima, automatización y alertas que no se ignoran. </p>
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow">
+                <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Profesional, más:</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas vía WhatsApp: Integración crítica para umbrales mínimos configurables (300 notificaciones/mes).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Boletín Diario Programado: El sistema envía automáticamente un resumen cada mañana a la Junta.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Mapa de Calor de Consumo: Visualiza las franjas horarias y días de mayor gasto para optimizar el bombeo.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Proyecciones de Vaciado: El sistema calcula cuánto tiempo durará el agua según el ritmo de consumo actual.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Historial Infinito: Almacenamiento hasta 12 meses de registros acumulados.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Roles Avanzados: Miembros ilimitados con permisos específicos (Tesorero, Operador, Administrador).</li>
+              </ul>
+            </div>
+
+            {/* Plan IA */}
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all opacity-90 border-dashed">
+              <h3 className="text-2xl font-bold text-white mb-2">4. Plan IA</h3>
+              <p className="text-blue-400 font-medium mb-4">"El futuro del ahorro: Prevención total."</p>
+              <p className="text-slate-400 text-sm mb-6">(En Desarrollo - próximamente disponible)</p>
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-6">
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Detección Algorítmica de Fugas: Escaneo automático de flujos anómalos entre 2:00 AM y 4:00 AM.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Consultor IA: Análisis mensual sugerido sobre hábitos de consumo y ahorro energético.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Gestión de Descanso Nocturno: Configuración inteligente de silenciamiento de alertas no críticas.</li>
+              </ul>
+              <a href="#contacto" className="text-blue-400 hover:text-blue-300 font-bold text-sm underline">
+                [i] Notificarme cuando esté listo
+              </a>
+            </div>
+          </div>
+
+          {/* Multitanque Nota */}
+          <div className="bg-blue-600/10 border border-blue-500/20 rounded-2xl p-6 mb-16 text-center">
+            <p className="text-slate-300">
+              <span className="font-bold text-white">NOTA:</span> si su edificio o conjunto residencial o comercial tiene mas de un tanque de agua que desee controlar y monitorear con estas estadisticas, por favor <a href="#contacto" className="text-blue-400 hover:text-blue-300 font-bold underline">contactenos</a> para un Desarrollo particular multitanque.
+            </p>
+          </div>
+
+          {/* Tabla Comparativa */}
+          <div className="bg-slate-800/30 rounded-2xl p-1 overflow-hidden border border-slate-700/50 shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-slate-800/50 border-b border-slate-700">
+                    <th className="py-4 px-6 text-slate-400 font-medium uppercase text-[10px] tracking-wider">Característica</th>
+                    <th className="py-4 px-6 text-white font-bold">ESENCIAL (Gratis/Prueba)</th>
+                    <th className="py-4 px-6 text-white font-bold">(Profesional)</th>
+                    <th className="py-4 px-6 text-white font-bold">(Premium)</th>
+                    <th className="py-4 px-6 text-slate-400 font-bold italic">IA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Registros</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
+                    <td className="py-4 px-6 text-slate-500 font-medium">Ilimitados</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Emails / mes</td>
+                    <td className="py-4 px-6 text-slate-400">50</td>
+                    <td className="py-4 px-6 text-slate-200 font-bold">200</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">WhatsApp</td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Sí (Alertas Críticas)</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Reportes</td>
+                    <td className="py-4 px-6 text-slate-400 text-xs">Dashboard Básico</td>
+                    <td className="py-4 px-6 text-slate-200 text-xs font-semibold">Estadísticas de Sistema</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold text-xs uppercase tracking-tight">Inteligencia Hídrica</td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Historial</td>
+                    <td className="py-4 px-6 text-slate-400 text-xs">60 días</td>
+                    <td className="py-4 px-6 text-slate-200 text-xs font-semibold">120 días</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold text-xs">Ilimitado</td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Banner / Branding</td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
+                    <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Exportar CSV</td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">(Con gráficas)</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Reporte Diario</td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">(Configurable)</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Detección de Fugas</td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6"><X className="w-5 h-5 text-red-500/30" /></td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-blue-500" />
+                        <span className="text-[10px] text-blue-400 font-bold uppercase">(AI)</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
       {/* ACERCA DE */}
       <section id="acerca-de" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
