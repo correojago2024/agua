@@ -2444,8 +2444,9 @@ export default function EdificioAdminPage() {
                   <tbody className="divide-y divide-slate-700/40">
                     {auditLogs.map((log) => {
                       const isSuccess = log.operation === 'SUCCESS' || log.operation === 'INSERT';
-                      const isError = log.operation === 'ERROR';
+                      const isError = log.operation === 'ERROR' || log.status === 'ERROR';
                       const isWarning = log.operation === 'WARNING';
+                      const isInfo = log.operation === 'INFO';
 
                       return (
                         <tr key={log.id} className="hover:bg-slate-700/20">
@@ -2456,7 +2457,9 @@ export default function EdificioAdminPage() {
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               isSuccess ? 'bg-green-500/10 text-green-400' :
                               isError ? 'bg-red-500/10 text-red-400' :
-                              isWarning ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-700 text-slate-400'
+                              isWarning ? 'bg-amber-500/10 text-amber-400' : 
+                              isInfo ? 'bg-blue-500/10 text-blue-400' :
+                              'bg-slate-700 text-slate-400'
                             }`}>
                               {log.operation}
                             </span>

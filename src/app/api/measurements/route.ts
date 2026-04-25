@@ -34,8 +34,21 @@ export async function POST(request: Request) {
 
     if (!building_id) return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
 
+    // 1. Log de recepción
+    await logAudit({ 
+      req: request, 
+      building_id, 
+      user_email: email || collaborator_name || 'Anónimo', 
+      operation: 'INFO', 
+      entity_type: 'measurement', 
+      data_after: { message: 'Reporte recibido en API', body } 
+    });
+
     const { data: building, error: bErr } = await supabase.from('buildings').select('*').eq('id', building_id).single();
-    if (bErr || !building) return NextResponse.json({ error: 'Edificio no encontrado' }, { status: 404 });
+    if (bErr || !building) {
+      await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'ERROR', entity_type: 'measurement', data_after: { error: 'Edificio no encontrado', details: bErr } });
+      return NextResponse.json({ error: 'Edificio no encontrado' }, { status: 404 });
+    }
 
     const { data: history } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });
     const lastM = history && history.length > 0 ? history[history.length - 1] : null;
@@ -55,15 +68,47 @@ export async function POST(request: Request) {
     }
 
     const var_lts = lastM ? liters - lastM.liters : null;
-    const { data: meas } = await supabase.from('measurements').insert([{
-      building_id, liters, percentage, email: email || null,
+    
+    // CORRECCIÓN: Asegurar que email no sea null porque la tabla tiene restricción NOT NULL
+    const dbEmail = email || 'anonimo@aquasaas.com';
+
+    const { data: meas, error: insErr } = await supabase.from('measurements').insert([{
+      building_id, 
+      liters, 
+      percentage, 
+      email: dbEmail,
       collaborator_name: collaborator_name || 'Anónimo',
-      recorded_at, is_anomaly: isAnomaly, anomaly_checked: true,
+      recorded_at, 
+      is_anomaly: isAnomaly, 
+      anomaly_checked: true,
       variation_lts: var_lts,
     }]).select().single();
 
-    if (meas) await logAudit({ req: request, building_id, user_email: email || collaborator_name || 'Anónimo', operation: 'INSERT', entity_type: 'measurement', entity_id: meas.id, data_after: meas });
+    if (insErr) {
+      console.error('[DATABASE INSERT ERROR]', insErr);
+      await logAudit({ 
+        req: request, 
+        building_id, 
+        user_email: dbEmail, 
+        operation: 'ERROR', 
+        entity_type: 'measurement', 
+        data_after: { message: 'Error insertando en measurements', error: insErr } 
+      });
+      // A pesar del error de inserción, si el usuario proporcionó email, intentaremos enviarle algo o al menos retornar error
+      return NextResponse.json({ error: 'Error al registrar medición en base de datos: ' + insErr.message }, { status: 500 });
+    }
 
+    if (meas) {
+      await logAudit({ 
+        req: request, 
+        building_id, 
+        user_email: dbEmail, 
+        operation: 'INSERT', 
+        entity_type: 'measurement', 
+        entity_id: meas.id, 
+        data_after: meas 
+      });
+    }
     // --- INTEGRACIÓN WHATSAPP ---
     // Verificar umbrales de nivel y enviar alertas si es necesario
     try {
