@@ -1350,7 +1350,7 @@ export default function HomePage() {
 
           {/* Tabla Comparativa */}
           <div className="bg-slate-800/30 rounded-2xl p-1 overflow-hidden border border-slate-700/50 shadow-2xl">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="bg-slate-800/50 border-b border-slate-700">

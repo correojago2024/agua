@@ -1215,9 +1215,9 @@ export default function EdificioAdminPage() {
               </button>
             </div>
 
-            <div className="h-6 w-px bg-slate-700 hidden md:block" />
+            <div className="h-6 w-px bg-slate-700 hidden lg:block" />
 
-            <div className="flex items-center gap-3 ml-auto md:ml-0">
+            <div className="hidden lg:flex items-center gap-3">
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
@@ -1240,9 +1240,9 @@ export default function EdificioAdminPage() {
         </div>
       </header>
 
-      {/* Tabs */}
-      <div className="bg-slate-800/80 border-b border-slate-700 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto flex gap-1 px-4 overflow-x-auto scrollbar-hide">
+      {/* Tabs Menu Strip */}
+      <div className="bg-slate-800 border-b border-slate-700 shadow-xl sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto flex gap-2 px-4 overflow-x-auto scrollbar-hide py-3">
           {([
             { id: 'dashboard',     label: 'Dashboard',     Icon: BarChart3,     color: 'blue' },
             { id: 'junta',         label: 'Mi Junta',      Icon: Users,        color: 'purple' },
@@ -1251,15 +1251,17 @@ export default function EdificioAdminPage() {
             isUserAdmin ? { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' } : null,
             { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' },
           ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
-            <button key={id} onClick={() => setTab(id)}
-              className={`flex items-center gap-1.5 px-3 py-2 my-1.5 rounded-lg text-xs font-semibold transition-all ${
+            <button 
+              key={id} 
+              onClick={() => setTab(id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap shadow-sm active:scale-95 ${
                 tab === id
-                  ? `bg-${color}-500/20 text-${color}-400 ring-1 ring-${color}-500/40 shadow-sm`
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/50'
-              }`}>
-              <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden sm:inline">{label}</span>
-              <span className="sm:hidden">{label.slice(0,4)}</span>
+                  ? `bg-white text-blue-700 ring-2 ring-blue-500/20 shadow-blue-500/10`
+                  : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-600/50'
+              }`}
+            >
+              <Icon className={`w-4 h-4 flex-shrink-0 ${tab === id ? 'text-blue-600' : 'text-slate-400'}`} />
+              <span className="uppercase tracking-wider">{label}</span>
             </button>
           ))}
         </div>
