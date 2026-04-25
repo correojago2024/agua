@@ -2075,7 +2075,6 @@ export default function EdificioAdminPage() {
                 </button>
               </div>
             </div>
-            {isUserAdmin && (
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-700">
                 <h3 className="text-white font-semibold flex items-center gap-2">
@@ -2104,7 +2103,9 @@ export default function EdificioAdminPage() {
                             }
                           }}
                         />
-                    </div>                    <div className="flex gap-2">
+                    </div>
+                    {isUserAdmin && (
+                    <div className="flex gap-2">
                       <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors">
                         <Upload className="w-4 h-4" />
                         Cambiar banner
@@ -2116,8 +2117,10 @@ export default function EdificioAdminPage() {
                         Eliminar banner
                       </button>
                     </div>
+                    )}
                   </div>
                 ) : (
+                  isUserAdmin ? (
                   <label className={`flex flex-col items-center justify-center border-2 border-dashed border-slate-600 rounded-xl p-8 cursor-pointer transition-colors hover:border-blue-500 hover:bg-blue-500/5 ${bannerUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                     <Upload className="w-10 h-10 text-slate-500 mb-3" />
                     <p className="text-slate-300 font-medium">
@@ -2127,10 +2130,15 @@ export default function EdificioAdminPage() {
                     <input type="file" accept="image/*" className="hidden"
                       onChange={e => e.target.files?.[0] && uploadBanner(e.target.files[0])} />
                   </label>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-600 rounded-xl p-8 opacity-50">
+                      <Image className="w-10 h-10 text-slate-500 mb-3" />
+                      <p className="text-slate-300 font-medium italic">Sin banner personalizado</p>
+                    </div>
+                  )
                 )}
               </div>
             </div>
-            )}
 
             {/* Datos del edificio */}
             {isUserAdmin && (
