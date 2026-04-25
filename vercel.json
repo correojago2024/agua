@@ -25,5 +25,15 @@
         }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/buildings/daily-report",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/maintenance",
+      "schedule": "0 3 1,15 * *"
+    }
   ]
 }

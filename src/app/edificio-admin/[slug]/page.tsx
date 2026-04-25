@@ -65,10 +65,10 @@ type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' |
 const getVariation = (m: Measurement): number =>
   m.variation_lts ?? m.variacion_lts ?? 0;
 
-// Enmascara email: jogarot@gmail.com → jo***ot@gmail.com
+// Enmascara email: pepito@gmail.com → pe***to@gmail.com
 const maskEmail = (email: string): string => {
+  if (!email || !email.includes('@')) return email;
   const [local, domain] = email.split('@');
-  if (!domain) return email;
   if (local.length <= 4) return local[0] + '***@' + domain;
   return local.slice(0, 2) + '***' + local.slice(-2) + '@' + domain;
 };
@@ -193,12 +193,12 @@ export default function EdificioAdminPage() {
     return true;
   };
 
-  // Helper to mask email for demo mode
-  const maskEmail = (email: string): string => {
-    if (!email || !email.includes('@')) return email;
-    const [local, domain] = email.split('@');
-    const maskedLocal = local.length > 2 ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] : local;
-    return `${maskedLocal}@${domain}`;
+  // Helper to block writes for observers
+  const observerBlock = (msg?: string): boolean => {
+    if (!isObserver) return false;
+    setMeasMsg(msg || '⚠️ Modo Observador: no tienes permisos para realizar cambios.');
+    setTimeout(() => setMeasMsg(''), 4000);
+    return true;
   };
 
   const logClientAudit = async (operation: string, entity_type: string, entity_id: string, data?: any) => {
@@ -248,6 +248,7 @@ export default function EdificioAdminPage() {
 
   const saveWhatsAppSettings = async () => {
     if (!building) return;
+    if (observerBlock()) return;
     if (demoBlock()) return;
 
     setWaLoading(true);
@@ -284,6 +285,7 @@ export default function EdificioAdminPage() {
 
   const handleTestWhatsApp = async () => {
     if (!building || !testPhone) return;
+    if (observerBlock()) return;
     setTestLoading(true);
     setTestResult(null);
 
@@ -322,6 +324,7 @@ export default function EdificioAdminPage() {
 
   const handleManualSendReport = async () => {
     if (!building || !manualRecipients) return;
+    if (observerBlock()) return;
     setSendingManual(true);
     setManualMsg('');
     
@@ -619,7 +622,16 @@ export default function EdificioAdminPage() {
   };
 
   // Helper: check if current user is admin
+  // Permisos: Admin real del edificio (o el admin central correojago)
   const isUserAdmin = !currentUser || currentUser.is_admin === true;
+  const isSuperAdmin = currentUser?.email === 'correojago@gmail.com';
+  const isObserver = currentUser?.role === 'Observador';
+
+  // Helper para enmascarar email - Ahora siempre enmascara si NO es admin, o si es la pestaña Junta
+  const getDisplayEmail = (email: string, forceMask = false) => {
+    if (isUserAdmin && !isDemo && !forceMask) return email;
+    return maskEmail(email);
+  };
 
   // ── KPIs ───────────────────────────────────────────────────────────────────
   const kpis = (() => {
@@ -654,6 +666,7 @@ export default function EdificioAdminPage() {
 
   // ── Junta CRUD ─────────────────────────────────────────────────────────────
   const addJuntaMember = async () => {
+    if (observerBlock()) return;
     if (!newMemberEmail.trim()) return;
     if (demoBlock('⚠️ Modo Demo: no se pueden agregar miembros en la cuenta de demostración.')) return;
     const memberEmail = newMemberEmail.trim().toLowerCase();
@@ -735,6 +748,7 @@ export default function EdificioAdminPage() {
   };
 
   const removeJuntaMember = async (member: JuntaMember) => {
+    if (observerBlock()) return;
     if (!confirm(`¿Quitar a ${member.email} de la junta?\nDejará de recibir copias de los reportes.`)) return;
     if (demoBlock('⚠️ Modo Demo: no se pueden eliminar miembros en la cuenta de demostración.')) return;
     await supabase.from('building_members')
@@ -747,6 +761,7 @@ export default function EdificioAdminPage() {
 
   const updateJuntaMember = async (member: any) => {
     if (!member) return;
+    if (observerBlock()) { setEditingMember(null); return; }
     if (demoBlock('⚠️ Modo Demo: los cambios no se guardan en la base de datos.')) { setEditingMember(null); return; }
     const { error } = await supabase.from('building_members')
       .update({ 
@@ -810,6 +825,7 @@ export default function EdificioAdminPage() {
 
   const saveEditMeasurement = async () => {
     if (!editingMeasurement) return;
+    if (observerBlock()) { setEditingMeasurement(null); return; }
     if (demoBlock('⚠️ Modo Demo: las ediciones no se guardan en la base de datos.')) { setEditingMeasurement(null); return; }
     const newLiters = parseFloat(editLiters);
     const newPct    = parseFloat(editPct);
@@ -836,6 +852,7 @@ export default function EdificioAdminPage() {
   };
 
   const deleteMeasurement = async (id: string) => {
+    if (observerBlock()) return;
     if (!confirm('¿Eliminar esta medición? Esta acción no se puede deshacer.')) return;
     if (demoBlock('⚠️ Modo Demo: no se pueden eliminar registros en la cuenta de demostración.')) return;
 
@@ -870,6 +887,7 @@ export default function EdificioAdminPage() {
   };
 
   const markAnomalyReviewed = async (id: string) => {
+    if (observerBlock()) return;
     if (demoBlock()) return;
     await supabase.from('measurements').update({ anomaly_checked: true, is_anomaly: false }).eq('id', id);
     setMeasMsg('✅ Marcada como revisada');
@@ -887,6 +905,7 @@ export default function EdificioAdminPage() {
   };
 
   const saveConfig = async () => {
+    if (observerBlock()) { setEditingConfig(false); return; }
     if (demoBlock('⚠️ Modo Demo: la configuración no se guarda en la cuenta de demostración.')) { setEditingConfig(false); return; }
     const { error } = await supabase.from('buildings').update({
       name:                 cfgName,
@@ -912,6 +931,7 @@ export default function EdificioAdminPage() {
       console.log('DEBUG BANNER: Falta archivo o datos del edificio', { file, buildingId: building?.id });
       return;
     }
+    if (observerBlock()) return;
     if (demoBlock('⚠️ Modo Demo: no se puede subir banner.')) return;
     if (file.size > 2 * 1024 * 1024) { setBannerMsg('❌ La imagen debe ser menor a 2MB'); return; }
 
@@ -981,6 +1001,7 @@ export default function EdificioAdminPage() {
 
   const removeBanner = async () => {
     if (!confirm('¿Eliminar el banner actual?')) return;
+    if (observerBlock()) return;
     if (demoBlock('⚠️ Modo Demo: no se puede eliminar el banner en la cuenta de demostración.')) return;
     await supabase.from('buildings').update({ banner_url: null }).eq('id', building.id);
     setBuilding({ ...building, banner_url: null });
@@ -1154,10 +1175,10 @@ export default function EdificioAdminPage() {
             { id: 'junta',         label: 'Mi Junta',      Icon: Users,        color: 'purple' },
             { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,     color: 'amber' },
             { id: 'reportes',      label: 'Estadísticas y Reportes', Icon: FileText, color: 'green' },
-            { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' },
-            { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' },
-            { id: 'planes',        label: 'Planes (Admin)', Icon: CreditCard,    color: 'blue' },
-          ] as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
+            isUserAdmin ? { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' } : null,
+            isUserAdmin ? { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' } : null,
+            isSuperAdmin ? { id: 'planes',        label: 'Planes (Admin)', Icon: CreditCard,    color: 'blue' } : null,
+          ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-2 my-1.5 rounded-lg text-xs font-semibold transition-all ${
                 tab === id
@@ -1468,10 +1489,14 @@ export default function EdificioAdminPage() {
                   </h3>
                   <p className="text-slate-400 text-xs mt-0.5">
                     Al agregar un miembro, se le enviará automáticamente un email de bienvenida con su clave temporal (123456) e instrucciones de acceso.
-                    {currentUser && !isUserAdmin && <span className="text-amber-400 ml-2">(Solo administradores pueden agregar/remover)</span>}
+                    {isObserver ? (
+                      <span className="text-amber-400 ml-2">(Modo Observador: no puedes realizar cambios)</span>
+                    ) : (
+                      currentUser && !isUserAdmin && <span className="text-amber-400 ml-2">(Solo administradores pueden agregar/remover)</span>
+                    )}
                   </p>
                 </div>
-                {isUserAdmin && (
+                {isUserAdmin && !isObserver && (
                   <button onClick={() => setShowAddMember(!showAddMember)}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm transition-colors">
                     <Plus className="w-4 h-4" />
@@ -1489,7 +1514,7 @@ export default function EdificioAdminPage() {
                       placeholder="Nombre (opcional)" className="bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                     <select value={newMemberRole} onChange={e => setNewMemberRole(e.target.value)}
                       className="bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                      {['Presidente','Vice-presidente','Secretario/a','Tesorero/a','Vocal','Síndico/a'].map(r => (
+                      {['Presidente','Vice-presidente','Secretario/a','Tesorero/a','Vocal','Síndico/a','Observador'].map(r => (
                         <option key={r} value={r}>{r}</option>
                       ))}
                     </select>
@@ -1564,14 +1589,14 @@ export default function EdificioAdminPage() {
                         {editingMember?.id === m.id ? (
                           <>
                             <td className="px-4 py-3">
-                              <p className="text-white font-medium text-xs">{m.email}</p>
+                              <p className="text-white font-medium text-xs">{getDisplayEmail(m.email, true)}</p>
                               <input type="text" value={editingMember.name || ''} onChange={e => setEditingMember({...editingMember, name: e.target.value})}
                                 className="mt-1 bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-xs w-full" placeholder="Nombre" />
                             </td>
                             <td className="px-4 py-3">
                               <select value={editingMember.role || 'Vocal'} onChange={e => setEditingMember({...editingMember, role: e.target.value})}
                                 className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-xs">
-                                {['Presidente','Vice-presidente','Secretario/a','Tesorero/a','Vocal','Síndico/a'].map(r => (
+                                {['Presidente','Vice-presidente','Secretario/a','Tesorero/a','Vocal','Síndico/a','Observador'].map(r => (
                                   <option key={r} value={r}>{r}</option>
                                 ))}
                               </select>
@@ -1619,7 +1644,7 @@ export default function EdificioAdminPage() {
                           <>
                             <td className="px-4 py-3">
                               <p className="text-white font-medium text-xs">{m.name || 'Sin nombre'}</p>
-                              <p className="text-slate-500 text-[10px]">{m.email}</p>
+                              <p className="text-slate-500 text-[10px]">{getDisplayEmail(m.email, true)}</p>
                             </td>
                             <td className="px-4 py-3 text-slate-300 text-xs">{m.role || 'Vocal'}</td>
                             <td className="px-4 py-3">
@@ -1639,7 +1664,7 @@ export default function EdificioAdminPage() {
                             </td>
                             <td className="px-4 py-3 text-green-400 text-xs font-medium">∞ Ilimitado</td>
                             <td className="px-4 py-3">
-                              {isUserAdmin && (
+                              {isUserAdmin && !isObserver && (
                                 <div className="flex gap-1">
                                   <button onClick={() => setEditingMember(m)} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-all"><Edit2 className="w-4 h-4" /></button>
                                   <button onClick={() => removeJuntaMember(m)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-all"><Trash2 className="w-4 h-4" /></button>
@@ -1989,32 +2014,34 @@ export default function EdificioAdminPage() {
                                 : <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">Normal</span>}
                             </td>
                             <td className="px-3 py-2">
-                              <div className="flex gap-1">
-                                {isEditing ? (
-                                  <>
-                                    <button onClick={saveEditMeasurement} className="p-1 text-green-400 hover:bg-green-500/20 rounded" title="Guardar">
-                                      <Save className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button onClick={() => setEditingMeasurement(null)} className="p-1 text-slate-400 hover:bg-slate-600 rounded" title="Cancelar">
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button onClick={() => startEditMeasurement(m)} className="p-1 text-blue-400 hover:bg-blue-500/20 rounded" title="Editar">
-                                      <Edit2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    {m.is_anomaly && !m.anomaly_checked && (
-                                      <button onClick={() => markAnomalyReviewed(m.id)} className="p-1 text-amber-400 hover:bg-amber-500/20 rounded" title="Marcar revisada">
-                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                              {isUserAdmin && !isObserver && (
+                                <div className="flex gap-1">
+                                  {isEditing ? (
+                                    <>
+                                      <button onClick={saveEditMeasurement} className="p-1 text-green-400 hover:bg-green-500/20 rounded" title="Guardar">
+                                        <Save className="w-3.5 h-3.5" />
                                       </button>
-                                    )}
-                                    <button onClick={() => deleteMeasurement(m.id)} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="Eliminar">
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
+                                      <button onClick={() => setEditingMeasurement(null)} className="p-1 text-slate-400 hover:bg-slate-600 rounded" title="Cancelar">
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button onClick={() => startEditMeasurement(m)} className="p-1 text-blue-400 hover:bg-blue-500/20 rounded" title="Editar">
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                      </button>
+                                      {m.is_anomaly && !m.anomaly_checked && (
+                                        <button onClick={() => markAnomalyReviewed(m.id)} className="p-1 text-amber-400 hover:bg-amber-500/20 rounded" title="Marcar revisada">
+                                          <CheckCircle2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                      <button onClick={() => deleteMeasurement(m.id)} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="Eliminar">
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
                             </td>
                           </tr>
                         );
