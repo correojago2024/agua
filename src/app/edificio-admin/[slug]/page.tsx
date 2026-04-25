@@ -842,14 +842,15 @@ export default function EdificioAdminPage() {
       const { error } = await query;
       if (error) throw error;
 
-      await logAudit({
-        req: undefined,
+      // Registro de auditoría manual (compatible con cliente)
+      await supabase.from('audit_logs').insert([{
         building_id: building.id,
-        user_email: currentUser?.email || 'ADMIN',
+        user_email: currentUser?.email || loginEmail || 'ADMIN',
         operation: 'SECURITY',
-        entity_type: 'bulk_cleanup',
-        data_after: { mode, count_deleted: count, from: reportFrom, to: reportTo }
-      });
+        entity_type: 'measurement_cleanup',
+        data_after: { mode, count_deleted: count, from: reportFrom, to: reportTo },
+        status: 'SUCCESS'
+      }]);
 
       setMeasMsg(`✅ Limpieza exitosa: ${count} registros eliminados`);
       setTimeout(() => setMeasMsg(''), 5000);
