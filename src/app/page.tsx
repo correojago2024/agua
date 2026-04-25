@@ -1331,21 +1331,21 @@ export default function HomePage() {
                     <td className="py-4 px-6 text-white font-bold">${getPrice('basico')}{billingCycle === 'yearly' ? '*' : ''}</td>
                     <td className="py-4 px-6 text-white font-bold">${getPrice('profesional')}{billingCycle === 'yearly' ? '*' : ''}</td>
                     <td className="py-4 px-6 text-white font-bold">${getPrice('premium')}{billingCycle === 'yearly' ? '*' : ''}</td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6 text-white font-bold">${getPrice('ia')}{billingCycle === 'yearly' ? '*' : ''}</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Registros</td>
                     <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
                     <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
                     <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
-                    <td className="py-4 px-6 text-slate-500 font-medium">Ilimitados</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Emails / mes</td>
                     <td className="py-4 px-6 text-slate-400">50</td>
                     <td className="py-4 px-6 text-slate-200 font-bold">200</td>
                     <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">WhatsApp</td>
@@ -1357,28 +1357,33 @@ export default function HomePage() {
                         <span className="text-[10px] text-green-500 font-bold uppercase">Sí (Alertas Críticas)</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Sí (Alertas Críticas)</span>
+                      </div>
+                    </td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Reportes</td>
                     <td className="py-4 px-6 text-slate-400 text-xs">Dashboard Básico</td>
                     <td className="py-4 px-6 text-slate-200 text-xs font-semibold">Estadísticas de Sistema</td>
                     <td className="py-4 px-6 text-blue-400 font-bold text-xs uppercase tracking-tight">Inteligencia Hídrica</td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold text-xs uppercase tracking-tight">Inteligencia Hídrica + Predictivo</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Historial</td>
                     <td className="py-4 px-6 text-slate-400 text-xs">60 días</td>
                     <td className="py-4 px-6 text-slate-200 text-xs font-semibold">120 días</td>
                     <td className="py-4 px-6 text-blue-400 font-bold text-xs">12 meses</td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold text-xs">12 meses</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Banner / Branding</td>
                     <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
                     <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Exportar CSV</td>
@@ -1390,7 +1395,12 @@ export default function HomePage() {
                         <span className="text-[10px] text-green-500 font-bold uppercase">(Con gráficas)</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">(Con gráficas)</span>
+                      </div>
+                    </td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Reporte Diario</td>
@@ -1402,7 +1412,12 @@ export default function HomePage() {
                         <span className="text-[10px] text-green-500 font-bold uppercase">(Configurable)</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-slate-500">—</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">(Configurable)</span>
+                      </div>
+                    </td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Detección de Fugas</td>
