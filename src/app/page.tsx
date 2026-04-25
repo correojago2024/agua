@@ -1349,8 +1349,8 @@ export default function HomePage() {
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">WhatsApp</td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-green-500" />
@@ -1375,14 +1375,14 @@ export default function HomePage() {
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Banner / Branding</td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
                     <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
                     <td className="py-4 px-6 text-slate-500">—</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Exportar CSV</td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6"><CheckCircle className="w-5 h-5 text-green-500" /></td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
@@ -1394,8 +1394,8 @@ export default function HomePage() {
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Reporte Diario</td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-green-500" />
@@ -1406,9 +1406,9 @@ export default function HomePage() {
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Detección de Fugas</td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
-                    <td className="py-4 px-6"><div className="flex justify-center"><X className="w-6 h-6 text-red-500 bg-red-500/10 rounded-full p-1 shadow-sm shadow-red-500/20" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
+                    <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-blue-500" />
