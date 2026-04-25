@@ -80,6 +80,23 @@ export default function HomePage() {
   const router = useRouter();
   const [view, setView] = useState<'home' | 'login' | 'register' | 'forgot'>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [plans, setPlans] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      const { data } = await supabase.from('plan_precios').select('*').order('precio', { ascending: true });
+      if (data) setPlans(data);
+    };
+    loadPlans();
+  }, []);
+
+  const getPrice = (planId: string) => {
+    const plan = plans.find(p => p.plan_id === planId);
+    if (!plan) return planId === 'basico' ? 0 : planId === 'profesional' ? 25 : planId === 'premium' ? 60 : 0;
+    return billingCycle === 'yearly' ? plan.precio * 0.8 : plan.precio;
+  };
+
   const [formData, setFormData] = useState({
     slug: '',
     password: '',
@@ -1145,13 +1162,31 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">Planes: AquaSaaS 2026</h2>
-            <p className="text-xl text-blue-400">Control inteligente para comunidades que valoran cada gota.</p>
+            <p className="text-xl text-blue-400 mb-8">Control inteligente para comunidades que valoran cada gota.</p>
+            
+            {/* Toggle Mensual/Anual */}
+            <div className="flex items-center justify-center gap-4">
+              <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}>Mensual</span>
+              <button 
+                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                className="w-14 h-7 bg-slate-700 rounded-full relative transition-colors duration-300 focus:outline-none ring-2 ring-blue-500/20"
+              >
+                <div className={`absolute top-1 w-5 h-5 bg-blue-500 rounded-full transition-all duration-300 ${billingCycle === 'yearly' ? 'left-8' : 'left-1'}`}></div>
+              </button>
+              <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-white' : 'text-slate-500'}`}>
+                Anual <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full ml-1 font-bold">AHORRA 20%</span>
+              </span>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
             {/* Plan ESENCIAL */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all">
               <h3 className="text-2xl font-bold text-white mb-2">1. Plan ESENCIAL</h3>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-white">${getPrice('basico')}</span>
+                <span className="text-slate-400 text-sm"> / {billingCycle === 'monthly' ? 'mes' : 'mes (anual)'}</span>
+              </div>
               <p className="text-blue-400 font-medium mb-4">"La base de la tranquilidad comunitaria."</p>
               <p className="text-slate-400 text-sm mb-6">Ideal para juntas de condominio que necesitan orden en la comunicación y dejar de depender de rumores.</p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow">
@@ -1167,6 +1202,10 @@ export default function HomePage() {
             <div className="bg-slate-800/50 border border-blue-500/30 rounded-2xl p-8 flex flex-col hover:border-blue-500/50 transition-all relative">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">MÁS POPULAR</div>
               <h3 className="text-2xl font-bold text-white mb-2">2. Plan PROFESIONAL</h3>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-white">${getPrice('profesional')}</span>
+                <span className="text-slate-400 text-sm"> / {billingCycle === 'monthly' ? 'mes' : 'mes (anual)'}</span>
+              </div>
               <p className="text-blue-400 font-medium mb-4">"Gestión activa y transparencia vecinal."</p>
               <p className="text-slate-400 text-sm mb-6">Diseñado para edificios que buscan análisis y una imagen más institucional.</p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow">
@@ -1183,6 +1222,10 @@ export default function HomePage() {
             {/* Plan PREMIUM */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all">
               <h3 className="text-2xl font-bold text-white mb-2">3. Plan PREMIUM</h3>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-white">${getPrice('premium')}</span>
+                <span className="text-slate-400 text-sm"> / {billingCycle === 'monthly' ? 'mes' : 'mes (anual)'}</span>
+              </div>
               <p className="text-blue-400 font-medium mb-4">"Inteligencia hidráulica y respuesta crítica."</p>
               <p className="text-slate-400 text-sm mb-6">Para condominios que exigen eficiencia máxima, automatización y alertas que no se ignoran. </p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow">
@@ -1191,7 +1234,7 @@ export default function HomePage() {
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Boletín Diario Programado: El sistema envía automáticamente un resumen cada mañana a la Junta.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Mapa de Calor de Consumo: Visualiza las franjas horarias y días de mayor gasto para optimizar el bombeo.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Proyecciones de Vaciado: El sistema calcula cuánto tiempo durará el agua según el ritmo de consumo actual.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Historial Infinito: Almacenamiento hasta 12 meses de registros acumulados.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Historial Extendido: Almacenamiento hasta 12 meses de registros acumulados.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Roles Avanzados: Miembros ilimitados con permisos específicos (Tesorero, Operador, Administrador).</li>
               </ul>
             </div>
@@ -1199,6 +1242,9 @@ export default function HomePage() {
             {/* Plan IA */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all opacity-90 border-dashed">
               <h3 className="text-2xl font-bold text-white mb-2">4. Plan IA</h3>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-white">$—</span>
+              </div>
               <p className="text-blue-400 font-medium mb-4">"El futuro del ahorro: Prevención total."</p>
               <p className="text-slate-400 text-sm mb-6">(En Desarrollo - próximamente disponible)</p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-6">
@@ -1233,6 +1279,13 @@ export default function HomePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Tarifa {billingCycle === 'monthly' ? 'Mensual' : 'Anual'}</td>
+                    <td className="py-4 px-6 text-white font-bold">${getPrice('basico')}{billingCycle === 'yearly' ? '*' : ''}</td>
+                    <td className="py-4 px-6 text-white font-bold">${getPrice('profesional')}{billingCycle === 'yearly' ? '*' : ''}</td>
+                    <td className="py-4 px-6 text-white font-bold">${getPrice('premium')}{billingCycle === 'yearly' ? '*' : ''}</td>
+                    <td className="py-4 px-6 text-slate-500">—</td>
+                  </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Registros</td>
                     <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
@@ -1270,7 +1323,7 @@ export default function HomePage() {
                     <td className="py-4 px-6 text-slate-300 font-medium">Historial</td>
                     <td className="py-4 px-6 text-slate-400 text-xs">60 días</td>
                     <td className="py-4 px-6 text-slate-200 text-xs font-semibold">120 días</td>
-                    <td className="py-4 px-6 text-blue-400 font-bold text-xs">Ilimitado</td>
+                    <td className="py-4 px-6 text-blue-400 font-bold text-xs">12 meses</td>
                     <td className="py-4 px-6 text-slate-500">—</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
@@ -1319,6 +1372,9 @@ export default function HomePage() {
                 </tbody>
               </table>
             </div>
+            {billingCycle === 'yearly' && (
+              <p className="p-4 text-[10px] text-slate-500 italic">* Tarifa con 20% de descuento incluido por pago anual.</p>
+            )}
           </div>
         </div>
       </section>
