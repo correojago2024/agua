@@ -330,28 +330,57 @@ export function getWeekendChartUrl(measurements: Measurement[]) {
   });
 }
 
-// ── 11. Proyección Llenado/Vaciado con fechas/horas reales en eje X ───────────
+// ── 11. Proyección Llenado/Vaciado ──────────────────────────────────────────
 export function getProjectionFillingChartUrl(measurements: Measurement[], capacity: number) {
   const sorted = [...measurements].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
-  const lastRecord = sorted[sorted.length - 1];
-  if (!lastRecord) return enc({ type: 'bar', data: { labels: ['Sin datos'], datasets: [{ data: [0] }] } });
+  if (sorted.length < 1) return enc({ type: 'bar', data: { labels: ['Sin datos'], datasets: [{ data: [0] }] } });
 
+  const lastRecord = sorted[sorted.length - 1];
+  const prevRecord = sorted[sorted.length - 2];
+  
   const currentLiters = lastRecord.liters;
-  const flowLpm = (lastRecord.flow_lpm ?? lastRecord.caudal_lts_min ?? 0) as number;
   const baseTime = new Date(lastRecord.recorded_at);
+
+  // Intentamos calcular el caudal actual basándonos en la última variación
+  let flowLpm = (lastRecord.flow_lpm ?? lastRecord.caudal_lts_min ?? 0) as number;
+  
+  // Si no hay caudal o es 0, intentamos calcularlo manualmente entre las dos últimas
+  if (Math.abs(flowLpm) < 0.001 && prevRecord) {
+    const mins = (new Date(lastRecord.recorded_at).getTime() - new Date(prevRecord.recorded_at).getTime()) / 60000;
+    if (mins > 0) {
+      flowLpm = (lastRecord.liters - prevRecord.liters) / mins;
+    }
+  }
 
   const points: { label: string; pct: number }[] = [
     { label: format(baseTime, 'HH:mm'), pct: +lastRecord.percentage.toFixed(0) }
   ];
 
-  if (Math.abs(flowLpm) > 0.1) {
-    const targetPct = flowLpm < 0 ? [50, 0] : [80, 100];
-    targetPct.forEach(t => {
+  // Proyectamos si el caudal es significativo (> 0.01 lpm)
+  if (Math.abs(flowLpm) > 0.01) {
+    // Si vacía, proyectamos hacia niveles menores. Si llena, hacia mayores.
+    const targetPcts = flowLpm < 0 ? [60, 40, 20, 0] : [60, 80, 100];
+    
+    targetPcts.forEach(t => {
       const targetL = (t / 100) * capacity;
-      const mins = (targetL - currentLiters) / flowLpm;
-      if (mins > 0 && mins < 10080) {
-        points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm'), pct: t });
+      const diffL = targetL - currentLiters;
+      
+      // Solo proyectamos si el objetivo está en la dirección del flujo
+      if ((flowLpm < 0 && diffL < 0) || (flowLpm > 0 && diffL > 0)) {
+        const mins = diffL / flowLpm;
+        if (mins > 0 && mins < 10080) { // Máximo una semana de proyección
+          points.push({ label: format(addMinutes(baseTime, mins), 'HH:mm'), pct: t });
+        }
       }
+    });
+  }
+
+  // Si después de intentar proyectar solo tenemos 1 punto, agregamos una proyección corta ficticia 
+  // para que Chart.js dibuje una línea (mínimo 2 puntos)
+  if (points.length === 1) {
+    points.push({ 
+      label: format(addMinutes(baseTime, 60), 'HH:mm'), 
+      pct: +lastRecord.percentage.toFixed(0) 
     });
   }
 
@@ -360,18 +389,25 @@ export function getProjectionFillingChartUrl(measurements: Measurement[], capaci
     data: {
       labels: points.map(p => p.label),
       datasets: [{
-        label: flowLpm < 0 ? 'Vaciado (%)' : 'Llenado (%)',
+        label: flowLpm < 0 ? 'Proyección de Vaciado (%)' : flowLpm > 0 ? 'Proyección de Llenado (%)' : 'Nivel Estable (%)',
         data: points.map(p => p.pct),
-        borderColor: flowLpm < 0 ? '#ef4444' : '#22c55e',
+        borderColor: flowLpm < 0 ? '#ef4444' : flowLpm > 0 ? '#22c55e' : '#94a3b8',
         backgroundColor: 'transparent',
-        borderWidth: 2
+        borderWidth: 3,
+        pointRadius: 4,
+        tension: 0.1
       }]
     },
     options: {
-      plugins: { title: { display: true, text: 'Proyección' } },
-      scales: { y: { min: 0, max: 100 } }
+      plugins: { 
+        title: { display: true, text: 'Proyección de Nivel (Tiempo Estimado)' },
+        datalabels: { display: true, align: 'top', font: { size: 10 } }
+      },
+      scales: { 
+        y: { min: 0, max: 100, title: { display: true, text: 'Porcentaje (%)' } }
+      }
     }
-  }, 600, 300);
+  }, 700, 350);
 }
 
 // ── 12. Caudal en L/h ─────────────────────────────────────────────────────────

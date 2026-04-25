@@ -73,8 +73,21 @@ export async function POST(request: Request) {
     }
     // ----------------------------
 
-    const { data: updHistory } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });
-    const indicators: Indicators = calculateIndicators(updHistory || [], building.tank_capacity_liters) || {
+    // Volvemos a consultar el historial completo INCLUYENDO la recién creada
+    const { data: rawUpdHistory } = await supabase
+      .from('measurements')
+      .select('*')
+      .eq('building_id', building_id)
+      .order('recorded_at', { ascending: true });
+
+    // Si por algún retraso de replicación no viene en rawUpdHistory, la agregamos manualmente si tenemos meas
+    let updHistory = rawUpdHistory || [];
+    if (meas && !updHistory.find(m => m.id === meas.id)) {
+      updHistory.push(meas);
+      updHistory.sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
+    }
+
+    const indicators: Indicators = calculateIndicators(updHistory, building.tank_capacity_liters) || {
       lastFlow: 0, balance24h: { consumed: 0, filled: 0, net: 0 }, avgFlow24h: 0,
       projection11pm: percentage, projectedLiters11pm: liters, timeEstimate: 'Pendiente', estimateDate: 'N/A',
       filledToday: 0, filledLastWeek: 0, slotMax: { range: 'N/A', avg: 0 }, trends: { current: 0, previous: 0 },
