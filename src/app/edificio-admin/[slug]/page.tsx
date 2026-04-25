@@ -1182,10 +1182,10 @@ export default function EdificioAdminPage() {
       )}
       {/* Header */}
       <header className="bg-slate-800 border-b border-slate-700 px-4 py-3">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Droplets className="w-5 h-5 text-white" />
+        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+              <Droplets className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-white font-bold text-sm leading-tight">{building.name}</h1>
@@ -1193,49 +1193,47 @@ export default function EdificioAdminPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 md:gap-5">
-            {/* Botón Ayuda e Info de Usuario unificados */}
-            <button 
-              onClick={() => setShowHelpModal(true)}
-              className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-bold transition-colors text-[11px]"
-            >
-              <Info className="w-3.5 h-3.5" /> Ayuda ?
-            </button>
-
-            <div className="h-4 w-px bg-slate-700 hidden md:block" />
-
-            <div className="flex items-center gap-2 text-slate-300 text-[10px] bg-slate-900/50 px-3 py-1.5 rounded-full border border-slate-700/50">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              <span className="font-semibold uppercase tracking-tighter text-slate-400">
-                {currentUser ? `${currentUser.name} (${currentUser.role})` : 'Admin Principal'}
-              </span>
-              <span className="text-slate-600">|</span>
-              <span className="text-slate-500 italic truncate max-w-[120px]">{loginEmail || building?.admin_email}</span>
-            </div>
-
-            <div className="h-4 w-px bg-slate-700 hidden md:block" />
-
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 md:gap-4 flex-1">
+            <div className="flex items-center gap-3">
               <a 
                 href={`/edificio/${building.id}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-blue-400/5 text-[11px] font-bold transition-all"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95"
               >
-                <Droplets className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Ir al Formulario de Entrada</span>
-                <span className="sm:hidden">Formulario</span>
+                <Droplets className="w-4 h-4" />
+                <span>Ir al Formulario de Entrada</span>
               </a>
-              <button onClick={loadData} className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
-                <RefreshCw className="w-3.5 h-3.5" />
+              <button 
+                onClick={() => setShowHelpModal(true)}
+                className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-bold transition-colors text-xs"
+              >
+                <Info className="w-4 h-4" /> Ayuda ?
               </button>
+              <button onClick={loadData} className="p-2 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="h-6 w-px bg-slate-700 hidden md:block" />
+
+            <div className="flex items-center gap-3 ml-auto md:ml-0">
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <span className="font-bold uppercase text-[10px] text-slate-300 tracking-wider">
+                    {currentUser ? currentUser.name : 'Admin Principal'}
+                  </span>
+                  <span className="text-[9px] bg-slate-700 px-1.5 py-0.5 rounded text-slate-400 font-medium">{currentUser?.role || 'S.Admin'}</span>
+                </div>
+                <span className="text-[10px] text-slate-500 italic max-w-[150px] truncate">{loginEmail || building?.admin_email}</span>
+              </div>
               <button onClick={() => {
                 sessionStorage.clear();
                 setAuthed(false);
                 router.push('/');
-              }} className="flex items-center gap-1.5 text-slate-400 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-400/5 text-[11px] transition-all">
-                <LogOut className="w-3.5 h-3.5" />
-                Salir
+              }} className="flex items-center gap-1.5 text-slate-400 hover:text-red-400 p-2 rounded-lg hover:bg-red-400/5 transition-all" title="Cerrar Sesión">
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -2668,95 +2666,135 @@ export default function EdificioAdminPage() {
         )}
       </div>
 
-      {/* MODAL DE AYUDA SISTEMA */}
+      {/* MODAL DE AYUDA SISTEMA (VERSIÓN PROFESIONAL) */}
       {showHelpModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+          <div className="bg-[#f7f6f2] rounded-[32px] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-white/20">
             {/* Header Modal */}
-            <div className="bg-blue-600 p-6 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2 rounded-xl">
-                  <Info className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white leading-none">Centro de Ayuda AquaSaaS</h2>
-                  <p className="text-blue-100 text-xs mt-1">Guía rápida de uso y próximos pasos</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowHelpModal(false)}
-                className="bg-black/20 hover:bg-black/40 text-white p-2 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="bg-gradient-to-br from-[#04342C] via-[#0F6E56] to-[#1D9E75] p-8 shrink-0 relative">
+               <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='12'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
+               <div className="flex justify-between items-start relative z-10">
+                  <div>
+                    <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-[11px] px-3 py-1 rounded-full mb-4">
+                      💧 Gestión inteligente del agua
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-serif text-white leading-tight">Guía de Ayuda<br/>AquaSaaS</h2>
+                    <p className="text-white/70 text-sm mt-3 max-w-md">Todo lo que necesitas saber para gestionar el consumo de agua de tu edificio de forma inteligente y colaborativa.</p>
+                  </div>
+                  <button onClick={() => setShowHelpModal(false)} className="bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-full transition-all border border-white/20">
+                    <X className="w-5 h-5" />
+                  </button>
+               </div>
             </div>
 
             {/* Contenido Modal */}
-            <div className="p-8 overflow-y-auto space-y-8 custom-scrollbar text-sm">
-              <section className="space-y-3">
-                <h3 className="text-blue-400 font-black uppercase tracking-widest text-xs flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Gestión de la Junta
-                </h3>
-                <p className="text-slate-300 leading-relaxed">
-                  Como <strong>Administrador</strong>, tienes la capacidad de invitar a los demás miembros de tu junta de condominio. 
-                  En la pestaña <span className="text-purple-400 font-bold">"Mi Junta"</span>, agrega sus correos electrónicos para que reciban sus propias credenciales.
-                </p>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                  <li className="bg-slate-700/40 p-3 rounded-xl border border-slate-700/50">
-                    <p className="text-white font-bold text-xs mb-1">Administradores</p>
-                    <p className="text-slate-400 text-[11px]">Pueden modificar configuraciones, borrar datos y gestionar miembros.</p>
-                  </li>
-                  <li className="bg-slate-700/40 p-3 rounded-xl border border-slate-700/50">
-                    <p className="text-slate-300 font-bold text-xs mb-1">Miembros (Lectura)</p>
-                    <p className="text-slate-400 text-[11px]">Pueden ver gráficos, reportes y enviar informes manuales sin alterar nada.</p>
-                  </li>
-                </ul>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="text-green-400 font-black uppercase tracking-widest text-xs flex items-center gap-2">
-                  <Droplets className="w-4 h-4" /> Colaboración Vecinal
-                </h3>
-                <p className="text-slate-300 leading-relaxed">
-                  El sistema se alimenta de los datos que los vecinos registran. Tu edificio tiene un <strong>Link Público</strong> único.
-                </p>
-                <div className="bg-blue-900/20 border border-blue-500/30 p-4 rounded-2xl flex gap-4 items-start">
-                  <div className="bg-blue-500/20 p-2 rounded-lg"><MessageSquare className="w-5 h-5 text-blue-400" /></div>
-                  <div>
-                    <p className="text-blue-200 font-bold mb-1">Recomendación:</p>
-                    <p className="text-blue-300/80 text-xs">Publica el link en el grupo de WhatsApp del edificio o imprímelo en un código QR para las áreas comunes.</p>
-                  </div>
+            <div className="p-8 overflow-y-auto space-y-12 custom-scrollbar text-[#2C2C2A]">
+              
+              {/* Cómo funciona */}
+              <section id="como-funciona" className="space-y-6">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-[#E1F5EE] rounded-xl flex items-center justify-center text-xl">⚙️</div>
+                   <div>
+                     <h3 className="text-xl font-serif font-bold">¿Cómo funciona el sistema?</h3>
+                     <p className="text-xs text-[#5F5E5A]">Plataforma de gestión colaborativa para edificios residenciales.</p>
+                   </div>
                 </div>
-              </section>
 
-              <section className="space-y-3">
-                <h3 className="text-amber-400 font-black uppercase tracking-widest text-xs flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" /> Gráficos e Informes
-                </h3>
-                <p className="text-slate-300 leading-relaxed">
-                  Explora las pestañas para entender el comportamiento hídrico de tu comunidad:
-                </p>
+                <div className="bg-[#E6F1FB] border border-[#B5D4F4] p-4 rounded-xl flex gap-3 items-start text-sm text-[#0C447C]">
+                   <span className="text-lg leading-none">ℹ️</span>
+                   <p>AquaSaaS centraliza las mediciones reportadas por los residentes y las presenta en paneles detallados para la junta, generando informes automáticos en tiempo real.</p>
+                </div>
+
+                {/* Grid simple resumen */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center shrink-0"><BarChart3 className="w-4 h-4 text-slate-400" /></div>
-                    <div><p className="text-white font-bold text-[11px]">Dashboard</p><p className="text-slate-500 text-[10px]">Caudal, proyección de agotamiento y tendencias.</p></div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center shrink-0"><FileText className="w-4 h-4 text-slate-400" /></div>
-                    <div><p className="text-white font-bold text-[11px]">Estadísticas</p><p className="text-slate-500 text-[10px]">Histórico descargable y filtros por fecha.</p></div>
+                  {[
+                    { t: '🏢 Registro', p: 'El administrador crea el perfil del edificio con su capacidad y slug único.' },
+                    { t: '👥 Miembros', p: 'Se invita a residentes y miembros de junta por email para acceso seguro.' },
+                    { t: '📊 Reporte', p: 'Los residentes ingresan datos (L o %) alimentando las estadísticas.' },
+                    { t: '📧 Informes', p: 'Email automático con gráficos y análisis tras cada medición registrada.' }
+                  ].map(item => (
+                    <div key={item.t} className="bg-white border border-black/5 p-4 rounded-2xl">
+                      <h4 className="font-bold text-sm mb-1">{item.t}</h4>
+                      <p className="text-xs text-[#5F5E5A] leading-relaxed">{item.p}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Roles */}
+              <section id="roles" className="space-y-6">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#888780] border-b border-black/5 pb-2">Los tres roles del sistema</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="text-[#888780] uppercase tracking-tighter border-b border-black/10">
+                        <th className="py-3 px-2">Rol</th>
+                        <th className="py-3 px-2">Acceso</th>
+                        <th className="py-3 px-2">Funciones principales</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5">
+                      <tr>
+                        <td className="py-4 px-2 font-bold text-[#0F6E56]">Residente</td>
+                        <td className="py-4 px-2">Link público sin clave</td>
+                        <td className="py-4 px-2 text-[#5F5E5A]">Reportar datos y recibir informes.</td>
+                      </tr>
+                      <tr>
+                        <td className="py-4 px-2 font-bold text-[#185FA5]">Administrador</td>
+                        <td className="py-4 px-2">Panel privado con login</td>
+                        <td className="py-4 px-2 text-[#5F5E5A]">Gestión total, alertas y configuración.</td>
+                      </tr>
+                      <tr>
+                        <td className="py-4 px-2 font-bold text-[#BA7517]">Junta</td>
+                        <td className="py-4 px-2">Panel privado con login</td>
+                        <td className="py-4 px-2 text-[#5F5E5A]">Monitoreo, historial y visualización.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Residentes - El Ciclo */}
+              <section id="ciclo" className="space-y-6">
+                <div className="bg-[#FAEEDA] border border-[#FAC775] p-6 rounded-[24px]">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2">📧 Ciclo de Comunicación <span className="text-xs bg-white/50 px-2 py-0.5 rounded-full font-medium">Importante</span></h3>
+                  <p className="text-sm text-[#633806] mb-6">El sistema usa un ciclo inteligente para incentivar la participación sin saturar el correo:</p>
+                  
+                  <div className="flex flex-col md:flex-row items-center gap-4 justify-between bg-white/40 p-4 rounded-2xl border border-[#FAC775]/30">
+                    <div className="text-center px-4">
+                      <p className="font-bold text-xs">Tú reportas</p>
+                      <p className="text-[10px] opacity-70">Informe Completo</p>
+                    </div>
+                    <div className="text-[#BA7517] rotate-90 md:rotate-0">→</div>
+                    <div className="text-center px-4">
+                      <p className="font-bold text-xs">5 Emails vecinos</p>
+                      <p className="text-[10px] opacity-70">Siguientes reportes</p>
+                    </div>
+                    <div className="text-[#BA7517] rotate-90 md:rotate-0">→</div>
+                    <div className="text-center px-4 italic opacity-80">
+                      <p className="font-bold text-xs">Pausa</p>
+                      <p className="text-[10px]">Debes reportar otra vez</p>
+                    </div>
                   </div>
                 </div>
+              </section>
+
+              {/* Consejos */}
+              <section className="bg-[#EEEDFE] p-6 rounded-[24px] flex flex-col md:flex-row gap-6 items-center">
+                 <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-sm">🤝</div>
+                 <div className="space-y-2">
+                   <h3 className="font-bold">Colaboración Comunitaria</h3>
+                   <p className="text-sm text-[#3C3489] leading-relaxed">AquaSaaS promueve la transparencia. Publica tu <strong>Link Público</strong> en el grupo de WhatsApp del edificio. Cuantos más vecinos reporten, más precisas serán las proyecciones de consumo y alertas de fugas.</p>
+                 </div>
               </section>
             </div>
 
             {/* Footer Modal */}
-            <div className="bg-slate-900 p-6 border-t border-slate-700 text-center">
-              <button 
-                onClick={() => setShowHelpModal(false)}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-10 py-2.5 rounded-xl font-bold transition-all"
-              >
+            <div className="bg-white p-6 border-t border-black/5 text-center shrink-0">
+              <button onClick={() => setShowHelpModal(false)} className="bg-[#04342C] hover:bg-[#0F6E56] text-white px-12 py-3 rounded-2xl font-bold transition-all shadow-lg active:scale-95">
                 Entendido, gracias
               </button>
+              <p className="text-[10px] text-[#888780] mt-4 font-medium tracking-widest uppercase">2026 AquaSaaS — Gestión Hídrica Profesional</p>
             </div>
           </div>
         </div>

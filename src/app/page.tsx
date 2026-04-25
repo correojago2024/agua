@@ -325,7 +325,18 @@ export default function HomePage() {
       sessionStorage.setItem('building_slug', building.slug);
       sessionStorage.setItem('building_id', building.id);
 
+      // Email al cliente
       sendWelcomeEmail(building).catch(console.error);
+      
+      // Notificación inmediata al SuperAdmin (correojago)
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'superadmin_notification',
+          building: building
+        })
+      }).catch(err => console.error('Error notificando a SuperAdmin:', err));
 
       router.push(`/registro-confirmado?name=${encodeURIComponent(building.name)}&slug=${encodeURIComponent(building.slug)}&id=${encodeURIComponent(building.id)}`);
     } else {

@@ -142,6 +142,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: result.success });
     }
 
+    if (type === 'superadmin_notification') {
+      const superAdminHtml = `
+        <div style="font-family:sans-serif; max-width:600px; padding:20px; border:2px solid #3b82f6; border-radius:16px; background:#f8fafc;">
+          <h2 style="color:#1d4ed8; margin-top:0;">🚀 ¡NUEVO REGISTRO RECIBIDO!</h2>
+          <p style="font-size:16px;">Se ha registrado un nuevo edificio en el sistema AquaSaaS.</p>
+          
+          <div style="background:white; padding:20px; border-radius:12px; border:1px solid #e2e8f0; margin:20px 0;">
+            <p style="margin:5px 0;"><strong>🏢 Edificio:</strong> ${building.name}</p>
+            <p style="margin:5px 0;"><strong>🔑 Slug/ID:</strong> ${building.slug}</p>
+            <p style="margin:5px 0;"><strong>👤 Admin:</strong> ${building.admin_name}</p>
+            <p style="margin:5px 0;"><strong>📧 Email:</strong> ${building.admin_email}</p>
+            <p style="margin:5px 0;"><strong>📞 Teléfono:</strong> ${building.admin_phone || 'N/A'}</p>
+            <p style="margin:5px 0;"><strong>🚰 Capacidad:</strong> ${building.tank_capacity_liters.toLocaleString()} L</p>
+          </div>
+          
+          <p style="font-size:12px; color:#64748b;">Este es un aviso automático enviado a correojago@gmail.com</p>
+        </div>
+      `;
+      const result = await sendEmailViaGmail(['correojago@gmail.com'], `NUEVO REGISTRO: ${building.name}`, superAdminHtml, building.id || null, 'superadmin_alert');
+      return NextResponse.json({ success: result.success });
+    }
+
     if (type === 'junta_welcome') {
       const htmlContent = generateJuntaWelcomeEmailHtml(member, building, siteUrl);
       const result = await sendEmailViaGmail([member.email], `Acceso al Panel Administrativo - ${building.name}`, htmlContent, building.id || null, 'junta_welcome_email');
