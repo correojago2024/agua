@@ -62,7 +62,7 @@ function generateWelcomeEmailHtml(building: any, siteUrl: string) {
       </div>
 
       <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
-        <p style="color: #1e40af; font-weight: bold; font-size: 14px; margin: 0 0 8px;">🏢 Tu Panel Administrativo (Portal Secreto)</p>
+        <p style="color: #1e40af; font-weight: bold; font-size: 14px; margin: 0 0 8px;">🏢 Tu Panel Administrativo</p>
         <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">Accede aquí para ver gráficos avanzados, bitácora de eventos y gestionar a la junta:</p>
         <a href="${siteUrl}/edificio-admin/${building.slug}" style="color: #2563eb; font-size: 13px; font-weight: bold; word-break: break-all;">${siteUrl}/edificio-admin/${building.slug}</a>
       </div>

@@ -128,6 +128,7 @@ export default function EdificioAdminPage() {
 
   // Configuración del edificio
   const [editingConfig, setEditingConfig] = useState(false);
+  const [showHelpModal, setShowHelpModal]   = useState(false);
   const [cfgName, setCfgName]       = useState('');
   const [cfgCapacity, setCfgCapacity] = useState('');
   const [cfgAdminEmail, setCfgAdminEmail] = useState('');
@@ -1142,6 +1143,30 @@ export default function EdificioAdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-900">
+      {/* Barra Superior Informativa */}
+      <div className="bg-slate-800/50 border-b border-slate-700/50 px-6 py-2 flex justify-between items-center text-[11px]">
+        <div className="flex items-center gap-4 text-slate-400">
+          <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> Sistema Activo</span>
+          <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3" /> {format(new Date(), 'dd/MM/yyyy')}</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={() => setShowHelpModal(true)}
+            className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-bold transition-colors"
+          >
+            <Info className="w-3.5 h-3.5" /> Ayuda ?
+          </button>
+          <div className="flex items-center gap-2 text-slate-300">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <Users className="w-3.5 h-3.5 text-slate-500" />
+            <span className="font-semibold uppercase tracking-wider">
+              {currentUser ? `${currentUser.name} (${currentUser.role})` : 'Administrador Principal'}
+            </span>
+            <span className="text-slate-600">|</span>
+            <span className="text-slate-500 italic">{loginEmail || building?.admin_email}</span>
+          </div>
+        </div>
+      </div>
       {/* Password Change Modal */}
       {showPasswordChange && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -2637,6 +2662,100 @@ export default function EdificioAdminPage() {
           </div>
         )}
       </div>
+
+      {/* MODAL DE AYUDA SISTEMA */}
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Header Modal */}
+            <div className="bg-blue-600 p-6 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-xl">
+                  <Info className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white leading-none">Centro de Ayuda AquaSaaS</h2>
+                  <p className="text-blue-100 text-xs mt-1">Guía rápida de uso y próximos pasos</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowHelpModal(false)}
+                className="bg-black/20 hover:bg-black/40 text-white p-2 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Contenido Modal */}
+            <div className="p-8 overflow-y-auto space-y-8 custom-scrollbar text-sm">
+              <section className="space-y-3">
+                <h3 className="text-blue-400 font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Gestión de la Junta
+                </h3>
+                <p className="text-slate-300 leading-relaxed">
+                  Como <strong>Administrador</strong>, tienes la capacidad de invitar a los demás miembros de tu junta de condominio. 
+                  En la pestaña <span className="text-purple-400 font-bold">"Mi Junta"</span>, agrega sus correos electrónicos para que reciban sus propias credenciales.
+                </p>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                  <li className="bg-slate-700/40 p-3 rounded-xl border border-slate-700/50">
+                    <p className="text-white font-bold text-xs mb-1">Administradores</p>
+                    <p className="text-slate-400 text-[11px]">Pueden modificar configuraciones, borrar datos y gestionar miembros.</p>
+                  </li>
+                  <li className="bg-slate-700/40 p-3 rounded-xl border border-slate-700/50">
+                    <p className="text-slate-300 font-bold text-xs mb-1">Miembros (Lectura)</p>
+                    <p className="text-slate-400 text-[11px]">Pueden ver gráficos, reportes y enviar informes manuales sin alterar nada.</p>
+                  </li>
+                </ul>
+              </section>
+
+              <section className="space-y-3">
+                <h3 className="text-green-400 font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                  <Droplets className="w-4 h-4" /> Colaboración Vecinal
+                </h3>
+                <p className="text-slate-300 leading-relaxed">
+                  El sistema se alimenta de los datos que los vecinos registran. Tu edificio tiene un <strong>Link Público</strong> único.
+                </p>
+                <div className="bg-blue-900/20 border border-blue-500/30 p-4 rounded-2xl flex gap-4 items-start">
+                  <div className="bg-blue-500/20 p-2 rounded-lg"><MessageSquare className="w-5 h-5 text-blue-400" /></div>
+                  <div>
+                    <p className="text-blue-200 font-bold mb-1">Recomendación:</p>
+                    <p className="text-blue-300/80 text-xs">Publica el link en el grupo de WhatsApp del edificio o imprímelo en un código QR para las áreas comunes.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h3 className="text-amber-400 font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" /> Gráficos e Informes
+                </h3>
+                <p className="text-slate-300 leading-relaxed">
+                  Explora las pestañas para entender el comportamiento hídrico de tu comunidad:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center shrink-0"><BarChart3 className="w-4 h-4 text-slate-400" /></div>
+                    <div><p className="text-white font-bold text-[11px]">Dashboard</p><p className="text-slate-500 text-[10px]">Caudal, proyección de agotamiento y tendencias.</p></div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center shrink-0"><FileText className="w-4 h-4 text-slate-400" /></div>
+                    <div><p className="text-white font-bold text-[11px]">Estadísticas</p><p className="text-slate-500 text-[10px]">Histórico descargable y filtros por fecha.</p></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Footer Modal */}
+            <div className="bg-slate-900 p-6 border-t border-slate-700 text-center">
+              <button 
+                onClick={() => setShowHelpModal(false)}
+                className="bg-slate-700 hover:bg-slate-600 text-white px-10 py-2.5 rounded-xl font-bold transition-all"
+              >
+                Entendido, gracias
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

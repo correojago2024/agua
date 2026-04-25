@@ -227,14 +227,14 @@ export default function HomePage() {
       return;
     }
 
-    // Modo Administrador: requiere email y clave
-    const loginEmail = formData.slug.toLowerCase().trim();
+    // Modo Administrador: requiere email/ID y clave
+    const loginInput = formData.slug.toLowerCase().trim();
 
-    // 1. Intentar como administrador principal del edificio
+    // 1. Intentar como administrador principal (por email O por identificador/slug)
     const { data: building, error: bError } = await supabase
       .from('buildings')
       .select('id, slug, admin_email')
-      .ilike('admin_email', loginEmail)
+      .or(`admin_email.ilike.${loginInput},slug.eq.${loginInput}`)
       .eq('password', formData.password)
       .single();
 
@@ -244,11 +244,11 @@ export default function HomePage() {
       return;
     }
 
-    // 2. Intentar como miembro de la junta
+    // 2. Intentar como miembro de la junta (por email)
     const { data: member, error: mError } = await supabase
       .from('building_members')
       .select('id, building_id, email')
-      .ilike('email', loginEmail)
+      .ilike('email', loginInput)
       .eq('password', formData.password)
       .single();
 
@@ -522,13 +522,13 @@ export default function HomePage() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {loginMode === 'admin' ? 'Email Registrado' : 'Identificador del Edificio'}
+                  {loginMode === 'admin' ? 'Email o ID del Edificio' : 'Identificador del Edificio'}
                 </label>
                 <input
-                  type={loginMode === 'admin' ? 'email' : 'text'}
+                  type="text"
                   required
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
-                  placeholder={loginMode === 'admin' ? 'admin@edificio.com' : 'mi-edificio'}
+                  placeholder={loginMode === 'admin' ? 'admin@edificio.com o mi-id' : 'mi-edificio'}
                   value={formData.slug}
                   onChange={e => setFormData({...formData, slug: e.target.value})}
                 />
@@ -1052,10 +1052,9 @@ export default function HomePage() {
             <button onClick={() => { setView('login'); setMobileMenuOpen(false); }} className="bg-blue-600 text-white py-3 rounded-xl font-medium text-center">
               Ingresar al Sistema
             </button>
-            <button onClick={() => { setView('register'); setMobileMenuOpen(false); }} className="border border-slate-600 text-gray-200 py-3 rounded-xl font-medium text-center">
+            <button onClick={() => { setView('register'); setMobileMenuOpen(false); }} className="border-2 border-slate-500 text-gray-200 py-3 rounded-xl font-bold text-center hover:border-white transition-all shadow-md">
               Registrar Edificio
-            </button>
-          </div>
+            </button>          </div>
         )}
       </header>
 
@@ -1090,11 +1089,10 @@ export default function HomePage() {
             </button>
             <button
               onClick={() => setView('register')}
-              className="border border-slate-600 text-gray-200 hover:bg-slate-800 font-semibold px-8 py-4 rounded-xl transition-all"
+              className="border-2 border-slate-500 text-gray-200 hover:bg-slate-800 font-bold px-8 py-4 rounded-xl transition-all hover:border-white shadow-lg"
             >
               Registrar Edificio
-            </button>
-          </div>
+            </button>          </div>
         </div>
       </section>
 
