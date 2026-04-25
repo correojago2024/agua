@@ -92,8 +92,15 @@ export default function HomePage() {
   }, []);
 
   const getPrice = (planId: string) => {
-    const plan = plans.find(p => p.plan_id === planId);
-    if (!plan) return planId === 'basico' ? 0 : planId === 'profesional' ? 25 : planId === 'premium' ? 60 : 0;
+    const plan = plans.find(p => p.plan_id.toLowerCase() === planId.toLowerCase());
+    if (!plan) {
+      // Fallbacks si no carga la BD
+      if (planId.toLowerCase() === 'basico') return 0;
+      if (planId.toLowerCase() === 'profesional') return 25;
+      if (planId.toLowerCase() === 'premium') return 60;
+      if (planId.toLowerCase() === 'ia') return 99;
+      return 0;
+    }
     return billingCycle === 'yearly' ? plan.precio * 0.8 : plan.precio;
   };
 
@@ -1262,7 +1269,7 @@ export default function HomePage() {
 
             {/* Plan IA */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all opacity-90 border-dashed relative overflow-hidden">
-              <div className="absolute top-2 right-[-35px] bg-purple-600 text-white text-[8px] font-bold py-1 px-10 rotate-45 uppercase tracking-widest shadow-lg">Próximamente</div>
+              <div className="absolute top-4 right-[-32px] bg-purple-600 text-white text-[10px] font-bold py-1.5 px-12 rotate-45 uppercase tracking-widest shadow-lg z-10">Próximamente</div>
               <h3 className="text-2xl font-bold text-white mb-2">4. Plan IA</h3>
               <div className="mb-4">
                 <span className="text-3xl font-bold text-white">${getPrice('ia')}</span>
