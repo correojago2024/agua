@@ -1278,8 +1278,8 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Maintenance tab */}
-        {activeView === 'maintenance' && (
+        {/* Plans tab */}
+        {activeView === 'plans' && (
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
             <h2 className="text-lg font-semibold text-white mb-4">💰 Configuración de Planes</h2>
             <p className="text-slate-400 text-xs mb-6">Edita los precios de los planes que se muestran en la página principal.</p>

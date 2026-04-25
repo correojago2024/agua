@@ -1189,18 +1189,25 @@ export default function HomePage() {
               </div>
               <p className="text-blue-400 font-medium mb-4">"La base de la tranquilidad comunitaria."</p>
               <p className="text-slate-400 text-sm mb-6">Ideal para juntas de condominio que necesitan orden en la comunicación y dejar de depender de rumores.</p>
-              <ul className="space-y-3 text-slate-300 text-sm flex-grow">
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas Inmediatas: Notificaciones vía email al reportante y a la Junta al instante. (Límite 50/mes).</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Dashboard de Control: Visualización en tiempo real del nivel actual y la última medición registrada.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Memoria de Datos: Historial de registros de 60 días para auditorías básicas.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Marca Estándar: Formulario de envío optimizado con el sello de confianza AquaSaaS.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Comunidad: Gestión de hasta 5 miembros administrativos.</li>
               </ul>
+              <button 
+                onClick={() => setView('register')}
+                className="w-full py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
+              >
+                Comenzar ahora
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Plan PROFESIONAL */}
             <div className="bg-slate-800/50 border border-blue-500/30 rounded-2xl p-8 flex flex-col hover:border-blue-500/50 transition-all relative">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">MÁS POPULAR</div>
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">MÁS POPULAR</div>
               <h3 className="text-2xl font-bold text-white mb-2">2. Plan PROFESIONAL</h3>
               <div className="mb-4">
                 <span className="text-3xl font-bold text-white">${getPrice('profesional')}</span>
@@ -1208,15 +1215,22 @@ export default function HomePage() {
               </div>
               <p className="text-blue-400 font-medium mb-4">"Gestión activa y transparencia vecinal."</p>
               <p className="text-slate-400 text-sm mb-6">Diseñado para edificios que buscan análisis y una imagen más institucional.</p>
-              <ul className="space-y-3 text-slate-300 text-sm flex-grow">
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
                 <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Esencial, más:</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Reportes Manuales a un clic: Envía reportes de estado personalizados a miembros seleccionados en cualquier momento.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Reportes Manuales a un clic: Envía reportes de estado personalizados a miembros seleccionados.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Módulo de Estadísticas: Acceso a gráficos de participación y volumen de consumo mensual.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Exportación Inteligente: Descarga de datos en formato CSV para presentaciones en asambleas.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Personalización Visual: Sube el Banner Exclusivo de tu Edificio en el formulario de registro (Branding comunitario).</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Capacidad Ampliada: Soporte para 150 emails/mes y hasta 10 miembros administrativos.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Exportación Inteligente: Descarga de datos en formato CSV para presentaciones.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Personalización Visual: Sube el Banner Exclusivo de tu Edificio (Branding comunitario).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Capacidad Ampliada: Soporte para 150 emails/mes y hasta 10 miembros.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Historial Extendido: 120 días de registros acumulados.</li>
               </ul>
+              <button 
+                onClick={() => setView('register')}
+                className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+              >
+                Comenzar ahora
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Plan PREMIUM */}
@@ -1228,31 +1242,47 @@ export default function HomePage() {
               </div>
               <p className="text-blue-400 font-medium mb-4">"Inteligencia hidráulica y respuesta crítica."</p>
               <p className="text-slate-400 text-sm mb-6">Para condominios que exigen eficiencia máxima, automatización y alertas que no se ignoran. </p>
-              <ul className="space-y-3 text-slate-300 text-sm flex-grow">
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
                 <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Profesional, más:</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas vía WhatsApp: Integración crítica para umbrales mínimos configurables (300 notificaciones/mes).</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Boletín Diario Programado: El sistema envía automáticamente un resumen cada mañana a la Junta.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Mapa de Calor de Consumo: Visualiza las franjas horarias y días de mayor gasto para optimizar el bombeo.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Proyecciones de Vaciado: El sistema calcula cuánto tiempo durará el agua según el ritmo de consumo actual.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas vía WhatsApp: Integración crítica para umbrales mínimos (300 notificaciones/mes).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Boletín Diario Programado: El sistema envía automáticamente un resumen cada mañana.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Mapa de Calor de Consumo: Visualiza franjas horarias y días de mayor gasto.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Proyecciones de Vaciado: Cálculo de duración según el ritmo de consumo actual.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Historial Extendido: Almacenamiento hasta 12 meses de registros acumulados.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Roles Avanzados: Miembros ilimitados con permisos específicos (Tesorero, Operador, Administrador).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Roles Avanzados: Miembros ilimitados con permisos específicos.</li>
               </ul>
+              <button 
+                onClick={() => setView('register')}
+                className="w-full py-4 bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+              >
+                Comenzar ahora
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Plan IA */}
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all opacity-90 border-dashed">
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all opacity-90 border-dashed relative overflow-hidden">
+              <div className="absolute top-2 right-[-35px] bg-purple-600 text-white text-[8px] font-bold py-1 px-10 rotate-45 uppercase tracking-widest shadow-lg">Próximamente</div>
               <h3 className="text-2xl font-bold text-white mb-2">4. Plan IA</h3>
               <div className="mb-4">
-                <span className="text-3xl font-bold text-white">$—</span>
+                <span className="text-3xl font-bold text-white">${getPrice('ia')}</span>
+                <span className="text-slate-400 text-sm"> / {billingCycle === 'monthly' ? 'mes' : 'mes (anual)'}</span>
               </div>
               <p className="text-blue-400 font-medium mb-4">"El futuro del ahorro: Prevención total."</p>
               <p className="text-slate-400 text-sm mb-6">(En Desarrollo - próximamente disponible)</p>
-              <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-6">
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Detección Algorítmica de Fugas: Escaneo automático de flujos anómalos entre 2:00 AM y 4:00 AM.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Consultor IA: Análisis mensual sugerido sobre hábitos de consumo y ahorro energético.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Gestión de Descanso Nocturno: Configuración inteligente de silenciamiento de alertas no críticas.</li>
+              <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Detección Algorítmica de Fugas: Escaneo automático de flujos anómalos nocturnos.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Consultor IA: Análisis mensual sugerido sobre hábitos de consumo y ahorro.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Gestión de Descanso Nocturno: Silenciamiento inteligente de alertas no críticas.</li>
               </ul>
-              <a href="#contacto" className="text-blue-400 hover:text-blue-300 font-bold text-sm underline">
+              <button 
+                disabled
+                className="w-full py-4 bg-slate-800 text-slate-500 font-bold rounded-xl cursor-not-allowed border border-slate-700 flex flex-col items-center justify-center gap-1"
+              >
+                <span>En Desarrollo</span>
+                <span className="text-[10px] font-normal italic">No disponible aún</span>
+              </button>
+              <a href="#contacto" className="text-blue-400 hover:text-blue-300 font-bold text-xs underline text-center mt-4">
                 [i] Notificarme cuando esté listo
               </a>
             </div>
