@@ -92,16 +92,26 @@ export default function HomePage() {
   }, []);
 
   const getPrice = (planId: string) => {
-    const plan = plans.find(p => p.plan_id.toLowerCase() === planId.toLowerCase());
-    if (!plan) {
-      // Fallbacks si no carga la BD
-      if (planId.toLowerCase() === 'basico') return 0;
-      if (planId.toLowerCase() === 'profesional') return 25;
-      if (planId.toLowerCase() === 'premium') return 60;
-      if (planId.toLowerCase() === 'ia') return 99;
-      return 0;
+    // Buscar por ID exacto o variaciones comunes (premium/empresarial)
+    let plan = plans.find(p => p.plan_id.toLowerCase() === planId.toLowerCase());
+    
+    // Si buscamos 'premium' y no existe, intentamos con 'empresarial' que es el equivalente en BD antigua
+    if (!plan && planId.toLowerCase() === 'premium') {
+      plan = plans.find(p => p.plan_id.toLowerCase() === 'empresarial');
     }
-    return billingCycle === 'yearly' ? plan.precio * 0.8 : plan.precio;
+
+    if (!plan) {
+      // Fallbacks si no carga la BD (ahora con cálculo de ciclo)
+      let basePrice = 0;
+      if (planId.toLowerCase() === 'basico' || planId.toLowerCase() === 'esencial') basePrice = 0;
+      else if (planId.toLowerCase() === 'profesional') basePrice = 25;
+      else if (planId.toLowerCase() === 'premium' || planId.toLowerCase() === 'empresarial') basePrice = 60;
+      else if (planId.toLowerCase() === 'ia') basePrice = 99;
+      
+      return billingCycle === 'yearly' ? Math.round(basePrice * 0.8) : basePrice;
+    }
+    
+    return billingCycle === 'yearly' ? Math.round(plan.precio * 0.8) : plan.precio;
   };
 
   const [formData, setFormData] = useState({
@@ -1269,8 +1279,8 @@ export default function HomePage() {
 
             {/* Plan IA */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col hover:border-blue-500/30 transition-all opacity-90 border-dashed relative overflow-hidden">
-              <div className="absolute top-4 right-[-32px] bg-purple-600 text-white text-[10px] font-bold py-1.5 px-12 rotate-45 uppercase tracking-widest shadow-lg z-10">Próximamente</div>
-              <h3 className="text-2xl font-bold text-white mb-2">4. Plan IA</h3>
+              <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-bold py-1.5 px-4 text-center uppercase tracking-widest shadow-lg z-10">Próximamente Disponible</div>
+              <h3 className="text-2xl font-bold text-white mb-2 mt-4">4. Plan IA</h3>
               <div className="mb-4">
                 <span className="text-3xl font-bold text-white">${getPrice('ia')}</span>
                 <span className="text-slate-400 text-sm"> / {billingCycle === 'monthly' ? 'mes' : 'mes (anual)'}</span>
