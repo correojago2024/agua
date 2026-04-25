@@ -51,18 +51,18 @@ function lastN(measurements: Measurement[], n: number): Measurement[] {
 }
 
 // ── 1. Gauge mejorado ─────────────────────────────────────────────────────────
-export function getGaugeChartUrl(percentage: number) {
+export function getGaugeChartUrl(percentage: number, prevThr: number = 60, ratThr: number = 40) {
   const safePct = isNaN(percentage) ? 0 : percentage;
   const pct = Math.round(Math.max(0, Math.min(100, safePct)));
-  
+
   // Usamos una configuración más compacta para el Gauge
   const config = {
     type: 'gauge',
     data: {
       datasets: [{
         value: pct,
-        data: [30, 60, 100],
-        backgroundColor: ['#ef4444', '#fbbf24', '#22c55e'],
+        data: [ratThr, prevThr, 100],
+        backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'],
         borderWidth: 2
       }]
     },
@@ -103,7 +103,7 @@ export function getCaudalChartUrl(measurements: Measurement[]) {
 }
 
 // ── 3. Porcentaje del Tanque (línea simple) ──────────────────────────────────
-export function getCombinadoChartUrl(measurements: Measurement[]) {
+export function getCombinadoChartUrl(measurements: Measurement[], prevThr: number = 60, ratThr: number = 40) {
   const data = lastN(measurements, 15);
   const labels = data.map(m => format(new Date(m.recorded_at), 'HH:mm'));
   const valores = data.map(m => +m.percentage.toFixed(0));
@@ -116,6 +116,7 @@ export function getCombinadoChartUrl(measurements: Measurement[]) {
         data: valores,
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59,130,246,0.1)',
+        pointBackgroundColor: valores.map(v => v > prevThr ? '#22c55e' : v > ratThr ? '#f59e0b' : '#dc2626'),
         fill: true,
         tension: 0.3
       }]
@@ -142,7 +143,7 @@ export function getDailyVariationChartUrl(measurements: Measurement[]) {
 }
 
 // ── 5. Nivel con Umbrales de Alerta (Área) ──────────────────────────────────
-export function getThresholdChartUrl(measurements: Measurement[], capacity: number) {
+export function getThresholdChartUrl(measurements: Measurement[], capacity: number, prevThr: number = 60, ratThr: number = 40) {
   const data = lastN(measurements, 20);
   const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm'));
   const n = data.length;
@@ -161,8 +162,8 @@ export function getThresholdChartUrl(measurements: Measurement[], capacity: numb
           pointRadius: 2 
         },
         { 
-          label: 'Alerta (60%)', 
-          data: Array(n).fill(Math.round(capacity*0.6)), 
+          label: `Alerta (${prevThr}%)`, 
+          data: Array(n).fill(Math.round(capacity * (prevThr/100))), 
           borderColor: '#f59e0b', 
           borderDash: [5,5], 
           borderWidth: 2, // Más grosor
@@ -170,8 +171,8 @@ export function getThresholdChartUrl(measurements: Measurement[], capacity: numb
           fill: false
         },
         { 
-          label: 'Racionamiento (40%)', 
-          data: Array(n).fill(Math.round(capacity*0.4)), 
+          label: `Racionamiento (${ratThr}%)`, 
+          data: Array(n).fill(Math.round(capacity * (ratThr/100))), 
           borderColor: '#ef4444', 
           borderDash: [5,5], 
           borderWidth: 2, // Más grosor
@@ -331,19 +332,19 @@ export function getWeekendChartUrl(measurements: Measurement[]) {
 }
 
 // ── 11. Proyección Llenado/Vaciado ──────────────────────────────────────────
-export function getProjectionFillingChartUrl(measurements: Measurement[], capacity: number) {
+export function getProjectionFillingChartUrl(measurements: Measurement[], capacity: number, prevThr: number = 60, ratThr: number = 40) {
   const sorted = [...measurements].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
   if (sorted.length < 1) return enc({ type: 'bar', data: { labels: ['Sin datos'], datasets: [{ data: [0] }] } });
 
   const lastRecord = sorted[sorted.length - 1];
   const prevRecord = sorted[sorted.length - 2];
-  
+
   const currentLiters = lastRecord.liters;
   const baseTime = new Date(lastRecord.recorded_at);
 
   // Intentamos calcular el caudal actual basándonos en la última variación
   let flowLpm = (lastRecord.flow_lpm ?? lastRecord.caudal_lts_min ?? 0) as number;
-  
+
   // Si no hay caudal o es 0, intentamos calcularlo manualmente entre las dos últimas
   if (Math.abs(flowLpm) < 0.001 && prevRecord) {
     const mins = (new Date(lastRecord.recorded_at).getTime() - new Date(prevRecord.recorded_at).getTime()) / 60000;
@@ -359,8 +360,7 @@ export function getProjectionFillingChartUrl(measurements: Measurement[], capaci
   // Proyectamos si el caudal es significativo (> 0.01 lpm)
   if (Math.abs(flowLpm) > 0.01) {
     // Si vacía, proyectamos hacia niveles menores. Si llena, hacia mayores.
-    const targetPcts = flowLpm < 0 ? [60, 40, 20, 0] : [60, 80, 100];
-    
+    const targetPcts = flowLpm < 0 ? [prevThr, ratThr, 20, 0] : [prevThr, 80, 100];    
     targetPcts.forEach(t => {
       const targetL = (t / 100) * capacity;
       const diffL = targetL - currentLiters;
@@ -612,20 +612,27 @@ export function getConsumoFranjaHorariaChartUrl(measurements: Measurement[]) {
 }
 
 // ── Exporta todos los gráficos ────────────────────────────────────────────────
-export function getAllImprovedCharts(measurements: Measurement[], tankCapacity: number = 169000) {
+export function getAllImprovedCharts(
+  measurements: Measurement[], 
+  tankCapacity: number = 169000,
+  settings?: { prevention_threshold?: number, rationing_threshold?: number }
+) {
+  const prevThr = settings?.prevention_threshold ?? 60;
+  const ratThr  = settings?.rationing_threshold ?? 40;
+  
   const pct = [...measurements].sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
   const lastPct = pct[pct.length - 1]?.percentage ?? 0;
   return {
-    gaugeChart:             getGaugeChartUrl(lastPct),
+    gaugeChart:             getGaugeChartUrl(lastPct, prevThr, ratThr),
     caudalChart:            getCaudalChartUrl(measurements),
-    combinadoChart:         getCombinadoChartUrl(measurements),
+    combinadoChart:         getCombinadoChartUrl(measurements, prevThr, ratThr),
     variationChart:         getDailyVariationChartUrl(measurements),
-    thresholdChart:         getThresholdChartUrl(measurements, tankCapacity),
+    thresholdChart:         getThresholdChartUrl(measurements, tankCapacity, prevThr, ratThr),
     nightlyLitrosChart:     getNightlyLitrosChartUrl(measurements),
     last4WeeksChart:        getLast4WeeksChartUrl(measurements),
     dayOfWeekChart:         getDayOfWeekChartUrl(measurements),
     weekendChart:           getWeekendChartUrl(measurements),
-    projectionFillingChart: getProjectionFillingChartUrl(measurements, tankCapacity),
+    projectionFillingChart: getProjectionFillingChartUrl(measurements, tankCapacity, prevThr, ratThr),
     caudalHoraChart:        getCaudalHoraChartUrl(measurements),
     consumoSemanalDoughnut: getConsumoSemanalDoughnutUrl(measurements),
     historicoMensualChart:  getHistoricoMensualChartUrl(measurements),

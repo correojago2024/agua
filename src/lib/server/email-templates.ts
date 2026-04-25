@@ -54,9 +54,17 @@ export function buildReportEmailHtml(
   percentage: number,
   isAnomaly: boolean,
   variationPercentage: number,
-  chartUrls: any
+  chartUrls: any,
+  settings?: {
+    emails_on_subscription?: number,
+    prevention_threshold?: number,
+    rationing_threshold?: number
+  }
 ): string {
   const percentageInt = Math.round(percentage);
+  const prevThr = settings?.prevention_threshold ?? 60;
+  const ratThr  = settings?.rationing_threshold ?? 40;
+  const emailsLimit = settings?.emails_on_subscription ?? 5;
   
   // ── ENRIQUECIMIENTO DE DATOS EN TIEMPO REAL ──
   // Ordenamos de más antiguo a más nuevo para calcular
@@ -173,8 +181,8 @@ export function buildReportEmailHtml(
 
     <div style="text-align:center; margin-bottom:40px; background:white; padding:25px; border-radius:20px; border:2px solid #f1f5f9;">
       <p style="margin:0 0 10px; font-size:14px; font-weight:bold; color:#64748b; text-transform:uppercase; tracking-widest:0.1em;">Estado de Reserva Actual</p>
-      <p style="margin:0 0 15px; font-size:32px; font-weight:bold; color:${percentageInt > 60 ? '#16a34a' : percentageInt > 30 ? '#f59e0b' : '#dc2626'}">
-        ${percentageInt > 60 ? '✅ ÓPTIMO' : percentageInt > 30 ? '⚠️ REGULAR' : '🚨 CRÍTICO'}
+      <p style="margin:0 0 15px; font-size:32px; font-weight:bold; color:${percentageInt > prevThr ? '#16a34a' : percentageInt > ratThr ? '#f59e0b' : '#dc2626'}">
+        ${percentageInt > prevThr ? '✅ ÓPTIMO' : percentageInt > ratThr ? '⚠️ REGULAR' : '🚨 CRÍTICO'}
       </p>
       <p style="margin:0; font-size:24px; font-weight:bold;">${percentageInt}% de capacidad</p>
       <p style="margin:5px 0 0; font-size:16px; color:#64748b;">Aproximadamente ${Math.round(currentLiters).toLocaleString()} Litros</p>
@@ -256,15 +264,15 @@ export function buildReportEmailHtml(
     <div style="margin-top:50px; padding-top:30px; border-top:1px solid #e2e8f0; font-size:13px; color:#475569;">
       <h4 style="color:#0f172a; margin-bottom:15px;">*** Observaciones y Explicación de Gráficos ***</h4>
       <p style="margin-bottom:10px;">1. <b>Caudal de Llenado y Consumo:</b> Muestra la tasa de cambio en litros por minuto. Barras verdes indican llenado (entrada de agua), barras rojas indican consumo (salida de agua).</p>
-      <p style="margin-bottom:10px;">2. <b>Evolución del Nivel del Tanque (%):</b> Línea azul con área sombreada mostrando el porcentaje del nivel a lo largo del tiempo. Los puntos se colorean en verde (>60%), naranja (30-60%) y rojo (<30%) según el umbral de alerta.</p>
+      <p style="margin-bottom:10px;">2. <b>Evolución del Nivel del Tanque (%):</b> Línea azul con área sombreada mostrando el porcentaje del nivel a lo largo del tiempo. Los puntos se colorean en verde (>${prevThr}%), naranja (${ratThr}-${prevThr}%) y rojo (<${ratThr}%) según el umbral de alerta.</p>
       <p style="margin-bottom:10px;">3. <b>Variación entre Mediciones:</b> Diferencia de litros entre reportes consecutivos. Barras verdes = llenado, barras rojas = consumo.</p>
-      <p style="margin-bottom:10px;">4. <b>Nivel del Tanque con Umbrales:</b> Visualiza el nivel histórico con líneas de alerta: Alerta ${Math.round(building.tank_capacity_liters * 0.6).toLocaleString()} L (60%), Racionamiento ${Math.round(building.tank_capacity_liters * 0.4).toLocaleString()} L (40%), Crítico ${Math.round(building.tank_capacity_liters * 0.2).toLocaleString()} L (20%).</p>
+      <p style="margin-bottom:10px;">4. <b>Nivel del Tanque con Umbrales:</b> Visualiza el nivel histórico con líneas de alerta: Alerta ${Math.round(building.tank_capacity_liters * (prevThr/100)).toLocaleString()} L (${prevThr}%), Racionamiento ${Math.round(building.tank_capacity_liters * (ratThr/100)).toLocaleString()} L (${ratThr}%), Crítico ${Math.round(building.tank_capacity_liters * 0.2).toLocaleString()} L (20%).</p>
       <p style="margin-bottom:10px;">5. <b>Consumo Promedio por Día de Semana (barras):</b> Promedio histórico de litros consumidos por cada día. Solo considera variaciones negativas (consumo real).</p>
       <p style="margin-bottom:10px;">6. <b>Nivel % por Día — Últimas 5 Semanas:</b> Cada línea representa una semana. El eje X muestra los días Lun–Dom. Permite comparar patrones entre semanas.</p>
       <p style="margin-bottom:10px;">7. <b>Consumo Nocturno Estimado:</b> Litros consumidos entre mediciones consecutivas. Representa el consumo en los períodos registrados.</p>
       <p style="margin-bottom:10px;">8. <b>Distribución de Consumo por Día (Doughnut):</b> Vista proporcional del consumo promedio histórico por día de la semana. Permite identificar qué días se consume más agua.</p>
       <p style="margin-bottom:10px;">9. <b>Consumo Fin de Semana — Últimas 5 Semanas:</b> Barras amarillas = sábados, barras azules = domingos. Muestra la evolución real del consumo en cada fin de semana.</p>
-      <p style="margin-bottom:10px;">10. <b>Proyección de Llenado/Vaciado:</b> Basado en el caudal de la última medición, proyecta las fechas y horas estimadas para alcanzar niveles críticos (vaciado: 60%, 40%, 30%, 20%, 0%) o completos (llenado: 50%, 60%, 80%, 90%, 100%).</p>
+      <p style="margin-bottom:10px;">10. <b>Proyección de Llenado/Vaciado:</b> Basado en el caudal de la última medición, proyecta las fechas y horas estimadas para alcanzar niveles críticos (vaciado: ${prevThr}%, ${ratThr}%, 30%, 20%, 0%) o completos (llenado: 50%, 60%, 80%, 90%, 100%).</p>
       <p style="margin-bottom:10px;">11. <b>Caudal en Litros por Hora:</b> Evolución del caudal horario en las últimas mediciones. Valores positivos = llenado, negativos = consumo.</p>
       <p style="margin-bottom:10px;">12. <b>Histórico Mensual — Consumo y Llenado:</b> Barras rojas = litros consumidos por mes, barras verdes = litros de llenado por mes. Muestra los últimos 6 meses.</p>
       <p style="margin-bottom:10px;">13. <b>Consumo/Llenado Sáb-Dom (5 semanas):</b> Barras agrupadas mostrando litros consumidos y llenados cada sábado y domingo de las últimas 5 semanas. Permite identificar patrones de fin de semana.</p>
@@ -285,8 +293,8 @@ export function buildReportEmailHtml(
     <div style="background:#fffbeb; padding:20px; border-radius:12px; margin-top:25px; border:1px solid #fef3c7;">
       <h4 style="color:#92400e; margin:0 0 10px 0;">IMPORTANTE (Manténgase Informado): Así Funciona Nuestro Sistema de Resúmenes por Correo</h4>
       <p style="font-size:13px; margin-bottom:10px;">Para que siempre esté al tanto del nivel del agua de nuestro tanque, hemos diseñado un sistema de notificación muy sencillo:</p>
-      <p style="font-size:13px; margin-bottom:5px;">✉️ <b>Activación de Resúmenes:</b> Cada vez que usted registre un nuevo dato en el formulario e incluya su correo electrónico, activará la recepción de los próximos <b>5 resúmenes</b> de estadísticas del agua.</p>
-      <p style="font-size:13px; margin-bottom:5px;">➡️ <b>Fin del Ciclo:</b> Una vez que haya recibido esos 5 correos, su ciclo de suscripción actual finalizará y dejará de recibir notificaciones.</p>
+      <p style="font-size:13px; margin-bottom:5px;">✉️ <b>Activación de Resúmenes:</b> Cada vez que usted registre un nuevo dato en el formulario e incluya su correo electrónico, activará la recepción de los próximos <b>${emailsLimit} resúmenes</b> de estadísticas del agua.</p>
+      <p style="font-size:13px; margin-bottom:5px;">➡️ <b>Fin del Ciclo:</b> Una vez que haya recibido esos ${emailsLimit} correos, su ciclo de suscripción actual finalizará y dejará de recibir notificaciones.</p>
       <p style="font-size:13px; margin-bottom:10px;">➡️ <b>Reactivar su Suscripción:</b> ¿Desea seguir recibiendo estas valiosas actualizaciones? ¡Es muy fácil! Simplemente, vuelva a registrar un nuevo dato en el formulario e indique nuevamente su correo electrónico.</p>
       <p style="font-size:13px; margin-top:15px;">Agradecemos su colaboración en el monitoreo del agua. ¡Cada dato registrado es un paso hacia una mejor gestión del agua en el edificio!</p>
     </div>

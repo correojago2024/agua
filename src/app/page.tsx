@@ -1078,11 +1078,11 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-            Monitorea los niveles de agua de tu edificio en tiempo real
+            Monitorea los niveles de agua de tu edificio
           </h1>
 
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-            AquaSaaS te permite capturar datos de niveles de liquidos, generar estadisticas de consumo y enviar reportes graficos por correo electronico.
+            AquaSaaS te permite capturar datos de niveles de liquidos, generar estadisticas de consumo y enviar reportes graficos por correo electronico y por WhatsApp.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -1156,7 +1156,7 @@ export default function HomePage() {
               <div className="flex-grow">
                 <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                   Accede al panel de administración del edificio demo y explora el
-                  <strong className="text-gray-200"> dashboard con gráficos en tiempo real</strong>, la gestión
+                  <strong className="text-gray-200"> dashboard con gráficos históricos</strong>, la gestión
                   de miembros de la junta de condominio, reportes filtrables por rango de fechas, exportación a CSV,
                   corrección y eliminación de mediciones incorrectas, subida de banner personalizado y la
                   configuración general del edificio — todo en un solo lugar diseñado para el administrador.
@@ -1202,8 +1202,8 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-6">
                 <Mail className="w-6 h-6 text-purple-500" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-4">Reportes por Email</h3>
-              <p className="text-gray-300">Recibe automaticamente reportes graficos con analisis detallado directamente en tu correo electronico.</p>
+              <h3 className="text-xl font-bold text-white mb-4">Reportes por Email y WhatsApp</h3>
+              <p className="text-gray-300">Recibe automáticamente reportes gráficos con análisis detallado directamente en tu correo electrónico y por WhatsApp.</p>
             </div>
 
           </div>
@@ -1244,7 +1244,8 @@ export default function HomePage() {
               <p className="text-slate-400 text-sm mb-6">Ideal para juntas de condominio que necesitan orden en la comunicación y dejar de depender de rumores.</p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas Inmediatas: Notificaciones vía email al reportante y a la Junta al instante. (Límite 50/mes).</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Dashboard de Control: Visualización en tiempo real del nivel actual y la última medición registrada.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Configuración Fija: 5 emails post-registro y umbrales de alerta predeterminados (60%/40%).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Dashboard de Control: Visualización del nivel actual y la última medición registrada.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Memoria de Datos: Historial de registros de 60 días para auditorías básicas.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Marca Estándar: Formulario de envío optimizado con el sello de confianza AquaSaaS.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Comunidad: Gestión de hasta 5 miembros administrativos.</li>
@@ -1270,6 +1271,7 @@ export default function HomePage() {
               <p className="text-slate-400 text-sm mb-6">Diseñado para edificios que buscan análisis y una imagen más institucional.</p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
                 <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Esencial, más:</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Configuración Flexible: Ajusta la cantidad de emails post-registro y niveles de alerta.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Reportes Manuales a un clic: Envía reportes de estado personalizados a miembros seleccionados.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Módulo de Estadísticas: Acceso a gráficos de participación y volumen de consumo mensual.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Exportación Inteligente: Descarga de datos en formato CSV para presentaciones.</li>
@@ -1297,6 +1299,7 @@ export default function HomePage() {
               <p className="text-slate-400 text-sm mb-6">Para condominios que exigen eficiencia máxima, automatización y alertas que no se ignoran. </p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
                 <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Profesional, más:</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Configuración Avanzada: Control total sobre notificaciones y umbrales preventivos.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas vía WhatsApp: Integración crítica para umbrales mínimos (300 notificaciones/mes).</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Boletín Diario Programado: El sistema envía automáticamente un resumen cada mañana.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Mapa de Calor de Consumo: Visualiza franjas horarias y días de mayor gasto.</li>
@@ -1324,6 +1327,7 @@ export default function HomePage() {
               <p className="text-blue-400 font-medium mb-4">"El futuro del ahorro: Prevención total."</p>
               <p className="text-slate-400 text-sm mb-6">(En Desarrollo - próximamente disponible)</p>
               <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
+                <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Premium, más:</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Detección Algorítmica de Fugas: Escaneo automático de flujos anómalos nocturnos.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Consultor IA: Análisis mensual sugerido sobre hábitos de consumo y ahorro.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500/50 flex-shrink-0" /> Gestión de Descanso Nocturno: Silenciamiento inteligente de alertas no críticas.</li>
@@ -1456,6 +1460,50 @@ export default function HomePage() {
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Config. Emails Post-Registro</td>
+                    <td className="py-4 px-6 text-slate-400 text-xs italic">Fijo (5)</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Configurable</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Configurable</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Configurable</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-4 px-6 text-slate-300 font-medium">Umbrales de Alerta (%)</td>
+                    <td className="py-4 px-6 text-slate-400 text-xs italic">Fijos (60%/40%)</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Configurable</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Configurable</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-[10px] text-green-500 font-bold uppercase">Configurable</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6 text-slate-300 font-medium">Detección de Fugas</td>
                     <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
@@ -1498,8 +1546,7 @@ export default function HomePage() {
                 <Users className="w-6 h-6 text-emerald-500" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">Visibilidad Total</h3>
-              <p className="text-gray-300">Gráficos históricos, alertas de fugas y proyecciones en tiempo real.</p>
-            </div>
+              <p className="text-gray-300">Gráficos históricos, alertas de fugas y proyecciones basadas en datos.</p>            </div>
 
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 hover:border-blue-500/30 transition-all">
               <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center mb-6">

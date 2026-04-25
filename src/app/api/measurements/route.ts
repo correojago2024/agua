@@ -165,9 +165,12 @@ export async function POST(request: Request) {
       lastUpdate: new Date().toLocaleString('es-ES'), reportDate: new Date().toLocaleString('es-ES'),
     };
 
+    const { data: bSettings } = await supabase.from('building_settings').select('*').eq('building_id', building_id).single();
+    const emailsLimit = bSettings?.emails_on_subscription ?? 5;
+
     if (email) {
       const { data: exSub } = await supabase.from('resident_subscriptions').select('id, emails_remaining').eq('building_id', building_id).eq('email', email).single();
-      if (!exSub) await supabase.from('resident_subscriptions').insert({ building_id, email, emails_remaining: 5 });
+      if (!exSub) await supabase.from('resident_subscriptions').insert({ building_id, email, emails_remaining: emailsLimit });
     }
 
     const { data: subs } = await supabase.from('resident_subscriptions').select('email, id, emails_remaining').eq('building_id', building_id).gt('emails_remaining', 0);
@@ -177,8 +180,15 @@ export async function POST(request: Request) {
     if (recipientEmails.length > 0) {
       await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'INFO', entity_type: 'email', entity_id: meas?.id || 'N/A', data_after: { message: 'Iniciando envío de reporte', recipients: recipientEmails } });
       
-      const chartUrls = getAllImprovedCharts(updHistory || [], building.tank_capacity_liters);
-      const emailHtml = buildReportEmailHtml(building, updHistory || [], indicators, liters, percentage, isAnomaly, variationPercentage, chartUrls);
+      const chartUrls = getAllImprovedCharts(updHistory || [], building.tank_capacity_liters, {
+        prevention_threshold: bSettings?.prevention_threshold,
+        rationing_threshold: bSettings?.rationing_threshold
+      });
+      const emailHtml = buildReportEmailHtml(building, updHistory || [], indicators, liters, percentage, isAnomaly, variationPercentage, chartUrls, {
+        emails_on_subscription: emailsLimit,
+        prevention_threshold: bSettings?.prevention_threshold,
+        rationing_threshold: bSettings?.rationing_threshold
+      });
       const res = await sendEmailViaGmail(recipientEmails, `💧 Reporte de Agua: ${Math.round(percentage)}% actual — ${building.name}`, emailHtml, building_id, 'measurement_report');
       
       if (res.success) {

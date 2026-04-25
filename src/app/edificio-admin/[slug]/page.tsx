@@ -135,6 +135,9 @@ export default function EdificioAdminPage() {
   const [cfgCapacity, setCfgCapacity] = useState('');
   const [cfgAdminEmail, setCfgAdminEmail] = useState('');
   const [cfgThreshold, setCfgThreshold]   = useState('30');
+  const [cfgEmailsOnSubscription, setCfgEmailsOnSubscription] = useState(5);
+  const [cfgPreventionThreshold, setCfgPreventionThreshold] = useState(60);
+  const [cfgRationingThreshold, setCfgRationingThreshold] = useState(40);
   const [cfgSilenceStart, setCfgSilenceStart] = useState('22:00');
   const [cfgSilenceEnd, setCfgSilenceEnd] = useState('06:00');
   const [cfgEnableResidentNotifications, setCfgEnableResidentNotifications] = useState(true);
@@ -376,11 +379,23 @@ export default function EdificioAdminPage() {
         
         // Cargar settings adicionales
         const { data: set } = await supabase.from('building_settings').select('*').eq('building_id', data.id).single();
+        
+        const currentPlan = data.subscription_status?.toLowerCase() || 'prueba';
+        const isAdvanced = ['profesional', 'premium', 'ia', 'activo', 'empresarial'].includes(currentPlan);
+
         if (set) {
           setCfgThreshold(set.alert_threshold_percentage?.toString() || '30');
+          setCfgEmailsOnSubscription(isAdvanced ? (set.emails_on_subscription ?? 5) : 5);
+          setCfgPreventionThreshold(isAdvanced ? Number(set.prevention_threshold ?? 60) : 60);
+          setCfgRationingThreshold(isAdvanced ? Number(set.rationing_threshold ?? 40) : 40);
           setCfgSilenceStart(set.silence_start_time || '22:00');
           setCfgSilenceEnd(set.silence_end_time || '06:00');
           setCfgEnableResidentNotifications(set.enable_resident_notifications !== false);
+        } else if (!isAdvanced) {
+          // Si no hay settings y es plan básico, asegurar defaults
+          setCfgEmailsOnSubscription(5);
+          setCfgPreventionThreshold(60);
+          setCfgRationingThreshold(40);
         }
       }
       // Si viene con ?authed=1 desde el login de page.tsx, ya está autenticado
@@ -470,7 +485,10 @@ export default function EdificioAdminPage() {
   useEffect(() => {
     if (measurements.length > 0 && building) {
       try {
-        const urls = getAllImprovedCharts(measurements, building.tank_capacity_liters);
+        const urls = getAllImprovedCharts(measurements, building.tank_capacity_liters, {
+          prevention_threshold: cfgPreventionThreshold,
+          rationing_threshold: cfgRationingThreshold
+        });
         setChartUrls(urls);
       } catch (error) {
         console.error("Error generando los gráficos:", error);
@@ -482,7 +500,7 @@ export default function EdificioAdminPage() {
       setChartsLoading(false);
       setChartUrls(null);
     }
-  }, [measurements, building]);
+  }, [measurements, building, cfgPreventionThreshold, cfgRationingThreshold]);
 
 
   // ── Auth ───────────────────────────────────────────────────────────────────
@@ -627,6 +645,9 @@ export default function EdificioAdminPage() {
   // Permisos: Admin real del edificio (o el admin central correojago)
   const isUserAdmin = !currentUser || currentUser.is_admin === true;
   const isObserver = currentUser?.role === 'Observador';
+  
+  const plan = building?.subscription_status?.toLowerCase() || 'prueba';
+  const canEditAdvanced = ['profesional', 'premium', 'ia', 'activo', 'empresarial'].includes(plan);
 
   // Helper para enmascarar email - Ahora siempre enmascara si NO es admin, o si es la pestaña Junta
   const getDisplayEmail = (email: string, forceMask = false) => {
@@ -963,12 +984,26 @@ export default function EdificioAdminPage() {
   const saveConfig = async () => {
     if (observerBlock()) { setEditingConfig(false); return; }
     if (demoBlock('⚠️ Modo Demo: la configuración no se guarda en la cuenta de demostración.')) { setEditingConfig(false); return; }
-    const { error } = await supabase.from('buildings').update({
+    
+    const { error: bErr } = await supabase.from('buildings').update({
       name:                 cfgName,
       tank_capacity_liters: parseInt(cfgCapacity) || 169000,
       admin_email:          cfgAdminEmail,
     }).eq('id', building.id);
-    if (!error) {
+
+    const { error: sErr } = await supabase.from('building_settings').upsert({
+      building_id: building.id,
+      alert_threshold_percentage: parseFloat(cfgThreshold),
+      emails_on_subscription: cfgEmailsOnSubscription,
+      prevention_threshold: cfgPreventionThreshold,
+      rationing_threshold: cfgRationingThreshold,
+      silence_start_time: cfgSilenceStart,
+      silence_end_time: cfgSilenceEnd,
+      enable_resident_notifications: cfgEnableResidentNotifications,
+      updated_at: new Date().toISOString()
+    });
+
+    if (!bErr && !sErr) {
       setCfgMsg('✅ Configuración guardada');
       setEditingConfig(false);
       logClientAudit('UPDATE', 'building_config', building.id, { name: cfgName });
@@ -977,7 +1012,7 @@ export default function EdificioAdminPage() {
       const { data } = await supabase.from('buildings').select('*').eq('id', building.id).single();
       if (data) setBuilding(data);
     } else {
-      setCfgMsg('❌ Error: ' + error.message);
+      setCfgMsg('❌ Error: ' + (bErr?.message || sErr?.message));
     }
   };
 
@@ -1148,8 +1183,8 @@ export default function EdificioAdminPage() {
     </div>
   );
 
-  const pctColor = (kpis?.currentPct ?? 0) > 60 ? 'text-green-400' : (kpis?.currentPct ?? 0) > 30 ? 'text-amber-400' : 'text-red-400';
-  const pctBg    = (kpis?.currentPct ?? 0) > 60 ? 'bg-green-500' : (kpis?.currentPct ?? 0) > 30 ? 'bg-amber-500' : 'bg-red-500';
+  const pctColor = (kpis?.currentPct ?? 0) > cfgPreventionThreshold ? 'text-green-400' : (kpis?.currentPct ?? 0) > cfgRationingThreshold ? 'text-amber-400' : 'text-red-400';
+  const pctBg    = (kpis?.currentPct ?? 0) > cfgPreventionThreshold ? 'bg-green-500' : (kpis?.currentPct ?? 0) > cfgRationingThreshold ? 'bg-amber-500' : 'bg-red-500';
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -1471,10 +1506,9 @@ export default function EdificioAdminPage() {
                           </td>
                           <td className="px-4 py-3 text-white font-medium">{Math.round(m.liters).toLocaleString()}</td>
                           <td className="px-4 py-3">
-                            <span className={`font-bold ${m.percentage > 60 ? 'text-green-400' : m.percentage > 30 ? 'text-amber-400' : 'text-red-400'}`}>
+                            <span className={`font-bold ${m.percentage > cfgPreventionThreshold ? 'text-green-400' : m.percentage > cfgRationingThreshold ? 'text-amber-400' : 'text-red-400'}`}>
                               {Math.round(m.percentage)}%
-                            </span>
-                          </td>
+                            </span>                          </td>
                           <td className="px-4 py-3">
                             {v !== 0 && (
                               <span className={v > 0 ? 'text-green-400' : 'text-red-400'}>
@@ -2058,10 +2092,9 @@ export default function EdificioAdminPage() {
                           <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa')}</td>
                           <td className="px-4 py-2 text-white">{Math.round(m.liters).toLocaleString()}</td>
                           <td className="px-4 py-2">
-                            <span className={m.percentage > 60 ? 'text-green-400' : m.percentage > 30 ? 'text-amber-400' : 'text-red-400'}>
+                            <span className={m.percentage > cfgPreventionThreshold ? 'text-green-400' : m.percentage > cfgRationingThreshold ? 'text-amber-400' : 'text-red-400'}>
                               {Math.round(m.percentage)}%
-                            </span>
-                          </td>
+                            </span>                          </td>
                           <td className="px-4 py-2">
                             {v !== 0
                               ? <span className={v > 0 ? 'text-green-400' : 'text-red-400'}>{v > 0 ? '+' : ''}{Math.round(v).toLocaleString()}</span>
@@ -2142,7 +2175,7 @@ export default function EdificioAdminPage() {
                               {isEditing
                                 ? <input type="number" value={editPct} onChange={e => setEditPct(e.target.value)}
                                     className="w-16 bg-slate-600 border border-slate-500 text-white rounded px-1 py-0.5 text-xs" />
-                                : <span className={m.percentage > 60 ? 'text-green-400' : m.percentage > 30 ? 'text-amber-400' : 'text-red-400'}>
+                                : <span className={m.percentage > cfgPreventionThreshold ? 'text-green-400' : m.percentage > cfgRationingThreshold ? 'text-amber-400' : 'text-red-400'}>
                                     {Math.round(m.percentage)}%
                                   </span>}
                             </td>
@@ -2445,6 +2478,86 @@ export default function EdificioAdminPage() {
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            </div>
+            )}
+
+            {/* Configuración Avanzada de Notificaciones y Umbrales */}
+            {isUserAdmin && (
+            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-5 py-4 border-b border-slate-700 flex justify-between items-center bg-blue-500/5">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-blue-400" />
+                  Ajustes de Notificaciones y Umbrales
+                </h3>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${canEditAdvanced ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                  PLAN {plan.toUpperCase()}
+                </span>
+              </div>
+              <div className="p-5 space-y-6">
+                {!canEditAdvanced && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-amber-400 font-semibold text-xs">Función Premium</p>
+                      <p className="text-amber-300/70 text-[10px]">Actualiza al Plan Profesional o superior para personalizar estos valores. Actualmente se usan los valores predeterminados del sistema.</p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider">Emails post-registro</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        value={cfgEmailsOnSubscription} 
+                        onChange={e => setCfgEmailsOnSubscription(parseInt(e.target.value))}
+                        disabled={!canEditAdvanced || isObserver}
+                        className={`w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${!canEditAdvanced && 'opacity-50 cursor-not-allowed'}`} 
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">emails</div>
+                    </div>
+                    <p className="text-[9px] text-slate-500 mt-1">Cuántos reportes recibe un vecino tras registrar un dato.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider">Umbral Prevención (%)</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        value={cfgPreventionThreshold} 
+                        onChange={e => setCfgPreventionThreshold(parseFloat(e.target.value))}
+                        disabled={!canEditAdvanced || isObserver}
+                        className={`w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${!canEditAdvanced && 'opacity-50 cursor-not-allowed'}`} 
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">%</div>
+                    </div>
+                    <p className="text-[9px] text-slate-500 mt-1">Nivel en el que el sistema marca el estado como "REGULAR".</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider">Umbral Racionamiento (%)</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        value={cfgRationingThreshold} 
+                        onChange={e => setCfgRationingThreshold(parseFloat(e.target.value))}
+                        disabled={!canEditAdvanced || isObserver}
+                        className={`w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${!canEditAdvanced && 'opacity-50 cursor-not-allowed'}`} 
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">%</div>
+                    </div>
+                    <p className="text-[9px] text-slate-500 mt-1">Nivel en el que el sistema marca el estado como "CRÍTICO".</p>
+                  </div>
+                </div>
+
+                {canEditAdvanced && !isObserver && (
+                  <button onClick={saveConfig} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2">
+                    <Save className="w-4 h-4" />
+                    Actualizar Ajustes Avanzados
+                  </button>
                 )}
               </div>
             </div>
@@ -2776,7 +2889,7 @@ export default function EdificioAdminPage() {
 
                 <div className="bg-[#E6F1FB] border border-[#B5D4F4] p-5 rounded-2xl flex gap-4 items-start text-sm md:text-base text-[#0C447C] shadow-sm leading-relaxed">
                    <span className="text-2xl">ℹ️</span>
-                   <p>AquaSaaS centraliza las mediciones de consumo reportadas por los residentes y las presenta en paneles de control detallados para administradores y miembros de la junta, generando informes automáticos por email en tiempo real.</p>
+                   <p>AquaSaaS centraliza las mediciones de consumo reportadas por los residentes y las presenta en paneles de control detallados para administradores y miembros de la junta, generando informes automáticos por email.</p>
                 </div>
 
                 {/* Grid de pasos */}
@@ -2785,7 +2898,7 @@ export default function EdificioAdminPage() {
                     { t: '🏢 Registro del edificio', p: 'El administrador del sistema AquaSaaS crea el perfil con un identificador único (slug), capacidad del tanque y correo administrativo.' },
                     { t: '👥 Incorporación de miembros', p: 'Se invita a residentes y miembros de junta por email. Cada uno recibe instrucciones de acceso y el enlace a su panel.' },
                     { t: '📊 Reporte y análisis', p: 'Los residentes ingresan mediciones (L o %) en cualquier momento. El sistema detecta anomalías y calcula tendencias.' },
-                    { t: '📧 Notificaciones automáticas', p: 'Tras cada medición, se envía un informe completo por email al colaborador y a la junta con estadísticas en tiempo real.' }
+                    { t: '📧 Notificaciones automáticas', p: 'Tras cada medición, se envía un informe completo por email al colaborador y a la junta con estadísticas detalladas.' }
                   ].map(item => (
                     <div key={item.t} className="bg-white border border-black/5 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
                       <h4 className="font-bold text-base text-[#042C53] mb-2">{item.t}</h4>
