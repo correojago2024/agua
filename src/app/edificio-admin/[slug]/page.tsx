@@ -349,6 +349,36 @@ export default function EdificioAdminPage() {
     loadAuditLogs();
   };
 
+  // PLANES CONFIG (para el admin central)
+  const [allPlans, setAllPlans] = useState<any[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [plansMsg, setPlansMsg] = useState('');
+
+  const loadAllPlans = async () => {
+    setPlansLoading(true);
+    const { data } = await supabase.from('plan_precios').select('*').order('precio', { ascending: true });
+    if (data) setAllPlans(data);
+    setPlansLoading(false);
+  };
+
+  const updatePlanPrice = async (planId: string, precio: number) => {
+    const { error } = await supabase
+      .from('plan_precios')
+      .update({ precio, updated_at: new Date().toISOString() })
+      .eq('plan_id', planId);
+
+    if (!error) {
+      setAllPlans(prev => prev.map(p => p.plan_id === planId ? { ...p, precio } : p));
+      setPlansMsg('✅ Precio actualizado');
+      setTimeout(() => setPlansMsg(''), 3000);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'planes') loadAllPlans();
+  }, [tab]);
+
+
   // ── Load building ──────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
