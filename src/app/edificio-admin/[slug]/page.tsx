@@ -1798,17 +1798,27 @@ export default function EdificioAdminPage() {
                   <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1 text-balance">
                     <Calendar className="w-3 h-3" /> Rango Desde (dd/mm/aaaa)
                   </label>
-                  <input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)}
+                  <input 
+                    type="date" 
+                    value={reportFrom} 
+                    onChange={e => setReportFrom(e.target.value)}
+                    lang="es-ES"
                     className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none" 
-                    style={{ colorScheme: 'dark' }} />
+                    style={{ colorScheme: 'dark' }} 
+                  />
                 </div>
                 <div>
                   <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1 text-balance">
                     <Calendar className="w-3 h-3" /> Rango Hasta (dd/mm/aaaa)
                   </label>
-                  <input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)}
+                  <input 
+                    type="date" 
+                    value={reportTo} 
+                    onChange={e => setReportTo(e.target.value)}
+                    lang="es-ES"
                     className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none"
-                    style={{ colorScheme: 'dark' }} />
+                    style={{ colorScheme: 'dark' }} 
+                  />
                 </div>
                 <div className="flex items-end gap-2">
                   <button onClick={() => setShowPreview(!showPreview)}
@@ -2666,135 +2676,311 @@ export default function EdificioAdminPage() {
         )}
       </div>
 
-      {/* MODAL DE AYUDA SISTEMA (VERSIÓN PROFESIONAL) */}
+      {/* MODAL DE AYUDA SISTEMA (VERSIÓN COMPLETA PROFESIONAL) */}
       {showHelpModal && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-          <div className="bg-[#f7f6f2] rounded-[32px] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-white/20">
-            {/* Header Modal */}
-            <div className="bg-gradient-to-br from-[#04342C] via-[#0F6E56] to-[#1D9E75] p-8 shrink-0 relative">
+        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl flex items-center justify-center z-[100] p-0 md:p-4 animate-in fade-in duration-300">
+          <div className="bg-[#f7f6f2] w-full md:max-w-5xl h-full md:max-h-[95vh] md:rounded-[32px] overflow-hidden flex flex-col shadow-2xl border border-white/20">
+            {/* Header del Modal */}
+            <div className="bg-gradient-to-br from-[#04342C] via-[#0F6E56] to-[#1D9E75] p-6 md:p-10 shrink-0 relative overflow-hidden">
                <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='12'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
                <div className="flex justify-between items-start relative z-10">
                   <div>
-                    <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-[11px] px-3 py-1 rounded-full mb-4">
+                    <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-[11px] px-3 py-1 rounded-full mb-6 font-bold uppercase tracking-wider">
                       💧 Gestión inteligente del agua
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-serif text-white leading-tight">Guía de Ayuda<br/>AquaSaaS</h2>
-                    <p className="text-white/70 text-sm mt-3 max-w-md">Todo lo que necesitas saber para gestionar el consumo de agua de tu edificio de forma inteligente y colaborativa.</p>
+                    <h2 className="text-4xl md:text-5xl font-serif text-white leading-tight">Guía de Ayuda<br/>AquaSaaS</h2>
+                    <p className="text-white/70 text-base mt-4 max-w-xl leading-relaxed font-medium">Todo lo que necesitas saber para gestionar el consumo de agua de tu edificio de forma inteligente, transparente y colaborativa.</p>
                   </div>
-                  <button onClick={() => setShowHelpModal(false)} className="bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-full transition-all border border-white/20">
-                    <X className="w-5 h-5" />
+                  <button onClick={() => setShowHelpModal(false)} className="bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-all border border-white/25 shadow-xl active:scale-90">
+                    <X className="w-6 h-6" />
                   </button>
                </div>
             </div>
 
-            {/* Contenido Modal */}
-            <div className="p-8 overflow-y-auto space-y-12 custom-scrollbar text-[#2C2C2A]">
+            {/* Cuerpo del Modal (Navegable y completo) */}
+            <div className="p-6 md:p-10 overflow-y-auto space-y-20 custom-scrollbar bg-[#f7f6f2] text-[#2C2C2A] flex-1">
               
-              {/* Cómo funciona */}
-              <section id="como-funciona" className="space-y-6">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 bg-[#E1F5EE] rounded-xl flex items-center justify-center text-xl">⚙️</div>
+              {/* SECCIÓN 1: CÓMO FUNCIONA */}
+              <section id="help-como-funciona" className="space-y-8">
+                <div className="flex items-center gap-4">
+                   <div className="w-14 h-14 bg-[#E1F5EE] border border-[#9FE1CB] rounded-2xl flex items-center justify-center text-3xl shadow-sm">⚙️</div>
                    <div>
-                     <h3 className="text-xl font-serif font-bold">¿Cómo funciona el sistema?</h3>
-                     <p className="text-xs text-[#5F5E5A]">Plataforma de gestión colaborativa para edificios residenciales.</p>
+                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#04342C]">¿Cómo funciona el sistema?</h3>
+                     <p className="text-sm text-[#5F5E5A] font-medium italic">AquaSaaS es una plataforma de gestión colaborativa para comunidades inteligentes.</p>
                    </div>
                 </div>
 
-                <div className="bg-[#E6F1FB] border border-[#B5D4F4] p-4 rounded-xl flex gap-3 items-start text-sm text-[#0C447C]">
-                   <span className="text-lg leading-none">ℹ️</span>
-                   <p>AquaSaaS centraliza las mediciones reportadas por los residentes y las presenta en paneles detallados para la junta, generando informes automáticos en tiempo real.</p>
+                <div className="bg-[#E6F1FB] border border-[#B5D4F4] p-5 rounded-2xl flex gap-4 items-start text-sm md:text-base text-[#0C447C] shadow-sm leading-relaxed">
+                   <span className="text-2xl">ℹ️</span>
+                   <p>AquaSaaS centraliza las mediciones de consumo reportadas por los residentes y las presenta en paneles de control detallados para administradores y miembros de la junta, generando informes automáticos por email en tiempo real.</p>
                 </div>
 
-                {/* Grid simple resumen */}
+                {/* Grid de pasos */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { t: '🏢 Registro', p: 'El administrador crea el perfil del edificio con su capacidad y slug único.' },
-                    { t: '👥 Miembros', p: 'Se invita a residentes y miembros de junta por email para acceso seguro.' },
-                    { t: '📊 Reporte', p: 'Los residentes ingresan datos (L o %) alimentando las estadísticas.' },
-                    { t: '📧 Informes', p: 'Email automático con gráficos y análisis tras cada medición registrada.' }
+                    { t: '🏢 Registro del edificio', p: 'El administrador del sistema AquaSaaS crea el perfil con un identificador único (slug), capacidad del tanque y correo administrativo.' },
+                    { t: '👥 Incorporación de miembros', p: 'Se invita a residentes y miembros de junta por email. Cada uno recibe instrucciones de acceso y el enlace a su panel.' },
+                    { t: '📊 Reporte y análisis', p: 'Los residentes ingresan mediciones (L o %) en cualquier momento. El sistema detecta anomalías y calcula tendencias.' },
+                    { t: '📧 Notificaciones automáticas', p: 'Tras cada medición, se envía un informe completo por email al colaborador y a la junta con estadísticas en tiempo real.' }
                   ].map(item => (
-                    <div key={item.t} className="bg-white border border-black/5 p-4 rounded-2xl">
-                      <h4 className="font-bold text-sm mb-1">{item.t}</h4>
-                      <p className="text-xs text-[#5F5E5A] leading-relaxed">{item.p}</p>
+                    <div key={item.t} className="bg-white border border-black/5 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                      <h4 className="font-bold text-base text-[#042C53] mb-2">{item.t}</h4>
+                      <p className="text-sm text-[#5F5E5A] leading-relaxed">{item.p}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm overflow-hidden">
+                   <h4 className="font-bold text-sm uppercase tracking-widest text-[#888780] mb-6">Los tres roles del sistema</h4>
+                   <div className="overflow-x-auto">
+                     <table className="w-full text-sm text-left">
+                        <thead>
+                          <tr className="text-[#888780] uppercase tracking-tighter border-b border-black/10 text-[10px]">
+                            <th className="py-4 px-2">Rol</th>
+                            <th className="py-4 px-2">Acceso</th>
+                            <th className="py-4 px-2">Funciones principales</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-black/5 text-[#5F5E5A]">
+                          <tr>
+                            <td className="py-5 px-2"><span className="bg-[#E1F5EE] text-[#085041] px-2.5 py-1 rounded-full text-xs font-bold border border-[#9FE1CB]">Residente</span></td>
+                            <td className="py-5 px-2 font-medium">Formulario público sin clave</td>
+                            <td className="py-5 px-2">Reportar mediciones y recibir informes por email.</td>
+                          </tr>
+                          <tr>
+                            <td className="py-5 px-2"><span className="bg-[#E6F1FB] text-[#0C447C] px-2.5 py-1 rounded-full text-xs font-bold border border-[#B5D4F4]">Administrador</span></td>
+                            <td className="py-5 px-2 font-medium">Panel privado con login</td>
+                            <td className="py-5 px-2">Gestionar miembros, estadísticas y configurar alertas críticas.</td>
+                          </tr>
+                          <tr>
+                            <td className="py-5 px-2"><span className="bg-[#FAEEDA] text-[#633806] px-2.5 py-1 rounded-full text-xs font-bold border border-[#FAC775]">Junta</span></td>
+                            <td className="py-5 px-2 font-medium">Panel privado con login</td>
+                            <td className="py-5 px-2">Monitorear consumo y recibir informes periódicos detallados.</td>
+                          </tr>
+                        </tbody>
+                     </table>
+                   </div>
+                </div>
+              </section>
+
+              {/* SECCIÓN 2: RESIDENTES */}
+              <section id="help-residente" className="space-y-8">
+                <div className="flex items-center gap-4">
+                   <div className="w-14 h-14 bg-[#FAEEDA] border border-[#FAC775] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🏠</div>
+                   <div>
+                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#633806]">Guía para Residentes</h3>
+                     <p className="text-sm text-[#5F5E5A] font-medium italic">Cómo reportar tu medición de consumo y qué sucede después.</p>
+                   </div>
+                </div>
+
+                <div className="bg-[#E1F5EE] border border-[#9FE1CB] p-5 rounded-2xl flex gap-4 items-start text-sm md:text-base text-[#085041] shadow-sm leading-relaxed">
+                   <span className="text-2xl">✅</span>
+                   <div>
+                     <p><strong>Sin contraseña necesaria.</strong> Los residentes acceden directamente a través de un enlace único de su edificio. No hay registro previo ni proceso de login tradicional para ellos.</p>
+                   </div>
+                </div>
+
+                <div className="bg-white border border-black/5 p-8 rounded-[32px] shadow-sm space-y-6">
+                   <h4 className="font-bold text-[#2C2C2A] text-lg">Tu enlace de acceso</h4>
+                   <p className="text-[#5F5E5A] text-sm">Recibirás por correo o de tu administrador el enlace único de tu edificio. Guárdalo como favorito para acceso rápido.</p>
+                   <div className="bg-[#F1EFE8] border border-black/10 rounded-xl p-4 flex items-center justify-between group overflow-hidden">
+                      <code className="text-xs md:text-sm text-[#0F6E56] font-mono break-all font-bold">https://agua-rust.vercel.app/edificio/<strong>{building?.slug || '[slug]'}</strong></code>
+                   </div>
+                   <p className="text-[11px] text-[#888780] italic">Nota: El slug es el identificador único del edificio.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-bold text-base text-[#2C2C2A] px-2 uppercase tracking-widest text-xs opacity-60">Pasos para registrar una medición</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { n: '1', t: 'Accede al formulario', p: 'Abre el enlace único en tu navegador. El formulario está disponible las 24 horas.' },
+                      { n: '2', t: 'Ingresa la medición', p: 'Introduce el dato en Litros o el Porcentaje de llenado del tanque (ej: 75%).' },
+                      { n: '3', t: 'Completa tus datos', p: 'Ingresa tu Email (requerido) y tu Nombre (opcional) para identificarte.' },
+                      { n: '4', t: 'Envía el reporte', p: 'Haz clic en enviar y en segundos recibirás el informe completo en tu correo.' }
+                    ].map(step => (
+                      <div key={step.n} className="flex gap-4 p-5 bg-white rounded-2xl border border-black/5 shadow-sm">
+                        <div className="w-10 h-10 bg-[#FAEEDA] text-[#BA7517] rounded-full flex items-center justify-center font-bold text-sm shrink-0 border border-[#FAC775]">{step.n}</div>
+                        <div><h5 className="font-bold text-sm mb-1">{step.t}</h5><p className="text-xs text-[#5F5E5A] leading-relaxed">{step.p}</p></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-[#0F6E56] to-[#1D9E75] p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden">
+                   <div className="relative z-10 space-y-6">
+                     <h4 className="text-xl font-bold flex items-center gap-2">📧 ¿Qué pasa después de reportar?</h4>
+                     <p className="text-white/80 text-sm leading-relaxed">El sistema activa un ciclo de comunicación inteligente para mantenerte informado sin saturar tu buzón:</p>
+                     
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white/10 p-4 rounded-2xl border border-white/20">
+                          <p className="font-black text-xs uppercase mb-2 text-white/60 tracking-widest">Paso 1</p>
+                          <p className="text-sm font-bold">Tú reportas un dato y recibes el informe detallado.</p>
+                        </div>
+                        <div className="bg-white/10 p-4 rounded-2xl border border-white/20">
+                          <p className="font-black text-xs uppercase mb-2 text-white/60 tracking-widest">Paso 2</p>
+                          <p className="text-sm font-bold">Recibes los siguientes 5 reportes hechos por tus vecinos.</p>
+                        </div>
+                        <div className="bg-white/10 p-4 rounded-2xl border border-white/20 border-dashed">
+                          <p className="font-black text-xs uppercase mb-2 text-white/60 tracking-widest">Paso 3</p>
+                          <p className="text-sm font-bold opacity-80 italic">El ciclo se pausa hasta que vuelvas a colaborar reportando un dato.</p>
+                        </div>
+                     </div>
+                   </div>
+                </div>
+              </section>
+
+              {/* SECCIÓN 3: ADMINISTRADOR */}
+              <section id="help-administrador" className="space-y-8">
+                <div className="flex items-center gap-4">
+                   <div className="w-14 h-14 bg-[#E6F1FB] border border-[#B5D4F4] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🔧</div>
+                   <div>
+                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#0C447C]">Guía para Administradores</h3>
+                     <p className="text-sm text-[#5F5E5A] font-medium italic">Panel completo de gestión: miembros, alertas y configuración.</p>
+                   </div>
+                </div>
+
+                <div className="bg-white border border-[#B5D4F4] rounded-[32px] overflow-hidden shadow-sm">
+                   <div className="bg-[#E6F1FB] p-6 border-b border-[#B5D4F4] flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <span className="text-2xl">🔐</span>
+                        <h4 className="font-bold text-[#0C447C]">Acceso al panel privado</h4>
+                     </div>
+                     <span className="bg-white/60 text-[#0C447C] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Requiere Contraseña</span>
+                   </div>
+                   <div className="p-8 space-y-6">
+                      <p className="text-sm text-[#5F5E5A]">Inicia sesión con tu correo y la contraseña configurada. Tendrás control total sobre:</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                         {[
+                           { i: '📉', t: 'Tendencias', c: 'Histórico diario/mensual.' },
+                           { i: '👥', t: 'Miembros', c: 'Añade o quita junta.' },
+                           { i: '⚙️', t: 'Alertas', c: 'Umbrales de WhatsApp.' },
+                           { i: '⚠️', t: 'Anomalías', c: 'Detección de fugas.' }
+                         ].map(item => (
+                           <div key={item.t} className="bg-[#F1EFE8]/50 p-4 rounded-2xl text-center border border-black/5">
+                              <div className="text-2xl mb-2">{item.i}</div>
+                              <p className="font-bold text-[11px] uppercase mb-1">{item.t}</p>
+                              <p className="text-[10px] text-[#888780] leading-tight">{item.c}</p>
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+                </div>
+              </section>
+
+              {/* SECCIÓN 4: JUNTA */}
+              <section id="help-junta" className="space-y-8">
+                <div className="flex items-center gap-4">
+                   <div className="w-14 h-14 bg-[#EEEDFE] border border-[#AFA9EC] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🏛️</div>
+                   <div>
+                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#3C3489]">Guía para la Junta</h3>
+                     <p className="text-sm text-[#5F5E5A] font-medium italic">Acceso de supervisión y recepción de informes periódicos.</p>
+                   </div>
+                </div>
+
+                <div className="card bg-white p-8 rounded-[32px] border border-black/5 shadow-sm space-y-6">
+                  <h4 className="font-bold text-lg">Lo que puedes hacer como miembro:</h4>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                    {[
+                      'Ver todos los gráficos avanzados del Dashboard.',
+                      'Consultar el historial ilimitado de mediciones.',
+                      'Acceder a las estadísticas y exportar reportes.',
+                      'Recibir emails con cada nuevo reporte vecinal.',
+                      'Supervisar los umbrales de configuración (Solo lectura).',
+                      'Enviar reportes manuales a cualquier correo.'
+                    ].map(text => (
+                      <li key={text} className="flex gap-3 text-sm text-[#5F5E5A] items-start">
+                        <span className="text-[#7F77DD] font-bold">✓</span> {text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+
+              {/* SECCIÓN 5: INFORMES EMAIL */}
+              <section id="help-emails" className="space-y-8">
+                <div className="flex items-center gap-4">
+                   <div className="w-14 h-14 bg-[#E1F5EE] border border-[#9FE1CB] rounded-2xl flex items-center justify-center text-3xl shadow-sm">📧</div>
+                   <div>
+                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#0F6E56]">Informes por correo</h3>
+                     <p className="text-sm text-[#5F5E5A] font-medium italic">Transparencia y datos en la palma de tu mano.</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="bg-white p-6 rounded-[24px] border border-black/5 shadow-sm">
+                      <h4 className="font-bold text-[#04342C] mb-4">Para Residentes</h4>
+                      <p className="text-xs text-[#5F5E5A] leading-relaxed">Contiene su medición, nivel actual (%) y estadísticas rápidas comparativas con días anteriores.</p>
+                   </div>
+                   <div className="bg-white p-6 rounded-[24px] border border-black/5 shadow-sm">
+                      <h4 className="font-bold text-[#04342C] mb-4">Para Admin y Junta</h4>
+                      <p className="text-xs text-[#5F5E5A] leading-relaxed">Incluye quién reportó, estado detallado de autonomía hídrica, gráficos y resumen de consumo diario.</p>
+                   </div>
+                </div>
+
+                <div className="bg-[#FAEEDA] border border-[#FAC775] p-6 rounded-2xl flex gap-4 items-start text-sm text-[#633806] shadow-sm">
+                   <span className="text-2xl">⚠️</span>
+                   <p><strong>Alerta de Anomalía:</strong> Si el sistema detecta una caída inusual (posible fuga), el Administrador recibe un email crítico inmediato con los datos del evento.</p>
+                </div>
+              </section>
+
+              {/* SECCIÓN 6: COMUNIDAD */}
+              <section id="help-comunidad" className="space-y-8">
+                <div className="flex items-center gap-4 text-[#0F6E56]">
+                   <div className="w-14 h-14 bg-[#E1F5EE] border border-[#9FE1CB] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🌊</div>
+                   <h3 className="text-2xl md:text-3xl font-serif font-bold">Datos Comunitarios</h3>
+                </div>
+                <div className="bg-[#F1EFE8] p-8 rounded-[32px] border border-black/5 shadow-inner">
+                   <p className="text-sm text-[#2C2C2A] leading-relaxed text-center italic font-medium">"AquaSaaS promueve el uso responsable del agua a través de la transparencia compartiendo datos agregados con toda la comunidad del edificio."</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { i: '📈', t: 'Tendencias', p: 'Visualización histórica del nivel del tanque para todos.' },
+                    { i: '👥', t: 'Participación', p: 'Indicador de cuántos vecinos están colaborando hoy.' },
+                    { i: '🚰', t: 'Estado', p: 'Nivel hídrico actual disponible desde el link vecinal.' }
+                  ].map(c => (
+                    <div key={c.t} className="bg-white p-5 rounded-2xl text-center border border-black/5 shadow-sm">
+                       <div className="text-2xl mb-2">{c.i}</div>
+                       <h5 className="font-bold text-sm mb-1">{c.t}</h5>
+                       <p className="text-[10px] text-[#888780] uppercase font-medium">{c.p}</p>
                     </div>
                   ))}
                 </div>
               </section>
 
-              {/* Roles */}
-              <section id="roles" className="space-y-6">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#888780] border-b border-black/5 pb-2">Los tres roles del sistema</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead>
-                      <tr className="text-[#888780] uppercase tracking-tighter border-b border-black/10">
-                        <th className="py-3 px-2">Rol</th>
-                        <th className="py-3 px-2">Acceso</th>
-                        <th className="py-3 px-2">Funciones principales</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-black/5">
-                      <tr>
-                        <td className="py-4 px-2 font-bold text-[#0F6E56]">Residente</td>
-                        <td className="py-4 px-2">Link público sin clave</td>
-                        <td className="py-4 px-2 text-[#5F5E5A]">Reportar datos y recibir informes.</td>
-                      </tr>
-                      <tr>
-                        <td className="py-4 px-2 font-bold text-[#185FA5]">Administrador</td>
-                        <td className="py-4 px-2">Panel privado con login</td>
-                        <td className="py-4 px-2 text-[#5F5E5A]">Gestión total, alertas y configuración.</td>
-                      </tr>
-                      <tr>
-                        <td className="py-4 px-2 font-bold text-[#BA7517]">Junta</td>
-                        <td className="py-4 px-2">Panel privado con login</td>
-                        <td className="py-4 px-2 text-[#5F5E5A]">Monitoreo, historial y visualización.</td>
-                      </tr>
-                    </tbody>
-                  </table>
+              {/* SECCIÓN 7: FAQ */}
+              <section id="help-faq" className="space-y-6">
+                <div className="flex items-center gap-4 text-[#0C447C]">
+                   <div className="w-14 h-14 bg-[#E6F1FB] border border-[#B5D4F4] rounded-2xl flex items-center justify-center text-3xl shadow-sm">❓</div>
+                   <h3 className="text-2xl md:text-3xl font-serif font-bold">Preguntas Frecuentes</h3>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { q: '¿Necesito cuenta para reportar?', a: 'No. Solo necesitas el link único de tu edificio que te dará el administrador.' },
+                    { q: '¿Cuándo debo reportar?', a: 'Cada vez que revises el nivel del tanque. A más datos, estadísticas más precisas.' },
+                    { q: '¿Por qué dejé de recibir emails?', a: 'Tu ciclo de 5 emails terminó. Debes registrar una medición nueva para reactivarlo.' },
+                    { q: '¿Es público mi email?', a: 'No. El correo es para identificación interna. Solo tu nombre (opcional) es comunitario.' },
+                    { q: '¿Puedo borrar una medición?', a: 'Solo el Administrador del edificio puede editar o eliminar registros desde su panel.' }
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-white border border-black/5 rounded-2xl p-5 hover:border-[#B5D4F4] transition-colors shadow-sm">
+                       <p className="font-bold text-sm text-[#0C447C] mb-2">Q: {item.q}</p>
+                       <p className="text-xs text-[#5F5E5A] leading-relaxed">A: {item.a}</p>
+                    </div>
+                  ))}
                 </div>
               </section>
 
-              {/* Residentes - El Ciclo */}
-              <section id="ciclo" className="space-y-6">
-                <div className="bg-[#FAEEDA] border border-[#FAC775] p-6 rounded-[24px]">
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2">📧 Ciclo de Comunicación <span className="text-xs bg-white/50 px-2 py-0.5 rounded-full font-medium">Importante</span></h3>
-                  <p className="text-sm text-[#633806] mb-6">El sistema usa un ciclo inteligente para incentivar la participación sin saturar el correo:</p>
-                  
-                  <div className="flex flex-col md:flex-row items-center gap-4 justify-between bg-white/40 p-4 rounded-2xl border border-[#FAC775]/30">
-                    <div className="text-center px-4">
-                      <p className="font-bold text-xs">Tú reportas</p>
-                      <p className="text-[10px] opacity-70">Informe Completo</p>
-                    </div>
-                    <div className="text-[#BA7517] rotate-90 md:rotate-0">→</div>
-                    <div className="text-center px-4">
-                      <p className="font-bold text-xs">5 Emails vecinos</p>
-                      <p className="text-[10px] opacity-70">Siguientes reportes</p>
-                    </div>
-                    <div className="text-[#BA7517] rotate-90 md:rotate-0">→</div>
-                    <div className="text-center px-4 italic opacity-80">
-                      <p className="font-bold text-xs">Pausa</p>
-                      <p className="text-[10px]">Debes reportar otra vez</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Consejos */}
-              <section className="bg-[#EEEDFE] p-6 rounded-[24px] flex flex-col md:flex-row gap-6 items-center">
-                 <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-sm">🤝</div>
-                 <div className="space-y-2">
-                   <h3 className="font-bold">Colaboración Comunitaria</h3>
-                   <p className="text-sm text-[#3C3489] leading-relaxed">AquaSaaS promueve la transparencia. Publica tu <strong>Link Público</strong> en el grupo de WhatsApp del edificio. Cuantos más vecinos reporten, más precisas serán las proyecciones de consumo y alertas de fugas.</p>
-                 </div>
-              </section>
             </div>
 
             {/* Footer Modal */}
-            <div className="bg-white p-6 border-t border-black/5 text-center shrink-0">
-              <button onClick={() => setShowHelpModal(false)} className="bg-[#04342C] hover:bg-[#0F6E56] text-white px-12 py-3 rounded-2xl font-bold transition-all shadow-lg active:scale-95">
-                Entendido, gracias
+            <div className="bg-white p-8 border-t border-black/5 text-center shrink-0 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 bg-[#04342C] rounded-xl flex items-center justify-center shadow-lg"><Droplets className="w-6 h-6 text-white" /></div>
+                 <div className="text-left"><p className="font-bold text-sm leading-none mb-1">AquaSaaS</p><p className="text-[10px] text-[#888780] font-medium tracking-tighter">Control Hídrico Residencial</p></div>
+              </div>
+              <button onClick={() => setShowHelpModal(false)} className="bg-[#04342C] hover:bg-[#0F6E56] text-white px-16 py-3.5 rounded-2xl font-black transition-all shadow-xl active:scale-95 text-sm uppercase tracking-widest">
+                Cerrar Guía
               </button>
-              <p className="text-[10px] text-[#888780] mt-4 font-medium tracking-widest uppercase">2026 AquaSaaS — Gestión Hídrica Profesional</p>
+              <p className="text-[9px] text-[#888780] font-bold uppercase tracking-widest hidden md:block">2026 — v2.0</p>
             </div>
           </div>
         </div>
