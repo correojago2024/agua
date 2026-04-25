@@ -227,22 +227,47 @@ export default function HomePage() {
       return;
     }
 
-    // Modo Administrador: requiere clave
-    const { data: building, error: fetchError } = await supabase
+    // Modo Administrador: requiere email y clave
+    const loginEmail = formData.slug.toLowerCase().trim();
+
+    // 1. Intentar como administrador principal del edificio
+    const { data: building, error: bError } = await supabase
       .from('buildings')
-      .select('id, slug')
-      .eq('slug', formData.slug.toLowerCase())
+      .select('id, slug, admin_email')
+      .ilike('admin_email', loginEmail)
       .eq('password', formData.password)
       .single();
 
-    if (fetchError || !building) {
-      setError('Identificador o clave incorrectos');
+    if (!bError && building) {
+      router.push(`/edificio-admin/${building.slug}?authed=1&email=${encodeURIComponent(building.admin_email)}`);
       setLoading(false);
       return;
     }
 
-    // Pasar token de autenticación via URL para evitar pedir la clave dos veces
-    router.push(`/edificio-admin/${building.slug}?authed=1`);
+    // 2. Intentar como miembro de la junta
+    const { data: member, error: mError } = await supabase
+      .from('building_members')
+      .select('id, building_id, email')
+      .ilike('email', loginEmail)
+      .eq('password', formData.password)
+      .single();
+
+    if (!mError && member) {
+      // Obtener el slug del edificio del miembro
+      const { data: memberBuilding } = await supabase
+        .from('buildings')
+        .select('slug')
+        .eq('id', member.building_id)
+        .single();
+      
+      if (memberBuilding) {
+        router.push(`/edificio-admin/${memberBuilding.slug}?authed=1&email=${encodeURIComponent(member.email)}`);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setError('Email o clave incorrectos. Verifica tus credenciales.');
     setLoading(false);
   };
 
@@ -496,12 +521,14 @@ export default function HomePage() {
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Identificador del Edificio</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {loginMode === 'admin' ? 'Email Registrado' : 'Identificador del Edificio'}
+                </label>
                 <input
-                  type="text"
+                  type={loginMode === 'admin' ? 'email' : 'text'}
                   required
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
-                  placeholder="mi-edificio"
+                  placeholder={loginMode === 'admin' ? 'admin@edificio.com' : 'mi-edificio'}
                   value={formData.slug}
                   onChange={e => setFormData({...formData, slug: e.target.value})}
                 />
@@ -548,7 +575,7 @@ export default function HomePage() {
                       : 'bg-white text-slate-600 border-slate-300 hover:border-slate-500'
                   }`}
                 >
-                  ⚙️ Administrador
+                  ⚙️ Portal de Edificio
                 </button>
               </div>
 
@@ -559,7 +586,7 @@ export default function HomePage() {
                   loginMode === 'admin' ? 'bg-slate-800 hover:bg-slate-700' : 'bg-blue-600 hover:bg-blue-500'
                 }`}
               >
-                {loading ? 'Ingresando...' : loginMode === 'admin' ? 'Acceder al Portal Admin' : 'Ir al Formulario'}
+                {loading ? 'Ingresando...' : loginMode === 'admin' ? 'Ingresar a mi Portal' : 'Ir al Formulario'}
               </button>
             </form>
 
@@ -1111,12 +1138,12 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Card 2: Portal administrador */}
+            {/* Card 2: Portal del edificio */}
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 hover:border-cyan-500/40 transition-all flex flex-col">
               <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center mb-4">
                 <BarChart3 className="w-6 h-6 text-cyan-400" />
               </div>
-              <h4 className="text-white font-bold text-lg mb-2">⚙️ Portal del Administrador</h4>
+              <h4 className="text-white font-bold text-lg mb-2">⚙️ Portal del Edificio</h4>
               <div className="flex-grow">
                 <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                   Accede al panel de administración del edificio demo y explora el

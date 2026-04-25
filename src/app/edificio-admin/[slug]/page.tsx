@@ -408,6 +408,22 @@ export default function EdificioAdminPage() {
       // Si viene con ?authed=1 desde el login de page.tsx, ya está autenticado
       if (searchParams.get('authed') === '1') {
         setAuthed(true);
+        const urlEmail = searchParams.get('email');
+        if (urlEmail) {
+          setLoginEmail(urlEmail); // Pre-rellenar por si cierran sesión
+          // Buscar si el email pertenece a un miembro de la junta para este edificio
+          const { data: members } = await supabase
+            .from('building_members')
+            .select('*')
+            .eq('building_id', data.id);
+          
+          if (members) {
+            const member = members.find((m: any) => m.email.toLowerCase() === urlEmail.toLowerCase());
+            if (member) {
+              setCurrentUser(member);
+            }
+          }
+        }
       }
       setLoading(false);
     })();
