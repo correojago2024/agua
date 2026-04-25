@@ -116,6 +116,8 @@ export default function EdificioAdminPage() {
   const [reportFrom, setReportFrom] = useState('');
   const [reportTo, setReportTo]     = useState('');
   const [reportType, setReportType] = useState('full');
+  const [showPreview, setShowPreview] = useState(false);
+  const [deletingBulk, setDeletingBulk] = useState(false);
 
   // Mediciones editing
   const [editingMeasurement, setEditingMeasurement] = useState<any>(null);
@@ -781,29 +783,83 @@ export default function EdificioAdminPage() {
     if (reportFrom) data = data.filter(m => new Date(m.recorded_at) >= new Date(reportFrom));
     if (reportTo)   data = data.filter(m => new Date(m.recorded_at) <= new Date(reportTo + 'T23:59:59'));
     return data;
-  })();
+    })();
 
-  const exportCSV = () => {
+    const exportCSV = () => {
+    if (filteredMeasurements.length === 0) {
+      alert('No hay datos para exportar en el rango seleccionado.');
+      return;
+    }
     const rows = [
-      ['Fecha/Hora','Litros','Porcentaje','Variación (L)','Registrado por','Email'],
+      ['Fecha/Hora', 'Litros', 'Porcentaje', 'Variacion (L)', 'Registrado por', 'Email'],
       ...filteredMeasurements.map(m => [
-        new Date(m.recorded_at).toLocaleString('es-ES'),
+        format(new Date(m.recorded_at), 'dd/MM/yyyy HH:mm:ss'),
         Math.round(m.liters),
         Math.round(m.percentage) + '%',
         Math.round((m.variation_lts ?? m.variacion_lts ?? 0)),
-        m.collaborator_name || '—',
+        m.collaborator_name || 'Anonimo',
         m.email || '—',
       ])
     ];
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    // Usar punto y coma (;) como separador para compatibilidad con Excel en español
+    const csv = rows.map(r => r.join(';')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a'); a.href = url;
     a.download = `reporte-${building?.slug}-${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+    };
 
+    const handleBulkDelete = async (mode: 'range' | 'all') => {
+    if (!isUserAdmin) return;
+    if (observerBlock()) return;
+    if (demoBlock('⚠️ Modo Demo: no se pueden realizar limpiezas de base de datos.')) return;
+
+    const count = mode === 'all' ? measurements.length : filteredMeasurements.length;
+    if (count === 0) {
+      alert('No hay registros para eliminar.');
+      return;
+    }
+
+    const confirmMsg = mode === 'all' 
+      ? `🚨 ¡ADVERTENCIA CRÍTICA!\n\nEstás a punto de ELIMINAR TODOS los registros (${count}) del edificio.\n\nEsta acción NO se puede deshacer.\n\n¿Deseas continuar?`
+      : `⚠️ ¿Eliminar los ${count} registros del rango seleccionado?\n\nEsta acción no se puede deshacer.`;
+
+    if (!confirm(confirmMsg)) return;
+    if (mode === 'all' && !confirm('¿Estás COMPLETAMENTE SEGURO?')) return;
+
+    setDeletingBulk(true);
+    setMeasMsg('⏳ Limpiando base de datos...');
+
+    try {
+      let query = supabase.from('measurements').delete().eq('building_id', building.id);
+      if (mode === 'range') {
+        if (reportFrom) query = query.gte('recorded_at', reportFrom);
+        if (reportTo)   query = query.lte('recorded_at', reportTo + 'T23:59:59');
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      await logAudit({
+        req: undefined,
+        building_id: building.id,
+        user_email: currentUser?.email || 'ADMIN',
+        operation: 'SECURITY',
+        entity_type: 'bulk_cleanup',
+        data_after: { mode, count_deleted: count, from: reportFrom, to: reportTo }
+      });
+
+      setMeasMsg(`✅ Limpieza exitosa: ${count} registros eliminados`);
+      setTimeout(() => setMeasMsg(''), 5000);
+      loadData();
+    } catch (err: any) {
+      setMeasMsg('❌ Error: ' + err.message);
+    } finally {
+      setDeletingBulk(false);
+    }
+    };
   // ── Mediciones CRUD ───────────────────────────────────────────────────────
   const startEditMeasurement = (m: any) => {
     setEditingMeasurement(m);
@@ -1691,31 +1747,123 @@ export default function EdificioAdminPage() {
               </div>
             </div>
 
-            {/* Sección de Filtros y Exportación */}
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2 border-b border-slate-700 pb-3">
-                <FileText className="w-4 h-4 text-blue-400" />
-                Herramientas de Exportación y Filtros
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2">Rango Desde</label>
-                  <input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
-                </div>
-                <div>
-                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2">Rango Hasta</label>
-                  <input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
-                </div>
-                <div className="flex flex-col justify-end">
-                  <button onClick={exportCSV}
-                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-green-900/20 active:scale-95 transition-all">
-                    <Download className="w-4 h-4" />
-                    Descargar Datos (CSV)
+            {/* Sección de Filtros y Herramientas */}
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700 pb-4">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-400" />
+                  Herramientas de Datos y Filtros
+                </h3>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => { setReportFrom(''); setReportTo(''); setShowPreview(false); }}
+                    className="text-[10px] text-slate-500 hover:text-white underline"
+                  >
+                    Limpiar filtros
                   </button>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Rango Desde (dd/mm/aaaa)
+                  </label>
+                  <input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none" 
+                    style={{ colorScheme: 'dark' }} />
+                </div>
+                <div>
+                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Rango Hasta (dd/mm/aaaa)
+                  </label>
+                  <input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none"
+                    style={{ colorScheme: 'dark' }} />
+                </div>
+                <div className="flex items-end gap-2">
+                  <button onClick={() => setShowPreview(!showPreview)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${showPreview ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
+                    <Eye className="w-4 h-4" />
+                    {showPreview ? 'Ocultar' : 'Visualizar'}
+                  </button>
+                  <button onClick={exportCSV}
+                    className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-green-900/20 active:scale-95 transition-all">
+                    <Download className="w-4 h-4" />
+                    CSV
+                  </button>
+                </div>
+                
+                {/* Nueva sección: Limpieza (Solo Admin) */}
+                <div className="flex items-end border-l border-slate-700 pl-6">
+                  {isUserAdmin && (
+                    <div className="w-full space-y-2">
+                      <p className="text-[10px] text-red-500 font-bold uppercase flex items-center gap-1">
+                        <Trash2 className="w-3 h-3" /> Zona de Limpieza
+                      </p>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleBulkDelete('range')}
+                          disabled={deletingBulk || (!reportFrom && !reportTo)}
+                          className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-900/30 py-2 rounded-lg text-[11px] font-bold transition-all disabled:opacity-30"
+                          title="Borrar solo el rango seleccionado"
+                        >
+                          Borrar Rango
+                        </button>
+                        <button 
+                          onClick={() => handleBulkDelete('all')}
+                          disabled={deletingBulk}
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-[11px] font-bold transition-all shadow-md active:scale-95 disabled:opacity-50"
+                          title="BORRAR TODO EL HISTORIAL"
+                        >
+                          BORRAR TODO
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Previsualización de Datos */}
+              {showPreview && (
+                <div className="mt-6 border-t border-slate-700 pt-6 animate-in fade-in duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-white text-xs font-bold uppercase tracking-widest">Previsualización de Registros ({filteredMeasurements.length})</h4>
+                    <p className="text-[10px] text-slate-500 italic">Mostrando registros según el filtro aplicado</p>
+                  </div>
+                  <div className="overflow-x-auto max-h-[400px] border border-slate-700 rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-900 sticky top-0 border-b border-slate-700">
+                        <tr>
+                          <th className="px-4 py-3 text-slate-400 font-medium">Fecha/Hora</th>
+                          <th className="px-4 py-3 text-slate-400 font-medium text-right">Liters</th>
+                          <th className="px-4 py-3 text-slate-400 font-medium text-right">%</th>
+                          <th className="px-4 py-3 text-slate-400 font-medium text-right">Variación</th>
+                          <th className="px-4 py-3 text-slate-400 font-medium">Reportado por</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {filteredMeasurements.map(m => (
+                          <tr key={m.id} className="hover:bg-slate-700/30 transition-colors">
+                            <td className="px-4 py-2.5 text-slate-300">{format(new Date(m.recorded_at), 'dd/MM/yyyy HH:mm:ss')}</td>
+                            <td className="px-4 py-2.5 text-white font-mono text-right">{Math.round(m.liters).toLocaleString()} L</td>
+                            <td className="px-4 py-2.5 text-blue-400 font-bold text-right">{Math.round(m.percentage)}%</td>
+                            <td className={`px-4 py-2.5 text-right font-mono ${ (m.variation_lts ?? m.variacion_lts ?? 0) >= 0 ? 'text-green-400' : 'text-red-400' }`}>
+                              { (m.variation_lts ?? m.variacion_lts ?? 0) > 0 ? '+' : '' }{ Math.round(m.variation_lts ?? m.variacion_lts ?? 0) }
+                            </td>
+                            <td className="px-4 py-2.5 text-slate-400">{m.collaborator_name || 'Anónimo'}</td>
+                          </tr>
+                        ))}
+                        {filteredMeasurements.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-10 text-center text-slate-500 italic">No hay datos que coincidan con el rango seleccionado.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Reportes pre-construidos */}
