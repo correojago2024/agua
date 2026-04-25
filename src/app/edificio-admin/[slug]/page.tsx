@@ -130,6 +130,7 @@ export default function EdificioAdminPage() {
   // Configuración del edificio
   const [editingConfig, setEditingConfig] = useState(false);
   const [showHelpModal, setShowHelpModal]   = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cfgName, setCfgName]       = useState('');
   const [cfgCapacity, setCfgCapacity] = useState('');
   const [cfgAdminEmail, setCfgAdminEmail] = useState('');
@@ -1181,42 +1182,38 @@ export default function EdificioAdminPage() {
         </div>
       )}
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-4 py-3">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Droplets className="w-6 h-6 text-white" />
+      <header className="bg-slate-800 border-b border-slate-700 px-4 py-3 sticky top-0 z-[60] shadow-md">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+              <Droplets className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-white font-bold text-sm leading-tight">{building.name}</h1>
-              <p className="text-slate-400 text-[10px]">Panel Administrativo — Junta de Condominio</p>
+              <h1 className="text-white font-bold text-xs md:text-sm leading-tight truncate max-w-[120px] md:max-w-none">{building.name}</h1>
+              <p className="text-slate-400 text-[9px] md:text-[10px]">Panel Administrativo</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 md:gap-4 flex-1">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 justify-end">
+            <div className="hidden sm:flex items-center gap-3">
               <a 
                 href={`/edificio/${building.id}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all shadow-lg active:scale-95"
               >
-                <Droplets className="w-4 h-4" />
-                <span>Ir al Formulario de Entrada</span>
+                <Droplets className="w-3.5 h-3.5" />
+                <span>Ir al Formulario</span>
               </a>
-              <button 
-                onClick={() => setShowHelpModal(true)}
-                className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-bold transition-colors text-xs"
-              >
-                <Info className="w-4 h-4" /> Ayuda ?
-              </button>
-              <button onClick={loadData} className="p-2 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
-                <RefreshCw className="w-4 h-4" />
-              </button>
             </div>
+
+            <button onClick={loadData} className="p-2 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition-colors hidden md:block" title="Refrescar">
+              <RefreshCw className="w-4 h-4" />
+            </button>
 
             <div className="h-6 w-px bg-slate-700 hidden lg:block" />
 
+            {/* Info Usuario (Solo Desktop) */}
             <div className="hidden lg:flex items-center gap-3">
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-2">
@@ -1228,39 +1225,96 @@ export default function EdificioAdminPage() {
                 </div>
                 <span className="text-[10px] text-slate-500 italic max-w-[150px] truncate">{loginEmail || building?.admin_email}</span>
               </div>
-              <button onClick={() => {
-                sessionStorage.clear();
-                setAuthed(false);
-                router.push('/');
-              }} className="flex items-center gap-1.5 text-slate-400 hover:text-red-400 p-2 rounded-lg hover:bg-red-400/5 transition-all" title="Cerrar Sesión">
-                <LogOut className="w-4 h-4" />
-              </button>
             </div>
+
+            <div className="h-6 w-px bg-slate-700 hidden sm:block" />
+
+            {/* BOTÓN HAMBURGUESA (Móvil/Tablet) */}
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-blue-400/30 flex items-center gap-2"
+            >
+              <span className="text-[10px] font-black uppercase tracking-tighter hidden sm:inline">{mobileMenuOpen ? 'Cerrar' : 'Menú'}</span>
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* MENÚ DESPLEGABLE MÓVIL (Hamburguesa) */}
+        {mobileMenuOpen && (
+          <div className="absolute top-full left-0 w-full bg-slate-800 border-b border-slate-700 shadow-2xl animate-in slide-in-from-top duration-200 z-50 overflow-hidden">
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-700 mb-2">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-slate-500" />
+                  <span className="text-xs text-slate-300 font-bold uppercase">{currentUser ? currentUser.name : 'Administrador'}</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    sessionStorage.clear();
+                    setAuthed(false);
+                    router.push('/');
+                  }}
+                  className="flex items-center gap-1.5 text-red-400 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg bg-red-400/5"
+                >
+                  <LogOut className="w-3 h-3" /> Salir
+                </button>
+              </div>
+
+              {/* Opciones que no caben abajo */}
+              <button onClick={() => { setTab('junta'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${tab === 'junta' ? 'bg-purple-600 text-white' : 'bg-slate-700/50 text-slate-300'}`}>
+                <Users className="w-4 h-4" /> Mi Junta
+              </button>
+              <button onClick={() => { setTab('configuracion'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${tab === 'configuracion' ? 'bg-cyan-600 text-white' : 'bg-slate-700/50 text-slate-300'}`}>
+                <Settings className="w-4 h-4" /> Configuración
+              </button>
+              {isUserAdmin && (
+                <button onClick={() => { setTab('alarmas_logs'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${tab === 'alarmas_logs' ? 'bg-slate-600 text-white' : 'bg-slate-700/50 text-slate-300'}`}>
+                  <ClipboardList className="w-4 h-4" /> Alarmas y Logs
+                </button>
+              )}
+              <div className="pt-2 border-t border-slate-700 mt-2">
+                <button 
+                  onClick={() => { setShowHelpModal(true); setMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black text-blue-400 bg-blue-400/5 border border-blue-400/20"
+                >
+                  <Info className="w-4 h-4" /> Guía de Ayuda ?
+                </button>
+              </div>
+              <div className="sm:hidden pt-2">
+                <a 
+                  href={`/edificio/${building.id}`} 
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-xl text-sm font-bold shadow-lg"
+                >
+                  <Droplets className="w-4 h-4" /> Ir al Formulario
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Tabs Menu Strip */}
-      <div className="bg-slate-800 border-b border-slate-700 shadow-xl sticky top-0 z-40">
+      <div className="bg-slate-800 border-b border-slate-700 shadow-xl sticky top-[52px] md:top-[64px] z-40">
         <div className="max-w-6xl mx-auto flex gap-2 px-4 overflow-x-auto scrollbar-hide py-3">
           {([
             { id: 'dashboard',     label: 'Dashboard',     Icon: BarChart3,     color: 'blue' },
-            { id: 'junta',         label: 'Mi Junta',      Icon: Users,        color: 'purple' },
+            { id: 'junta',         label: 'Mi Junta',      Icon: Users,        color: 'purple', desktopOnly: true },
             { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,     color: 'amber' },
-            { id: 'reportes',      label: 'Estadísticas y Reportes', Icon: FileText, color: 'green' },
-            isUserAdmin ? { id: 'alarmas_logs',  label: 'Alarmas/Logs',  Icon: ClipboardList, color: 'slate' } : null,
-            { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan' },
-          ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string }[]).map(({ id, label, Icon, color }) => (
+            { id: 'reportes',      label: 'Reportes',      Icon: FileText, color: 'green' },
+            isUserAdmin ? { id: 'alarmas_logs',  label: 'Logs',  Icon: ClipboardList, color: 'slate', desktopOnly: true } : null,
+            { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan',   desktopOnly: true },
+          ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string; desktopOnly?: boolean }[]).map(({ id, label, Icon, color, desktopOnly }) => (
             <button 
               key={id} 
               onClick={() => setTab(id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap shadow-sm active:scale-95 ${
+              className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap shadow-sm active:scale-95 ${
                 tab === id
                   ? `bg-white text-blue-700 ring-2 ring-blue-500/20 shadow-blue-500/10`
                   : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-600/50'
-              }`}
+              } ${desktopOnly ? 'hidden lg:flex' : 'flex'}`}
             >
-              <Icon className={`w-4 h-4 flex-shrink-0 ${tab === id ? 'text-blue-600' : 'text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0 ${tab === id ? 'text-blue-600' : 'text-slate-400'}`} />
               <span className="uppercase tracking-wider">{label}</span>
             </button>
           ))}
