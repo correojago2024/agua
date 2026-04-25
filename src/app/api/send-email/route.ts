@@ -36,22 +36,46 @@ function generateWelcomeEmailHtml(building: any, siteUrl: string) {
 
     <div style="padding: 20px;">
       <p style="margin-top: 0; font-size: 15px;">Hola <strong>${building.admin_name || 'Administrador'}</strong>,</p>
-      <p style="font-size: 14px; line-height: 1.6;">Su edificio <strong>${building.name}</strong> ha sido registrado exitosamente.</p>
+      <p style="font-size: 14px; line-height: 1.6;">Es un placer darte la bienvenida. Tu edificio <strong>${building.name}</strong> ha sido registrado exitosamente y ahora eres el <strong>Administrador Principal</strong> del sistema para tu comunidad.</p>
 
       <div style="background: #f1f5f9; border-radius: 12px; padding: 15px; margin: 20px 0; font-size: 13px;">
-        <p style="margin: 0 0 5px;"><strong>Identificador:</strong> ${building.slug}</p>
-        <p style="margin: 0;"><strong>Capacidad:</strong> ${building.tank_capacity_liters?.toLocaleString() || '169000'} Litros</p>
+        <p style="margin: 0 0 5px;"><strong>Tu Identificador:</strong> ${building.slug}</p>
+        <p style="margin: 0;"><strong>Capacidad del Tanque:</strong> ${building.tank_capacity_liters?.toLocaleString() || '169000'} Litros</p>
+      </div>
+
+      <h3 style="font-size: 16px; color: #2563eb; border-bottom: 2px solid #eff6ff; pb: 5px;">🚀 Próximos pasos recomendados:</h3>
+      
+      <div style="margin: 15px 0;">
+        <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">1. Invita a tu Junta de Condominio</p>
+        <p style="font-size: 13px; line-height: 1.5; color: #475569;">
+          En tu portal, dirígete a la pestaña <strong>"Mi Junta"</strong>. Allí podrás agregar los correos de los demás miembros. 
+          Puedes registrarlos como <strong>Administradores</strong> (tienen control total) o como <strong>Miembros</strong> (solo visualización), para que todos estén al tanto del nivel del tanque en tiempo real.
+        </p>
+      </div>
+
+      <div style="margin: 15px 0;">
+        <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">2. Empoderar a los Vecinos</p>
+        <p style="font-size: 13px; line-height: 1.5; color: #475569;">
+          El éxito de AquaSaaS se basa en la colaboración. Publica el <strong>Link de Reporte para Vecinos</strong> en el chat de WhatsApp de tu edificio o en carteleras físicas. 
+          Cualquier persona con el link puede registrar un dato; esto alimentará tus estadísticas e informes históricos, permitiéndoles tomar mejores decisiones sobre el suministro de agua.
+        </p>
       </div>
 
       <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
-        <p style="color: #1e40af; font-weight: bold; font-size: 14px; margin: 0 0 8px;">🏢 Panel de Administración</p>
+        <p style="color: #1e40af; font-weight: bold; font-size: 14px; margin: 0 0 8px;">🏢 Tu Panel Administrativo (Portal Secreto)</p>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">Accede aquí para ver gráficos avanzados, bitácora de eventos y gestionar a la junta:</p>
         <a href="${siteUrl}/edificio-admin/${building.slug}" style="color: #2563eb; font-size: 13px; font-weight: bold; word-break: break-all;">${siteUrl}/edificio-admin/${building.slug}</a>
       </div>
 
       <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0;">
-        <p style="color: #166534; font-weight: bold; font-size: 14px; margin: 0 0 8px;">💧 Registro para Vecinos</p>
+        <p style="color: #166534; font-weight: bold; font-size: 14px; margin: 0 0 8px;">💧 Link Público de Reporte (Para los vecinos)</p>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">Comparte este link para que los vecinos ayuden a alimentar la data:</p>
         <a href="${siteUrl}/edificio/${building.slug}" style="color: #16a34a; font-size: 13px; font-weight: bold; word-break: break-all;">${siteUrl}/edificio/${building.slug}</a>
       </div>
+
+      <p style="font-size: 13px; line-height: 1.6; background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px solid #fef3c7;">
+        <strong>💡 Tip:</strong> Cuantos más datos registren los vecinos, más precisas serán las proyecciones de consumo y las alertas de anomalías.
+      </p>
 
       <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 30px;">2026 AquaSaaS - Control Hídrico Profesional</p>
     </div>

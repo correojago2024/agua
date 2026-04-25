@@ -423,7 +423,7 @@ export default function EdificioAdminPage() {
 
     const [{ data: ms }, { data: members }, { count: emailCount }] = await Promise.all([
       supabase.from('measurements').select('*').eq('building_id', measurementsQueryBuildingId)
-        .order('recorded_at', { ascending: false }).limit(200),
+        .order('recorded_at', { ascending: false }),
       supabase.from('building_members').select('*').eq('building_id', subscriptionsQueryBuildingId),
       supabase.from('notification_logs').select('*', { count: 'exact', head: true }).eq('building_id', subscriptionsQueryBuildingId).eq('success', true)
     ]);
@@ -1767,7 +1767,7 @@ export default function EdificioAdminPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1">
+                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1 text-balance">
                     <Calendar className="w-3 h-3" /> Rango Desde (dd/mm/aaaa)
                   </label>
                   <input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)}
@@ -1775,7 +1775,7 @@ export default function EdificioAdminPage() {
                     style={{ colorScheme: 'dark' }} />
                 </div>
                 <div>
-                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1">
+                  <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2 flex items-center gap-1 text-balance">
                     <Calendar className="w-3 h-3" /> Rango Hasta (dd/mm/aaaa)
                   </label>
                   <input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)}
@@ -2155,7 +2155,7 @@ export default function EdificioAdminPage() {
               </div>
             </div>
 
-            {/* Reporte Diario Programado */}
+            {/* Reporte Diario Programado (Habilitado para toda la junta en modo lectura) */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
               <div className="px-5 py-4 border-b border-slate-700 bg-amber-500/5">
                 <div className="flex justify-between items-center">
@@ -2163,14 +2163,16 @@ export default function EdificioAdminPage() {
                     <Calendar className="w-4 h-4 text-amber-400" />
                     Reporte Diario Programado
                   </h3>
-                  <div className="flex items-center gap-2 bg-slate-700 p-1 rounded-lg">
+                  <div className={`flex items-center gap-2 bg-slate-700 p-1 rounded-lg ${!isUserAdmin && 'opacity-50'}`}>
                     <button 
-                      onClick={() => setWaDailyReportEnabled(true)}
+                      onClick={() => isUserAdmin && setWaDailyReportEnabled(true)}
                       className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${waDailyReportEnabled ? 'bg-amber-600 text-white' : 'text-slate-400'}`}
+                      disabled={!isUserAdmin}
                     >ACTIVADO</button>
                     <button 
-                      onClick={() => setWaDailyReportEnabled(false)}
+                      onClick={() => isUserAdmin && setWaDailyReportEnabled(false)}
                       className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${!waDailyReportEnabled ? 'bg-slate-600 text-white' : 'text-slate-400'}`}
+                      disabled={!isUserAdmin}
                     >DESACTIVADO</button>
                   </div>
                 </div>
@@ -2179,9 +2181,9 @@ export default function EdificioAdminPage() {
               <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-slate-500 text-[10px] mb-1 font-bold">HORA DE ENVÍO (24H)</label>
-                  <input type="time" value={waDailyReportTime} onChange={e => setWaDailyReportTime(e.target.value)}
-                    disabled={!waDailyReportEnabled}
-                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-lg font-bold focus:outline-none focus:border-amber-500" />
+                  <input type="time" value={waDailyReportTime} onChange={e => isUserAdmin && setWaDailyReportTime(e.target.value)}
+                    disabled={!isUserAdmin || !waDailyReportEnabled}
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-lg font-bold outline-none" />
                 </div>
                 <div>
                   <label className="block text-slate-500 text-[10px] mb-1 font-bold">DÍAS DE SEMANA (0-6)</label>
@@ -2189,40 +2191,26 @@ export default function EdificioAdminPage() {
                     {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => {
                       const isSelected = waDailyReportDays.split(',').includes(i.toString());
                       return (
-                        <button 
-                          key={i}
-                          disabled={!waDailyReportEnabled}
+                        <button key={i} disabled={!isUserAdmin || !waDailyReportEnabled}
                           onClick={() => {
                             const days = waDailyReportDays.split(',').filter(x => x !== '');
                             const newDays = isSelected ? days.filter(x => x !== i.toString()) : [...days, i.toString()];
                             setWaDailyReportDays(newDays.join(','));
                           }}
-                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${isSelected ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-500 hover:bg-slate-600'}`}
-                        >
-                          {d}
-                        </button>
+                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${isSelected ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-500'}`}
+                        >{d}</button>
                       );
                     })}
                   </div>
                 </div>
               </div>
-              <div className="px-5 py-3 bg-slate-900/30 border-t border-slate-700 flex flex-col md:flex-row justify-between items-center gap-3">
-                <div className="flex-1">
-                  {waMsg && (
-                    <div className={`text-xs font-bold px-3 py-1 rounded-lg ${waMsg.includes('❌') ? 'text-red-400 bg-red-400/10' : 'text-green-400 bg-green-400/10'}`}>
-                      {waMsg}
-                    </div>
-                  )}
+              {isUserAdmin && (
+                <div className="px-5 py-3 bg-slate-900/30 border-t border-slate-700 text-right">
+                  <button onClick={saveWhatsAppSettings} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 ml-auto shadow-lg">
+                    <Save className="w-3.5 h-3.5" /> Guardar Horario
+                  </button>
                 </div>
-                <button 
-                  onClick={saveWhatsAppSettings}
-                  disabled={waLoading}
-                  className="bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all"
-                >
-                  {waLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Guardar Configuración de Reporte Diario
-                </button>
-              </div>
+              )}
             </div>
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-700">
