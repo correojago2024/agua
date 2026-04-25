@@ -141,9 +141,9 @@ export function getDailyVariationChartUrl(measurements: Measurement[]) {
   }, 600, 300);
 }
 
-// ── 5. Nivel con Umbrales ────────────────────────────────────────────────────
+// ── 5. Nivel con Umbrales de Alerta (Área) ──────────────────────────────────
 export function getThresholdChartUrl(measurements: Measurement[], capacity: number) {
-  const data = lastN(measurements, 15);
+  const data = lastN(measurements, 20);
   const labels = data.map(m => format(new Date(m.recorded_at), 'dd/MM HH:mm'));
   const n = data.length;
   return enc({
@@ -151,12 +151,48 @@ export function getThresholdChartUrl(measurements: Measurement[], capacity: numb
     data: {
       labels,
       datasets: [
-        { label: 'Nivel', data: data.map(m => Math.round(m.liters)), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 2 },
-        { label: '60%', data: Array(n).fill(Math.round(capacity*0.6)), borderColor: '#fbbf24', borderDash: [5,5], borderWidth: 1, pointRadius: 0 },
-        { label: '20%', data: Array(n).fill(Math.round(capacity*0.2)), borderColor: '#ef4444', borderDash: [5,5], borderWidth: 1, pointRadius: 0 }
+        { 
+          label: 'Nivel del Tanque', 
+          data: data.map(m => Math.round(m.liters)), 
+          borderColor: '#1e40af', 
+          backgroundColor: 'rgba(34, 197, 94, 0.2)', // Verde claro al área
+          fill: true,
+          borderWidth: 2.5, 
+          pointRadius: 2 
+        },
+        { 
+          label: 'Alerta (60%)', 
+          data: Array(n).fill(Math.round(capacity*0.6)), 
+          borderColor: '#f59e0b', 
+          borderDash: [5,5], 
+          borderWidth: 2, // Más grosor
+          pointRadius: 0,
+          fill: false
+        },
+        { 
+          label: 'Racionamiento (40%)', 
+          data: Array(n).fill(Math.round(capacity*0.4)), 
+          borderColor: '#ef4444', 
+          borderDash: [5,5], 
+          borderWidth: 2, // Más grosor
+          pointRadius: 0,
+          fill: false
+        }
       ]
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: 'Nivel con Umbrales de Alerta' }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: capacity,
+          title: { display: true, text: 'Litros' }
+        }
+      }
     }
-  }, 600, 300);
+  }, 700, 350);
 }
 
 // ── 6. Tendencia 6 Semanas — líneas por semana, eje X = Lun-Dom ──────────────

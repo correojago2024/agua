@@ -120,6 +120,26 @@ export function buildReportEmailHtml(
     `;
   }).join('');
 
+  // Mapa de traducción para los títulos de los gráficos
+  const chartTitles: { [key: string]: string } = {
+    caudalChart:            'Caudal de Llenado y Consumo',
+    combinadoChart:         'Evolución del Nivel del Tanque (%)',
+    variationChart:         'Variación entre Mediciones',
+    thresholdChart:         'Nivel con Umbrales de Alerta',
+    dayOfWeekChart:         'Consumo Promedio por Día de Semana',
+    last4WeeksChart:        'Nivel % por Día — Últimas 4 Semanas',
+    nightlyLitrosChart:     'Consumo Nocturno Estimado',
+    consumoSemanalDoughnut: 'Distribución de Consumo por Día (histórico)',
+    weekendChart:           'Consumo Fines de Semana (5 semanas)',
+    projectionFillingChart: 'Proyección de Llenado/Vaciado',
+    caudalHoraChart:        'Caudal en Litros por Hora',
+    historicoMensualChart:  'Histórico Mensual — Consumo y Llenado',
+    weekendLitrosChart:     'Consumo/Llenado Sáb-Dom (5 semanas)',
+    semanaVsAnteriorChart:  'Consumo por Día — Semana Actual vs Anterior',
+    weekendVariacionChart:  'Variación % Sáb-Dom (5 semanas)',
+    franjaHorariaChart:     'Consumo Promedio por Franja Horaria'
+  };
+
   // Lógica de Doble Columna para Gráficos (Filtrando el Gauge)
   const chartEntries = Object.entries(chartUrls).filter(([key]) => key !== 'gaugeChart');
   let chartGalleryHtml = '<table width="100%" border="0" cellspacing="0" cellpadding="5">';
@@ -127,8 +147,9 @@ export function buildReportEmailHtml(
     const pair = chartEntries.slice(i, i + 2);
     chartGalleryHtml += '<tr>';
     pair.forEach(([key, url]) => {
+      const title = chartTitles[key] || key.replace('Chart', '').toUpperCase();
       chartGalleryHtml += `<td width="50%" align="center" style="vertical-align:top; padding-bottom:25px;">
-        <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-weight:bold; text-transform:uppercase;">${key.replace('Chart', '')}</div>
+        <div style="font-size:11px; color:#0f172a; margin-bottom:8px; font-weight:bold; text-transform:none;">${title}</div>
         <img src="${url}" style="width:100%; max-width:380px; height:auto; border-radius:8px; border:1px solid #e2e8f0;">
       </td>`;
     });
