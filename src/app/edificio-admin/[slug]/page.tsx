@@ -702,6 +702,21 @@ export default function EdificioAdminPage() {
       // Auditoría con email explícito
       logClientAudit('INSERT', 'junta_member', memberEmail, { name: memberNameVal, role: newMemberRole, email: memberEmail });
 
+      // ENVIAR EMAIL DE BIENVENIDA (Implementación del workflow de EdifiSaaS_v1)
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'junta_welcome', 
+            building: building, 
+            member: { email: memberEmail, name: memberNameVal } 
+          })
+        });
+      } catch (err) {
+        console.error('Error enviando email de bienvenida:', err);
+      }
+
       setNewMemberEmail(''); setNewMemberName(''); setNewMemberRole('Vocal'); setNewMemberIsAdmin(false);
       setShowAddMember(false);
       setMemberMsg('✅ Miembro agregado correctamente.');
@@ -1452,7 +1467,7 @@ export default function EdificioAdminPage() {
                     Miembros de la Junta de Condominio
                   </h3>
                   <p className="text-slate-400 text-xs mt-0.5">
-                    Los miembros de junta reciben copia de TODOS los reportes sin límite de emails.
+                    Al agregar un miembro, se le enviará automáticamente un email de bienvenida con su clave temporal (123456) e instrucciones de acceso.
                     {currentUser && !isUserAdmin && <span className="text-amber-400 ml-2">(Solo administradores pueden agregar/remover)</span>}
                   </p>
                 </div>
