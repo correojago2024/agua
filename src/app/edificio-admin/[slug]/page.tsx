@@ -424,9 +424,17 @@ export default function EdificioAdminPage() {
       measurementsQueryBuildingId = REAL_BUILDING_ID; // Redirect measurements for demo
     }
 
+    // Determinar límite según el plan del edificio
+    const plan = building.subscription_status?.toLowerCase() || 'prueba';
+    let measLimit = 200; // Default Esencial / Prueba
+    if (plan === 'profesional') measLimit = 1000;
+    if (plan === 'premium') measLimit = 5000;
+    if (plan === 'ia' || plan === 'activo') measLimit = 50000; // Prácticamente ilimitado para IA
+
     const [{ data: ms }, { data: members }, { count: emailCount }] = await Promise.all([
       supabase.from('measurements').select('*').eq('building_id', measurementsQueryBuildingId)
-        .order('recorded_at', { ascending: false }),
+        .order('recorded_at', { ascending: false })
+        .limit(measLimit),
       supabase.from('building_members').select('*').eq('building_id', subscriptionsQueryBuildingId),
       supabase.from('notification_logs').select('*', { count: 'exact', head: true }).eq('building_id', subscriptionsQueryBuildingId).eq('success', true)
     ]);

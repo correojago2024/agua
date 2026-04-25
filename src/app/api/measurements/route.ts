@@ -50,6 +50,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Edificio no encontrado' }, { status: 404 });
     }
 
+    // 2. Validar límites de almacenamiento según plan
+    const plan = building.subscription_status?.toLowerCase() || 'prueba';
+    let maxStorage = 200; // Esencial
+    if (plan === 'profesional') maxStorage = 1000;
+    if (plan === 'premium') maxStorage = 5000;
+    if (plan === 'ia' || plan === 'activo') maxStorage = 50000;
+
+    const { count: currentCount } = await supabase
+      .from('measurements')
+      .select('*', { count: 'exact', head: true })
+      .eq('building_id', building_id);
+
+    if ((currentCount || 0) >= maxStorage) {
+      await logAudit({ 
+        req: request, 
+        building_id, 
+        user_email: email || 'SYSTEM', 
+        operation: 'WARNING', 
+        entity_type: 'measurement', 
+        data_after: { message: 'Límite de almacenamiento alcanzado', count: currentCount, plan } 
+      });
+      return NextResponse.json({ 
+        error: `Límite de almacenamiento alcanzado para el Plan ${plan.toUpperCase()} (${maxStorage} registros). Por favor, limpie su historial o actualice su plan.` 
+      }, { status: 403 });
+    }
+
     const { data: history } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });
     const lastM = history && history.length > 0 ? history[history.length - 1] : null;
 
