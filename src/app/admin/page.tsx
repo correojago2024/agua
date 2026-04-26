@@ -629,7 +629,7 @@ export default function AdminPage() {
               { id: 'buildings', label: '🏢 Edificios' },
               { id: 'leads', label: '📬 Leads' },
               { id: 'reports', label: '📊 Reportes' },
-              { id: 'emails', label: '📧 Emails' },
+              { id: 'emails', label: '✉️ Mensajes' },
               { id: 'plans', label: '💰 Planes' },
               { id: 'maintenance', label: '🔧 Mantenimiento' },
               { id: 'logs', label: '📨 Logs' },
@@ -1239,42 +1239,63 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Emails tab */}
+        {/* Emails tab (Galería Real Identica) */}
         {activeView === 'emails' && (
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">📧 Plantillas de Emails</h2>
-            <p className="text-slate-400 text-xs mb-4">Clic en una plantilla para editar. Usa {'{building_name}'}, {'{trial_end_date}'}, etc. para variables.</p>
-            
-            {editingTemplate ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-slate-400 text-xs">Asunto</label>
-                  <input type="text" value={editingTemplate.subject_es} 
-                    onChange={(e) => setEditingTemplate({...editingTemplate, subject_es: e.target.value})}
-                    className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm" />
-                </div>
-                <div>
-                  <label className="text-slate-400 text-xs">Cuerpo (HTML)</label>
-                  <textarea value={editingTemplate.body_es} 
-                    onChange={(e) => setEditingTemplate({...editingTemplate, body_es: e.target.value})}
-                    className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm h-64 font-mono" />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={saveTemplate} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm">💾 Guardar</button>
-                  <button onClick={() => setEditingTemplate(null)} className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg text-sm">✕ Cancelar</button>
-                </div>
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h2 className="text-3xl font-bold text-white flex items-center gap-3"><Mail className="w-8 h-8 text-blue-400" /> Galería de Mensajes Reales</h2>
+                <p className="text-slate-400 mt-2">Envía copias <strong>idénticas al 100%</strong> a <strong>correojago@gmail.com</strong> para validar el diseño de producción.</p>
               </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-3">
-                {emailTemplates.map(t => (
-                  <div key={t.name} className="bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 cursor-pointer"
-                    onClick={() => setEditingTemplate(t)}>
-                    <p className="text-blue-400 font-medium">{t.name}</p>
-                    <p className="text-slate-400 text-xs mt-1">{t.subject_es.substring(0, 50)}...</p>
-                  </div>
-                ))}
+              {emailMsg && <div className="bg-blue-600/20 text-blue-400 px-6 py-2 rounded-full border border-blue-500/30 text-sm font-bold animate-bounce">{emailMsg}</div>}
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                { id: 'measurement_report', name: '📊 Reporte de Medición', desc: 'El diseño completo con gráficas reales, mapa de calor y tablas que ven los vecinos.', icon: '💧' },
+                { id: 'welcome', name: '🎉 Bienvenida Admin', desc: 'Email profesional de bienvenida con accesos y primeros pasos para el edificio.', icon: '🏢' },
+                { id: 'anomaly_alert', name: '🚨 Alerta de Anomalía', desc: 'Aviso urgente de variación brusca de nivel (posible fuga) con diseño de alerta roja.', icon: '⚠️' },
+                { id: 'limit_90_storage', name: '📦 Cuota Almacenamiento 90%', desc: 'Advertencia de límite de base de datos próximo a alcanzarse con explicación FIFO.', icon: '🟠' },
+                { id: 'limit_90_emails', name: '📧 Cuota Emails 90%', desc: 'Aviso preventivo de límite mensual de correos alcanzado con instrucciones de plan.', icon: '🟡' },
+              ].map(tpl => (
+                <div key={tpl.id} className="bg-slate-800 border border-slate-700 rounded-[32px] p-8 hover:border-blue-500/50 transition-all flex flex-col shadow-xl group">
+                  <div className="text-5xl mb-6 group-hover:scale-110 transition-transform">{tpl.icon}</div>
+                  <h3 className="text-xl font-bold text-white mb-2">{tpl.name}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-8 flex-1">{tpl.desc}</p>
+                  <button 
+                    onClick={async () => {
+                      setTestEmailLoading(tpl.id);
+                      setEmailMsg('');
+                      try {
+                        const res = await fetch('/api/send-email', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ to: ['correojago@gmail.com'], template: tpl.id })
+                        });
+                        const data = await res.json();
+                        if (data.success) setEmailMsg(`✅ ¡Enviado! Revisa tu bandeja de entrada.`);
+                        else setEmailMsg('❌ Error: ' + data.error);
+                      } catch (err: any) { setEmailMsg('❌ Error de conexión'); }
+                      setTestEmailLoading(null);
+                      setTimeout(() => setEmailMsg(''), 5000);
+                    }}
+                    disabled={testEmailLoading !== null}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {testEmailLoading === tpl.id ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    Visualizar Mensaje Idéntico
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 bg-blue-900/20 border border-blue-500/20 rounded-3xl p-8 flex gap-6 items-center">
+              <div className="w-16 h-16 bg-blue-600/20 rounded-2xl flex items-center justify-center text-3xl shrink-0">✨</div>
+              <div>
+                <h4 className="text-blue-400 font-bold mb-1">¿Cómo funcionan estas pruebas?</h4>
+                <p className="text-slate-400 text-sm leading-relaxed">Estas pruebas inyectan datos simulados realistas en las mismas funciones de código que envían los correos a los clientes. El resultado que recibas es <strong>exactamente el mismo</strong> que vería un usuario real.</p>
               </div>
-            )}
+            </div>
           </div>
         )}
 
