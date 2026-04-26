@@ -10,6 +10,13 @@ El sistema de monitoreo de agua AquaSAAS está plenamente operativo con integrac
   - Se eliminó el gráfico Gauge para optimizar la visualización de los 16 gráficos de inteligencia hídrica restantes.
   - Se estandarizó el formato de fecha y hora en todas las tablas y reportes a `dd/mm/aaaa hh:mm AM/PM`.
   - El diseño es 100% responsivo y mantiene toda la información detallada de indicadores y variaciones.
+- **Análisis por IA (Nuevo):**
+  - Nueva pestaña "Análisis IA" en el panel de administración de edificios.
+  - Generación de informes técnicos detallados utilizando inteligencia artificial (Gemini 2.0 Flash).
+  - Configuración de envío automático (Manual, Semanal, Mensual, Trimestral) y destinatarios personalizados.
+  - Reportes visualmente mejorados en la plataforma y en correos electrónicos.
+  - Integración de gráficos de tendencia, nivel y consumo en los informes enviados por email.
+  - Sistema de historial de reportes generados.
 - **WhatsApp Integration:**
   - Integración completa en `api/measurements` para alertas automáticas por umbrales (Precaución, Racionamiento, Crítico).
   - Integración en `api/contact` para notificaciones inmediatas al administrador ante nuevos mensajes.

@@ -309,3 +309,80 @@ export function buildReportEmailHtml(
 </body>
 </html>`.trim();
 }
+
+export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?: any): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; background-color: #f8fafc; margin: 0; padding: 20px;">
+  <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    
+    <!-- Header -->
+    <div style="background-color: #0d6efd; padding: 30px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Análisis de Inteligencia Hídrica</h1>
+      <p style="color: #e0f2fe; margin: 10px 0 0 0; font-size: 14px; font-weight: 500; opacity: 0.9;">Edificio \${building.name}</p>
+    </div>
+
+    <!-- Intro Card -->
+    <div style="padding: 30px;">
+      <div style="background-color: #f0f9ff; border-left: 4px solid #0d6efd; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 30px;">
+        <h2 style="color: #0c4a6e; margin: 0 0 10px 0; font-size: 16px; font-weight: 700;">Resumen del Informe</h2>
+        <p style="color: #075985; margin: 0; font-size: 14px; line-height: 1.5;">
+          Este informe ha sido generado automáticamente utilizando algoritmos de Inteligencia Artificial de AquaSaaS, 
+          analizando el comportamiento histórico y los patrones de consumo de su edificación.
+        </p>
+      </div>
+
+      <!-- Report Content -->
+      <div style="margin-bottom: 40px;">
+        \${report.html_report}
+      </div>
+
+      \${chartUrls ? \`
+      <!-- Charts Section -->
+      <div style="border-top: 2px solid #f1f5f9; padding-top: 30px; margin-top: 30px;">
+        <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-bottom: 20px; text-align: center;">Visualización de Datos Actualizados</h2>
+        
+        <div style="margin-bottom: 25px; text-align: center;">
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 10px; font-weight: 700; text-transform: uppercase;">Estado Actual del Tanque</p>
+          <img src="\${chartUrls.gauge}" alt="Nivel Actual" style="width: 250px; height: auto; border-radius: 8px;">
+        </div>
+
+        <div style="margin-bottom: 25px; text-align: center;">
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 10px; font-weight: 700; text-transform: uppercase;">Tendencia de Consumo Reciente</p>
+          <img src="\${chartUrls.trend}" alt="Tendencia" style="width: 100%; max-width: 500px; height: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
+        </div>
+
+        <div style="margin-bottom: 25px; text-align: center;">
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 10px; font-weight: 700; text-transform: uppercase;">Consumo por Día de la Semana</p>
+          <img src="\${chartUrls.dayOfWeek}" alt="Consumo por Día" style="width: 100%; max-width: 500px; height: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
+        </div>
+      </div>
+      \` : ''}
+
+      <!-- Footer Action -->
+      <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #f1f5f9;">
+        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">
+          Para ver más detalles o configurar los reportes automáticos, acceda a su panel de administración.
+        </p>
+        <a href="https://aquasaas.vercel.app/edificio-admin/\${building.slug || building.id}" style="background-color: #0d6efd; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">
+          Ir al Panel de Administración
+        </a>
+      </div>
+    </div>
+
+    <!-- Legal Footer -->
+    <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+      <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+        &copy; 2026 AquaSaaS — Monitoreo Inteligente de Agua. Todos los derechos reservados.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  \`;
+}

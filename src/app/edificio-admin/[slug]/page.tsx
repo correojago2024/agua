@@ -21,7 +21,7 @@ import {
   Droplets, Users, BarChart3, Download, Plus, Trash2, Edit2, Save,
   X, RefreshCw, AlertTriangle, CheckCircle2, Mail, Calendar,
   TrendingDown, TrendingUp, Activity, FileText, Settings, LogOut,
-  ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare, ClipboardList, CreditCard, Eye, Info, Menu
+  ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare, ClipboardList, CreditCard, Eye, Info, Menu, Sparkles, Brain, Clock, Zap
   } from 'lucide-react';
 
 
@@ -59,7 +59,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpi
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'alarmas_logs';
+type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'alarmas_logs' | 'ia_analisis';
 
 // Helper: lee variation_lts o variacion_lts (ambos nombres posibles en BD)
 const getVariation = (m: Measurement): number =>
@@ -103,6 +103,21 @@ export default function EdificioAdminPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordChangeMsg, setPasswordChangeMsg] = useState('');
   const [tab, setTab] = useState<Tab>('dashboard');
+
+  // IA Analysis State
+  const [iaSettings, setIaSettings] = useState<any>({
+    is_enabled: false,
+    frequency: 'manual',
+    recipients: '',
+    send_to_junta: false
+  });
+  const [iaReports, setIaReports] = useState<any[]>([]);
+  const [iaLoading, setIaLoading] = useState(false);
+  const [iaMsg, setIaMsg] = useState('');
+  const [generatingAi, setGeneratingAi] = useState(false);
+  const [selectedAiReport, setSelectedAiReport] = useState<any>(null);
+  const [iaDateStart, setIaDateStart] = useState('');
+  const [iaDateEnd, setIaDateEnd] = useState('');
 
   // Data
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -369,6 +384,106 @@ export default function EdificioAdminPage() {
     loadAuditLogs();
   };
 
+  // ── IA Analysis Logic ──────────────────────────────────────────────────
+  const loadIaData = useCallback(async () => {
+    if (!building) return;
+    setIaLoading(true);
+    try {
+      const res = await fetch(`/api/ai-analysis?building_id=${building.id}`);
+      const data = await res.json();
+      if (data.settings) setIaSettings(data.settings);
+      if (data.reports) setIaReports(data.reports);
+    } catch (err) {
+      console.error('Error loading IA data:', err);
+    }
+    setIaLoading(false);
+  }, [building]);
+
+  const saveIaSettings = async () => {
+    if (!building) return;
+    if (observerBlock()) return;
+    setIaLoading(true);
+    try {
+      const res = await fetch('/api/ai-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          action: 'save_settings',
+          settings: iaSettings
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIaMsg('✅ Configuración guardada');
+        setTimeout(() => setIaMsg(''), 3000);
+      } else {
+        setIaMsg('❌ Error: ' + data.error);
+      }
+    } catch (err: any) {
+      setIaMsg('❌ Error: ' + err.message);
+    }
+    setIaLoading(false);
+  };
+
+  const generateAiReport = async () => {
+    if (!building) return;
+    if (observerBlock()) return;
+    setGeneratingAi(true);
+    setIaMsg('');
+    try {
+      const res = await fetch('/api/ai-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          action: 'generate',
+          date_range: { start: iaDateStart, end: iaDateEnd },
+          created_by: currentUser?.email || loginEmail || 'ADMIN'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIaMsg('✅ Análisis generado con éxito');
+        loadIaData();
+        setSelectedAiReport(data.report);
+      } else {
+        setIaMsg('❌ Error: ' + data.error);
+      }
+    } catch (err: any) {
+      setIaMsg('❌ Error: ' + err.message);
+    }
+    setGeneratingAi(false);
+  };
+
+  const sendAiReportByEmail = async (reportId: string, recipients: string) => {
+    if (!building || !recipients) return;
+    if (observerBlock()) return;
+    setIaLoading(true);
+    try {
+      const res = await fetch('/api/ai-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          action: 'send_email',
+          report_id: reportId,
+          recipients
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIaMsg('✅ Reporte enviado por email');
+        loadIaData();
+      } else {
+        setIaMsg('❌ Error: ' + data.error);
+      }
+    } catch (err: any) {
+      setIaMsg('❌ Error: ' + err.message);
+    }
+    setIaLoading(false);
+  };
+
 
 
 
@@ -498,7 +613,7 @@ export default function EdificioAdminPage() {
     setJuntaMembers(allMembers);
   }, [building]);
 
-  useEffect(() => { if (authed && building) loadData(); }, [authed, building, loadData]);
+  useEffect(() => { if (authed && building) { loadData(); loadIaData(); } }, [authed, building, loadData, loadIaData]);
 
   useEffect(() => {
     if (tab === 'alarmas_logs') loadAuditLogs();
@@ -1347,6 +1462,12 @@ export default function EdificioAdminPage() {
               </div>
 
               {/* Opciones que no caben abajo */}
+              <button onClick={() => { setTab('reportes'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${tab === 'reportes' ? 'bg-green-600 text-white' : 'bg-slate-700/50 text-slate-300'}`}>
+                <FileText className="w-4 h-4" /> Reportes
+              </button>
+              <button onClick={() => { setTab('ia_analisis'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${tab === 'ia_analisis' ? 'bg-blue-600 text-white' : 'bg-slate-700/50 text-slate-300'}`}>
+                <Sparkles className="w-4 h-4" /> Análisis IA
+              </button>
               <button onClick={() => { setTab('junta'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${tab === 'junta' ? 'bg-purple-600 text-white' : 'bg-slate-700/50 text-slate-300'}`}>
                 <Users className="w-4 h-4" /> Mi Junta
               </button>
@@ -1387,7 +1508,9 @@ export default function EdificioAdminPage() {
             { id: 'junta',         label: 'Mi Junta',      Icon: Users,        color: 'purple', desktopOnly: true },
             { id: 'mediciones',    label: 'Mediciones',    Icon: Activity,     color: 'amber' },
             { id: 'reportes',      label: 'Reportes',      Icon: FileText, color: 'green' },
+            { id: 'ia_analisis',   label: 'Análisis IA',   Icon: Sparkles, color: 'blue' },
             isUserAdmin ? { id: 'alarmas_logs',  label: 'Logs',  Icon: ClipboardList, color: 'slate', desktopOnly: true } : null,
+
             { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan',   desktopOnly: true },
           ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string; desktopOnly?: boolean }[]).map(({ id, label, Icon, color, desktopOnly }) => (
             <button 
@@ -2843,6 +2966,280 @@ export default function EdificioAdminPage() {
             </div>
             )}
             </div>
+            )}
+
+            {/* ── IA ANALISIS TAB ───────────────────────────────────────────── */}
+            {tab === 'ia_analisis' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      <Sparkles className="w-6 h-6 text-blue-400" />
+                      Análisis con Inteligencia Artificial
+                    </h2>
+                    <p className="text-slate-400 text-sm">Informes técnicos y recomendaciones optimizadas por IA</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={loadIaData} 
+                      className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${iaLoading ? 'animate-spin' : ''}`} /> Actualizar
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Panel de Configuración IA */}
+                  <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
+                      <h3 className="text-white font-bold flex items-center gap-2 mb-2">
+                        <Settings className="w-5 h-5 text-blue-400" />
+                        Configuración de Envío
+                      </h3>
+                      
+                      <div className="flex items-center justify-between p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <Zap className={`w-5 h-5 ${iaSettings.is_enabled ? 'text-yellow-400' : 'text-slate-500'}`} />
+                          <div>
+                            <p className="text-white text-xs font-bold uppercase">Servicio de IA</p>
+                            <p className="text-slate-400 text-[10px]">{iaSettings.is_enabled ? 'ACTIVO' : 'INACTIVO'}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => setIaSettings({...iaSettings, is_enabled: !iaSettings.is_enabled})}
+                          className={`w-12 h-6 rounded-full transition-all relative ${iaSettings.is_enabled ? 'bg-blue-600' : 'bg-slate-700'}`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${iaSettings.is_enabled ? 'left-7' : 'left-1'}`} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">Frecuencia de Informe</label>
+                        <select 
+                          value={iaSettings.frequency}
+                          onChange={e => setIaSettings({...iaSettings, frequency: e.target.value})}
+                          disabled={!iaSettings.is_enabled}
+                          className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/50"
+                        >
+                          <option value="manual">Manual (A petición)</option>
+                          <option value="weekly">Semanal</option>
+                          <option value="monthly">Mensual</option>
+                          <option value="quarterly">Trimestral</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">Enviar a Emails (Separados por coma)</label>
+                        <textarea 
+                          value={iaSettings.recipients}
+                          onChange={e => setIaSettings({...iaSettings, recipients: e.target.value})}
+                          disabled={!iaSettings.is_enabled}
+                          placeholder="admin@edificio.com, junta@edificio.com"
+                          className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[80px]"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 bg-slate-900/50 rounded-xl">
+                        <input 
+                          type="checkbox"
+                          id="sendToJuntaIa"
+                          checked={iaSettings.send_to_junta}
+                          onChange={e => setIaSettings({...iaSettings, send_to_junta: e.target.checked})}
+                          disabled={!iaSettings.is_enabled}
+                          className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600"
+                        />
+                        <label htmlFor="sendToJuntaIa" className="text-xs text-slate-300 cursor-pointer">Enviar también a toda la Junta</label>
+                      </div>
+
+                      <button 
+                        onClick={saveIaSettings}
+                        disabled={iaLoading || !iaSettings.is_enabled}
+                        className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                      >
+                        <Save className="w-4 h-4" /> Guardar Configuración
+                      </button>
+                      
+                      {iaMsg && <p className="text-center text-xs font-medium animate-pulse">{iaMsg}</p>}
+                    </div>
+
+                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 space-y-4">
+                      <h3 className="text-amber-400 font-bold flex items-center gap-2 mb-2">
+                        <Zap className="w-5 h-5" />
+                        Generación Manual
+                      </h3>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Genera un informe instantáneo basado en un rango de fechas personalizado. Los informes manuales se guardan en el historial.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Desde</label>
+                          <input type="date" value={iaDateStart} onChange={e => setIaDateStart(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs" style={{colorScheme:'dark'}}/>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Hasta</label>
+                          <input type="date" value={iaDateEnd} onChange={e => setIaDateEnd(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs" style={{colorScheme:'dark'}}/>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={generateAiReport}
+                        disabled={generatingAi || !iaSettings.is_enabled}
+                        className="w-full bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                      >
+                        {generatingAi ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
+                        {generatingAi ? 'Analizando...' : 'Generar Análisis Ahora'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Panel de Resultados y Visor de Reportes */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {selectedAiReport ? (
+                      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in slide-in-from-right duration-300">
+                        <div className="bg-blue-600 p-5 text-white flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <Sparkles className="w-6 h-6 text-blue-200" />
+                            <div>
+                              <h3 className="font-bold">Informe de Inteligencia Hídrica</h3>
+                              <p className="text-[10px] opacity-80 uppercase tracking-widest font-black">Generado el {format(new Date(selectedAiReport.generated_at), 'dd/MM/yyyy HH:mm')}</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setSelectedAiReport(null)}
+                            className="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-all"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        <div className="p-8 max-h-[70vh] overflow-y-auto bg-slate-50 custom-scrollbar">
+                          {/* Visualización Mejorada */}
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: selectedAiReport.html_report }} 
+                            className="prose prose-blue max-w-none"
+                          />
+                        </div>
+
+                        <div className="p-4 bg-slate-100 border-t border-slate-200 flex flex-wrap gap-3 justify-between items-center">
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => {
+                                const recipients = iaSettings.recipients || building.admin_email;
+                                sendAiReportByEmail(selectedAiReport.id, recipients);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md"
+                            >
+                              <Mail className="w-4 h-4" /> Enviar por Email
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const blob = new Blob([selectedAiReport.report_text], { type: 'text/plain' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `Informe_IA_${building.name}_${format(new Date(selectedAiReport.generated_at), 'yyyy-MM-dd')}.txt`;
+                                a.click();
+                              }}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
+                            >
+                              <Download className="w-4 h-4" /> Bajar TXT
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-slate-500 italic">ID: {selectedAiReport.id}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 text-center space-y-4 shadow-xl flex flex-col items-center justify-center min-h-[400px]">
+                        <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-2">
+                          <Brain className="w-10 h-10 text-blue-400 opacity-50" />
+                        </div>
+                        <h3 className="text-white text-lg font-bold">Visor de Reportes IA</h3>
+                        <p className="text-slate-400 text-sm max-w-sm mx-auto">
+                          Selecciona un informe del historial o genera uno nuevo para ver el análisis detallado del comportamiento hídrico de tu edificio.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Historial de Reportes */}
+                    <div className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
+                      <div className="px-5 py-4 border-b border-slate-700 flex justify-between items-center">
+                        <h3 className="text-white font-bold flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-amber-400" />
+                          Historial de Reportes IA
+                        </h3>
+                        <span className="text-[10px] bg-slate-700 px-2 py-1 rounded-lg text-slate-400 uppercase font-black tracking-widest">
+                          {iaReports.length} Informes
+                        </span>
+                      </div>
+                      <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-700/50 sticky top-0 text-slate-500 uppercase font-black tracking-tighter">
+                            <tr>
+                              <th className="px-4 py-3">Fecha Generación</th>
+                              <th className="px-4 py-3">Rango de Datos</th>
+                              <th className="px-4 py-3">Solicitado por</th>
+                              <th className="px-4 py-3">Estado</th>
+                              <th className="px-4 py-3 text-right">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-700/40">
+                            {iaReports.map(report => (
+                              <tr 
+                                key={report.id} 
+                                className={`hover:bg-blue-600/10 transition-colors cursor-pointer ${selectedAiReport?.id === report.id ? 'bg-blue-600/20' : ''}`}
+                                onClick={() => setSelectedAiReport(report)}
+                              >
+                                <td className="px-4 py-4 font-bold text-slate-200">
+                                  {format(new Date(report.generated_at), 'dd/MM/yyyy HH:mm')}
+                                </td>
+                                <td className="px-4 py-4 text-slate-400">
+                                  {report.date_range_start ? format(new Date(report.date_range_start), 'dd/MM') : 'Inicio'} 
+                                  {' → '} 
+                                  {report.date_range_end ? format(new Date(report.date_range_end), 'dd/MM') : 'Hoy'}
+                                </td>
+                                <td className="px-4 py-4 text-slate-500 italic">
+                                  {report.created_by || 'Sistema'}
+                                </td>
+                                <td className="px-4 py-4">
+                                  {report.sent_to ? (
+                                    <span className="text-green-400 flex items-center gap-1" title={report.sent_to}>
+                                      <CheckCircle2 className="w-3 h-3" /> Enviado
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-600">No enviado</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  <button 
+                                    className="p-2 bg-slate-700 hover:bg-slate-600 text-blue-400 rounded-lg transition-all"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedAiReport(report);
+                                    }}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {iaReports.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-10 text-center text-slate-600 italic">
+                                  No se han generado reportes de IA todavía.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* ── ALARMAS/LOGS TAB ─────────────────────────────────────────────── */}
