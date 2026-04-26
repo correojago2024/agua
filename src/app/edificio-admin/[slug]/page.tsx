@@ -472,12 +472,16 @@ export default function EdificioAdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setIaTestResult({ success: true, msg: '✅ IA Conectada: ' + data.response });
+        setIaTestResult({ 
+          success: true, 
+          msg: 'Resultado de Disponibilidad:',
+          diagnostico: data.diagnostico
+        });
       } else {
-        setIaTestResult({ success: false, msg: '❌ Falló: ' + data.error });
+        setIaTestResult({ success: false, msg: '❌ Falló la conexión: ' + data.error });
       }
     } catch (err: any) {
-      setIaTestResult({ success: false, msg: '❌ Error: ' + err.message });
+      setIaTestResult({ success: false, msg: '❌ Error técnico: ' + err.message });
     }
     setTestingAi(false);
   };
@@ -3034,8 +3038,18 @@ export default function EdificioAdminPage() {
                       </div>
                       
                       {iaTestResult && (
-                        <div className={`p-2 rounded-lg text-[10px] font-bold text-center animate-in zoom-in duration-300 ${iaTestResult.success ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                          {iaTestResult.msg}
+                        <div className={`p-3 rounded-xl border animate-in zoom-in duration-300 ${iaTestResult.success ? 'bg-slate-900 border-slate-700' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                          <p className="text-[10px] font-black uppercase mb-2 text-center">{iaTestResult.msg}</p>
+                          {iaTestResult.diagnostico && (
+                            <div className="space-y-1">
+                              {iaTestResult.diagnostico.map((d: any) => (
+                                <div key={d.modelo} className="flex justify-between items-center text-[9px] font-medium border-t border-slate-800 pt-1">
+                                  <span className="text-slate-400">{d.modelo}</span>
+                                  <span className={d.ok ? 'text-green-400' : 'text-red-400'}>{d.status === 200 ? 'OK' : d.status}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -3068,6 +3082,21 @@ export default function EdificioAdminPage() {
                           <option value="monthly">Mensual</option>
                           <option value="quarterly">Trimestral</option>
                         </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider flex justify-between">
+                          <span>API KEY Personalizada (Opcional)</span>
+                          <span className="text-blue-500 lowercase font-normal italic">Si falla la global</span>
+                        </label>
+                        <input 
+                          type="password"
+                          value={iaSettings.ia_api_key || ''}
+                          onChange={e => setIaSettings({...iaSettings, ia_api_key: e.target.value})}
+                          disabled={!iaSettings.is_enabled}
+                          placeholder="Pega tu llave de Google AI Studio"
+                          className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/50"
+                        />
                       </div>
 
                       <div className="space-y-2">

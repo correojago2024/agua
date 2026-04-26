@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS building_ia_settings (
   recipients TEXT, -- correos separados por coma
   send_to_junta BOOLEAN DEFAULT FALSE,
   analysis_type TEXT DEFAULT 'general',
+  ia_api_key TEXT, -- Llave personalizada opcional
   last_analysis_at TIMESTAMPTZ,
   next_analysis_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ DEFAULT NOW()

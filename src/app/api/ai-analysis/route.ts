@@ -1,13 +1,12 @@
 
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { generateWaterAnalysis, formatAiReportToHtml } from '@/lib/server/ai';
+import { generateWaterAnalysis, formatAiReportToHtml, testAiConnection } from '@/lib/server/ai';
 import { sendEmailViaGmail } from '@/lib/server/email';
 import { getAllImprovedCharts } from '@/lib/charts';
 import { buildAiAnalysisEmailHtml } from '@/lib/server/email-templates';
 
 export async function GET(request: Request) {
-// ... (rest of GET)
   const { searchParams } = new URL(request.url);
   const buildingId = searchParams.get('building_id');
 
@@ -44,6 +43,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'building_id is required' }, { status: 400 });
     }
 
+    // Obtener settings actuales para la API KEY si existe
+    const { data: currentSettings } = await supabase
+      .from('building_ia_settings')
+      .select('*')
+      .eq('building_id', building_id)
+      .single();
+
     // Acción 1: Guardar configuración
     if (action === 'save_settings') {
       const { error } = await supabase
@@ -58,21 +64,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // Acción: TEST de conexión
+    // Acción: TEST de conexión con Diagnóstico
     if (action === 'test') {
       try {
-        const testPrompt = 'Responde solo con la palabra OK si puedes leer esto.';
-        const aiResponse = await generateWaterAnalysis(testPrompt);
+        const diagnostico = await testAiConnection(currentSettings?.ia_api_key);
         return NextResponse.json({ 
           success: true, 
-          message: 'Conexión exitosa con Gemini',
-          response: aiResponse
+          diagnostico
         });
       } catch (err: any) {
-        return NextResponse.json({ 
-          success: false, 
-          error: err.message 
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: err.message }, { status: 500 });
       }
     }
 
@@ -139,7 +140,7 @@ NO menciones a Gemini ni a Google.
 Genera el informe listo para ser presentado.
 `;
 
-      const aiText = await generateWaterAnalysis(prompt);
+      const aiText = await generateWaterAnalysis(prompt, currentSettings?.ia_api_key);
       const htmlReport = formatAiReportToHtml(aiText);
 
       // Guardar el reporte

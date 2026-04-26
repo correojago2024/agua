@@ -4,20 +4,22 @@
  * DESCRIPCIÓN: Servicio para interactuar con Gemini AI para el análisis de agua.
  */
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyACK6P75MupwOMHFVD3MwkiHYHz-EW5iVs';
+const DEFAULT_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyACK6P75MupwOMHFVD3MwkiHYHz-EW5iVs';
 
-// Lista de modelos verificados por Google para la API pública.
-const MODELOS_RESPALDO = [
-  'gemini-1.5-flash',      // El más estable y con mayor cuota gratuita
-  'gemini-2.0-flash-exp',  // Versión 2.0 estable
-  'gemini-1.5-pro',        // Más inteligente pero con cuota muy baja
-  'gemini-2.0-flash'       // Versión 2.0 final
+// Lista de modelos verificados y posibles variaciones
+const MODELOS_A_PROBAR = [
+  'gemini-1.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-exp',
+  'gemini-1.5-pro',
+  'gemini-2.5-flash' // Mantenemos este por si es una versión especial del usuario
 ];
 
-// Versiones de la API a intentar
 const API_VERSIONS = ['v1beta', 'v1'];
 
-export async function generateWaterAnalysis(prompt: string) {
+export async function generateWaterAnalysis(prompt: string, customApiKey?: string) {
+  const apiKey = customApiKey || DEFAULT_API_KEY;
+  
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
@@ -28,11 +30,13 @@ export async function generateWaterAnalysis(prompt: string) {
     },
   };
 
-  let erroresDetallados: string[] = [];
+  let diagnostico: any[] = [];
+  let exito = false;
+  let responseText = '';
 
-  for (const modelo of MODELOS_RESPALDO) {
+  for (const modelo of MODELOS_A_PROBAR) {
     for (const version of API_VERSIONS) {
-      const url = `https://generativelanguage.googleapis.com/${version}/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`;
+      const url = `https://generativelanguage.googleapis.com/${version}/models/${modelo}:generateContent?key=${apiKey}`;
       
       try {
         const response = await fetch(url, {
@@ -42,30 +46,66 @@ export async function generateWaterAnalysis(prompt: string) {
         });
 
         const data = await response.json();
+        const status = response.status;
 
         if (response.ok) {
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (text.length > 100) {
-            console.log(`[AI] ✅ ÉXITO con ${modelo} (${version})`);
-            return text;
+          if (text.length > 5) {
+            console.log(`[AI] ✅ ÉXITO: ${modelo} (${version})`);
+            diagnostico.push({ modelo, version, status: 'OK', message: 'Funcionando' });
+            return text; // Retorna inmediatamente el primero que funcione
           }
         } else {
-          const msg = data?.error?.message || 'Error desconocido';
-          console.warn(`[AI] Falló ${modelo} en ${version}: ${response.status} - ${msg}`);
-          erroresDetallados.push(`${modelo}(${version}): ${response.status}`);
-          
-          // Si es un error de cuota (429) o no encontrado (404), probamos la siguiente combinación
-          continue;
+          const errorMsg = data?.error?.message || 'Sin mensaje';
+          diagnostico.push({ modelo, version, status, message: errorMsg });
+          console.warn(`[AI] Fallo ${modelo} (${version}): ${status} - ${errorMsg}`);
         }
       } catch (error: any) {
-        console.error(`[AI] Error de red en ${modelo} (${version}):`, error.message);
-        erroresDetallados.push(`${modelo}(${version}): Network Error`);
+        diagnostico.push({ modelo, version, status: 'Error', message: error.message });
       }
     }
   }
 
-  throw new Error(`No se pudo conectar con los servidores de IA. Intentamos: ${erroresDetallados.join(', ')}. Verifica que la API Key sea válida para estos modelos en Vercel.`);
+  // Si llegamos aquí es que nada funcionó
+  const errorDetalle = diagnostico.map(d => `${d.modelo}(${d.status})`).join(', ');
+  throw new Error(`Diagnóstico de Fallo: ${errorDetalle}. Posiblemente la cuota de la API Key se agotó o el servidor de Google está restringiendo el acceso desde esta región.`);
 }
+
+/**
+ * Función especial para el botón de TEST que devuelve el diagnóstico completo
+ */
+export async function testAiConnection(customApiKey?: string) {
+  const apiKey = customApiKey || DEFAULT_API_KEY;
+  const prompt = 'Responde OK';
+  let diagnostico: any[] = [];
+
+  for (const modelo of MODELOS_A_PROBAR) {
+    // Para el test rápido probamos solo v1beta por defecto para ahorrar tiempo
+    const version = 'v1beta';
+    const url = `https://generativelanguage.googleapis.com/${version}/models/${modelo}:generateContent?key=${apiKey}`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      });
+      const status = response.status;
+      const data = await response.json();
+      
+      diagnostico.push({ 
+        modelo, 
+        status, 
+        ok: response.ok,
+        msg: response.ok ? 'Disponible' : (data?.error?.message?.substring(0, 50) || 'Error')
+      });
+    } catch (e: any) {
+      diagnostico.push({ modelo, status: 'Error', ok: false, msg: e.message });
+    }
+  }
+  return diagnostico;
+}
+
 
 /**
  * Mejora visualmente el texto plano de la IA para mostrarlo en HTML.
