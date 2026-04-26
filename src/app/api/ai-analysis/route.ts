@@ -58,6 +58,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // Acción: TEST de conexión
+    if (action === 'test') {
+      try {
+        const testPrompt = 'Responde solo con la palabra OK si puedes leer esto.';
+        const aiResponse = await generateWaterAnalysis(testPrompt);
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Conexión exitosa con Gemini',
+          response: aiResponse
+        });
+      } catch (err: any) {
+        return NextResponse.json({ 
+          success: false, 
+          error: err.message 
+        }, { status: 500 });
+      }
+    }
+
     // Acción 2: Generar nuevo análisis
     if (action === 'generate') {
       const { data: building } = await supabase

@@ -6,12 +6,12 @@
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyACK6P75MupwOMHFVD3MwkiHYHz-EW5iVs';
 
-// Lista de modelos a probar. Prioridad absoluta al que el usuario confirma que funciona.
+// Lista de modelos verificados por Google para la API pública.
 const MODELOS_RESPALDO = [
-  'gemini-2.5-flash',
-  'gemini-1.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-pro'
+  'gemini-1.5-flash',      // El más estable y con mayor cuota gratuita
+  'gemini-2.0-flash-exp',  // Versión 2.0 estable
+  'gemini-1.5-pro',        // Más inteligente pero con cuota muy baja
+  'gemini-2.0-flash'       // Versión 2.0 final
 ];
 
 // Versiones de la API a intentar

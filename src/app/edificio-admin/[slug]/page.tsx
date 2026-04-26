@@ -115,6 +115,8 @@ export default function EdificioAdminPage() {
   const [iaLoading, setIaLoading] = useState(false);
   const [iaMsg, setIaMsg] = useState('');
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [testingAi, setTestingAi] = useState(false);
+  const [testResult, setTestResult] = useState<{success: boolean, msg: string} | null>(null);
   const [selectedAiReport, setSelectedAiReport] = useState<any>(null);
   const [iaDateStart, setIaDateStart] = useState('');
   const [iaDateEnd, setIaDateEnd] = useState('');
@@ -454,6 +456,30 @@ export default function EdificioAdminPage() {
       setIaMsg('❌ Error: ' + err.message);
     }
     setGeneratingAi(false);
+  };
+
+  const handleTestIA = async () => {
+    setTestingAi(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/ai-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          action: 'test'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestResult({ success: true, msg: '✅ IA Conectada: ' + data.response });
+      } else {
+        setTestResult({ success: false, msg: '❌ Falló: ' + data.error });
+      }
+    } catch (err: any) {
+      setTestResult({ success: false, msg: '❌ Error: ' + err.message });
+    }
+    setTestingAi(false);
   };
 
   const sendAiReportByEmail = async (reportId: string, recipients: string) => {
@@ -2993,10 +3019,25 @@ export default function EdificioAdminPage() {
                   {/* Panel de Configuración IA */}
                   <div className="lg:col-span-1 space-y-6">
                     <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
-                      <h3 className="text-white font-bold flex items-center gap-2 mb-2">
-                        <Settings className="w-5 h-5 text-blue-400" />
-                        Configuración de Envío
-                      </h3>
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-white font-bold flex items-center gap-2">
+                          <Settings className="w-5 h-5 text-blue-400" />
+                          Configuración
+                        </h3>
+                        <button 
+                          onClick={handleTestIA}
+                          disabled={testingAi}
+                          className="text-[10px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded-lg font-black uppercase transition-all"
+                        >
+                          {testingAi ? 'Probando...' : 'Test IA'}
+                        </button>
+                      </div>
+                      
+                      {testResult && (
+                        <div className={`p-2 rounded-lg text-[10px] font-bold text-center animate-in zoom-in duration-300 ${testResult.success ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                          {testResult.msg}
+                        </div>
+                      )}
                       
                       <div className="flex items-center justify-between p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl">
                         <div className="flex items-center gap-3">
