@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { sendEmailViaGmail } from '@/lib/server/email';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Obtiene la URL base del sitio
