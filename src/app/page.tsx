@@ -31,7 +31,6 @@ import { Droplets, Building, Mail, Lock, AlertCircle, ArrowRight, ArrowLeft, Pho
 import PricingSection from '@/components/PricingSection';
 import FAQSection from '@/components/FAQSection';
 import HowItWorksSection from '@/components/HowItWorksSection';
-import Script from 'next/script';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodnluaGhiZ3BpdHRpbXlvcHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMyOTM3NTYsImV4cCI6MjA1ODg2OTc1Nn0.sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
@@ -1723,18 +1722,14 @@ export default function HomePage() {
       </footer>
 
       {/* Zapier Chatbot */}
-      <Script 
-        async 
-        type="module" 
-        src="https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js" 
-      />
-      {/* @ts-ignore */}
-      <zapier-interfaces-chatbot-embed 
-        is-popup="true" 
-        chatbot-id="cmoby1wx90033arnq1e04imh7" 
-        height="600px" 
-        width="400px" 
-      />
+      <div dangerouslySetInnerHTML={{ __html: `
+        <zapier-interfaces-chatbot-embed 
+          is-popup='false' 
+          chatbot-id='cmoby1wx90033arnq1e04imh7' 
+          height='600px' 
+          width='400px'>
+        </zapier-interfaces-chatbot-embed>
+      `}} />
 
     </div>
   );
