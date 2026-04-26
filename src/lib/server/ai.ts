@@ -6,15 +6,12 @@
 
 const DEFAULT_API_KEY = process.env.GEMINI_API_KEY;
 
-// Lista ampliada con sufijos -latest para evitar errores 404
+// Lista de modelos. Prioridad absoluta al modelo 3 preview que el usuario confirmó.
 const MODELOS_A_PROBAR = [
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-2.0-flash-exp',
+  'gemini-3-flash-preview',
   'gemini-2.0-flash',
-  'gemini-1.5-pro',
-  'gemini-1.5-pro-latest',
-  'gemini-2.5-flash'
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest'
 ];
 
 const API_VERSIONS = ['v1beta', 'v1'];
