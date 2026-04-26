@@ -324,7 +324,7 @@ export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?:
     <!-- Header -->
     <div style="background-color: #0d6efd; padding: 30px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Análisis de Inteligencia Hídrica</h1>
-      <p style="color: #e0f2fe; margin: 10px 0 0 0; font-size: 14px; font-weight: 500; opacity: 0.9;">Edificio \${building.name}</p>
+      <p style="color: #e0f2fe; margin: 10px 0 0 0; font-size: 14px; font-weight: 500; opacity: 0.9;">Edificio ${building.name}</p>
     </div>
 
     <!-- Intro Card -->
@@ -339,37 +339,37 @@ export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?:
 
       <!-- Report Content -->
       <div style="margin-bottom: 40px;">
-        \${report.html_report}
+        ${report.html_report}
       </div>
 
-      \${chartUrls ? \`
+      ${chartUrls ? `
       <!-- Charts Section -->
       <div style="border-top: 2px solid #f1f5f9; padding-top: 30px; margin-top: 30px;">
         <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-bottom: 20px; text-align: center;">Visualización de Datos Actualizados</h2>
         
         <div style="margin-bottom: 25px; text-align: center;">
           <p style="font-size: 12px; color: #64748b; margin-bottom: 10px; font-weight: 700; text-transform: uppercase;">Estado Actual del Tanque</p>
-          <img src="\${chartUrls.gauge}" alt="Nivel Actual" style="width: 250px; height: auto; border-radius: 8px;">
+          <img src="${chartUrls.gauge}" alt="Nivel Actual" style="width: 250px; height: auto; border-radius: 8px;">
         </div>
 
         <div style="margin-bottom: 25px; text-align: center;">
           <p style="font-size: 12px; color: #64748b; margin-bottom: 10px; font-weight: 700; text-transform: uppercase;">Tendencia de Consumo Reciente</p>
-          <img src="\${chartUrls.trend}" alt="Tendencia" style="width: 100%; max-width: 500px; height: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
+          <img src="${chartUrls.trend}" alt="Tendencia" style="width: 100%; max-width: 500px; height: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
         </div>
 
         <div style="margin-bottom: 25px; text-align: center;">
           <p style="font-size: 12px; color: #64748b; margin-bottom: 10px; font-weight: 700; text-transform: uppercase;">Consumo por Día de la Semana</p>
-          <img src="\${chartUrls.dayOfWeek}" alt="Consumo por Día" style="width: 100%; max-width: 500px; height: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
+          <img src="${chartUrls.dayOfWeek}" alt="Consumo por Día" style="width: 100%; max-width: 500px; height: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
         </div>
       </div>
-      \` : ''}
+      ` : ''}
 
       <!-- Footer Action -->
       <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #f1f5f9;">
         <p style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">
           Para ver más detalles o configurar los reportes automáticos, acceda a su panel de administración.
         </p>
-        <a href="https://aquasaas.vercel.app/edificio-admin/\${building.slug || building.id}" style="background-color: #0d6efd; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">
+        <a href="https://aquasaas.vercel.app/edificio-admin/${building.slug || building.id}" style="background-color: #0d6efd; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">
           Ir al Panel de Administración
         </a>
       </div>
@@ -384,5 +384,5 @@ export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?:
   </div>
 </body>
 </html>
-  \`;
+  `;
 }
