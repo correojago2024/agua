@@ -291,10 +291,6 @@ export default function AdminPage() {
   const [trialPreviewList, setTrialPreviewList] = useState<any[]>([]);
   const [selectedForEmail, setSelectedForEmail] = useState<{id: string; emailType: string}[]>([]);
 
-  // Send Email
-  const [emailLoading, setEmailLoading] = useState<string | null>(null);
-  const [emailMsg, setEmailMsg] = useState('');
-
   // Email Preview
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [previewBuilding, setPreviewBuilding] = useState<BuildingRow | null>(null);
@@ -305,7 +301,7 @@ export default function AdminPage() {
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
   const [newPayment, setNewPayment] = useState({ payment_date: '', amount: '', currency: 'USD', payment_method: '', bank: '', reference_number: '', notes: '' });
 
-  // Email Templates
+  // Email Templates UI
   const [showEmailTemplates, setShowEmailTemplates] = useState(false);
 
   // Config
@@ -323,25 +319,6 @@ export default function AdminPage() {
       { id: '2', building_id: 'b2', building_name: 'Residencia XYZ', email_type: 'welcome', sent_to: 'admin@xyz.com', sent_at: '2026-04-10', success: true },
     ]);
     setLogsLoading(false);
-  };
-
-  // Email Templates State
-  const [editingTemplate, setEditingTemplate] = useState<{name: string; subject_es: string; body_es: string} | null>(null);
-  const [emailTemplates, setEmailTemplates] = useState([
-    { name: 'trial_3days', subject_es: '⚠️ Tu período de prueba termina en 3 días - AquaSaaS', body_es: 'Estimado administrador,\n\nTu período de prueba del sistema AquaSaaS para {building_name} termina el {trial_end_date}.\n\nTe esperamos que hayas disfrutado del servicio. Recuerda que te quedan 3 días de uso gratuito para decidir si deseas continuar.\n\nPara activar tu edificio y seguir usando el sistema, contacta al administrador: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'trial_expired', subject_es: '📅 Período de prueba terminado - AquaSaaS', body_es: 'Estimado administrador,\n\nEl período de prueba de tu edificio {building_name} ha terminado.\n\nEl sistema ha sido pausado. Para renovar el servicio, contacta a: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'building_suspended', subject_es: '🚫 Edificio pausado - AquaSaaS', body_es: 'Estimado administrador,\n\nTu edificio {building_name} ha sido pausado y no recibirá más datos de mediciones hasta tanto se solucione la situación de renovación/pago.\n\nPara reactivar tu edificio, contacta al administrador: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'payment_reminder', subject_es: '💰 Recordatorio de pago - AquaSaaS', body_es: 'Estimado administrador,\n\nEl edificio {building_name} tiene un pago pendiente de ${pending_amount}.\n\nPor favor regularice su situación para continuar disfrutando del servicio.\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'welcome', subject_es: '🎉 Bienvenido a AquaSaaS', body_es: 'Estimado administrador,\n\n¡Bienvenido al sistema AquaSaaS! Tu edificio {building_name} ha sido registrado correctamente.\n\nAhora tienes 15 días de prueba gratuita para explorar todas las funcionalidades.\n\nSi tienes alguna duda, contacta a: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
-  ]);
-
-  const saveTemplate = async () => {
-    if (editingTemplate) {
-      setEmailTemplates(emailTemplates.map(t => t.name === editingTemplate.name ? editingTemplate : t));
-      setEditingTemplate(null);
-      setActionMsg('✅ Plantilla guardada');
-      setTimeout(() => setActionMsg(''), 2000);
-    }
   };
 
   useEffect(() => { loadBuildings(); }, []);
