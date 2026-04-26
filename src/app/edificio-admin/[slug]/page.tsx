@@ -116,7 +116,7 @@ export default function EdificioAdminPage() {
   const [iaMsg, setIaMsg] = useState('');
   const [generatingAi, setGeneratingAi] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
-  const [testResult, setTestResult] = useState<{success: boolean, msg: string} | null>(null);
+  const [iaTestResult, setIaTestResult] = useState<{success: boolean, msg: string} | null>(null);
   const [selectedAiReport, setSelectedAiReport] = useState<any>(null);
   const [iaDateStart, setIaDateStart] = useState('');
   const [iaDateEnd, setIaDateEnd] = useState('');
@@ -460,7 +460,7 @@ export default function EdificioAdminPage() {
 
   const handleTestIA = async () => {
     setTestingAi(true);
-    setTestResult(null);
+    setIaTestResult(null);
     try {
       const res = await fetch('/api/ai-analysis', {
         method: 'POST',
@@ -472,12 +472,12 @@ export default function EdificioAdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setTestResult({ success: true, msg: '✅ IA Conectada: ' + data.response });
+        setIaTestResult({ success: true, msg: '✅ IA Conectada: ' + data.response });
       } else {
-        setTestResult({ success: false, msg: '❌ Falló: ' + data.error });
+        setIaTestResult({ success: false, msg: '❌ Falló: ' + data.error });
       }
     } catch (err: any) {
-      setTestResult({ success: false, msg: '❌ Error: ' + err.message });
+      setIaTestResult({ success: false, msg: '❌ Error: ' + err.message });
     }
     setTestingAi(false);
   };
@@ -3033,9 +3033,9 @@ export default function EdificioAdminPage() {
                         </button>
                       </div>
                       
-                      {testResult && (
-                        <div className={`p-2 rounded-lg text-[10px] font-bold text-center animate-in zoom-in duration-300 ${testResult.success ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                          {testResult.msg}
+                      {iaTestResult && (
+                        <div className={`p-2 rounded-lg text-[10px] font-bold text-center animate-in zoom-in duration-300 ${iaTestResult.success ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                          {iaTestResult.msg}
                         </div>
                       )}
                       
