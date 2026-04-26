@@ -520,7 +520,7 @@ export default function HomePage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500 rounded-xl mb-3">
               <Droplets className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-white">AquaSaaS</h2>
+            <h2 className="text-xl font-bold text-white">aGuaSaaS</h2>
             <p className="text-gray-300 text-sm">Acceso al Sistema</p>
           </div>
 
@@ -635,7 +635,7 @@ export default function HomePage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500 rounded-xl mb-3">
               <Droplets className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-white">AquaSaaS - Registra tu edificio para iniciar el periodo de prueba</h2>
+            <h2 className="text-xl font-bold text-white">aGuaSaaS - Registra tu edificio para iniciar el periodo de prueba</h2>
             <p className="text-gray-300 text-sm mt-2">Datos del Edificio</p>
           </div>
 
@@ -1037,7 +1037,7 @@ export default function HomePage() {
             <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
               <Droplets className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">AquaSaaS</span>
+            <span className="text-xl font-bold text-white">aGuaSaaS</span>
           </div>
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6 text-gray-200">
@@ -1086,7 +1086,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-            AquaSaaS te permite capturar datos de niveles de liquidos, generar estadisticas de consumo y enviar reportes graficos por correo electronico y por WhatsApp.
+            aGuaSaaS te permite capturar datos de niveles de liquidos, generar estadisticas de consumo y enviar reportes graficos por correo electronico y por WhatsApp.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -1220,7 +1220,7 @@ export default function HomePage() {
       <section id="planes" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Planes: AquaSaaS 2026</h2>
+            <h2 className="text-4xl font-bold text-white mb-4">Planes: aGuaSaaS 2026</h2>
             <p className="text-xl text-blue-400 mb-8">Control inteligente para comunidades que valoran cada gota.</p>
             
             {/* Toggle Mensual/Anual */}
@@ -1253,7 +1253,7 @@ export default function HomePage() {
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Configuración Fija: 5 emails post-registro y umbrales de alerta predeterminados (60%/40%).</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Dashboard de Control: Visualización del nivel actual y la última medición registrada.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Memoria de Datos: Historial de registros de 60 días para auditorías básicas.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Marca Estándar: Formulario de envío optimizado con el sello de confianza AquaSaaS.</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Marca Estándar: Formulario de envío optimizado con el sello de confianza aGuaSaaS.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Comunidad: Gestión de hasta 5 miembros administrativos.</li>
               </ul>
               <button 
@@ -1534,7 +1534,7 @@ export default function HomePage() {
       <section id="acerca-de" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">AquaSaaS: Ingeniería de Datos para la Gestión Hídrica</h2>
+            <h2 className="text-4xl font-bold text-white mb-4">aGuaSaaS: Ingeniería de Datos para la Gestión Hídrica</h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">Tecnología moderna al servicio de la eficiencia y transparencia en el manejo del agua en condominios.</p>
           </div>
 
@@ -1691,7 +1691,7 @@ export default function HomePage() {
             Listo para comenzar?
           </h2>
           <p className="text-blue-100 mb-8 text-lg">
-            Unete a los edificios que ya estan monitoreando su consumo de agua con AquaSaaS
+            Unete a los edificios que ya estan monitoreando su consumo de agua con aGuaSaaS
           </p>
           <button
             onClick={() => setView('register')}
@@ -1709,10 +1709,10 @@ export default function HomePage() {
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <Droplets className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-white">AquaSaaS</span>
+            <span className="text-lg font-bold text-white">aGuaSaaS</span>
           </div>
           <p className="text-slate-500 text-sm">
-            © 2026 AquaSaaS. Todos los derechos reservados.
+            © 2026 aGuaSaaS. Todos los derechos reservados.
           </p>
           <div className="text-gray-300 text-sm flex gap-6">
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>

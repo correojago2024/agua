@@ -50,10 +50,10 @@ CREATE TABLE IF NOT EXISTS whatsapp_queue (
 
 -- 4. Insertar credenciales iniciales de Green API (basado en tu script)
 INSERT INTO whatsapp_credentials (name, service_type, instance_id, api_token, api_url)
-VALUES ('Green-API AquaSaaS', 'GREENAPI', '7107580078', '428eaebbd79840ad8b3e1fe59fa507ef78d05a28e23043f6b4', 'https://7107.api.greenapi.com')
+VALUES ('Green-API aGuaSaaS', 'GREENAPI', '7107580078', '428eaebbd79840ad8b3e1fe59fa507ef78d05a28e23043f6b4', 'https://7107.api.greenapi.com')
 ON CONFLICT DO NOTHING;
 
 -- 5. Insertar credenciales iniciales de Whapi
 INSERT INTO whatsapp_credentials (name, service_type, api_token, api_url)
-VALUES ('Whapi Cloud AquaSaaS', 'WHAPI', 'ixyftJEkEQIRb26mp6gd4yhLrt1QUIu7', 'https://gate.whapi.cloud')
+VALUES ('Whapi Cloud aGuaSaaS', 'WHAPI', 'ixyftJEkEQIRb26mp6gd4yhLrt1QUIu7', 'https://gate.whapi.cloud')
 ON CONFLICT DO NOTHING;

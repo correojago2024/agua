@@ -39,7 +39,7 @@ export async function logAudit({
 
     const { error } = await supabaseAdmin.from('audit_logs').insert([{
       building_id,
-      user_email: user_email || 'sistema@aquasaas.com',
+      user_email: user_email || 'sistema@aguasaas.com',
       ip_address: ip,
       operation,
       entity_type,

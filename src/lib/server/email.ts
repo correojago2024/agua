@@ -136,7 +136,7 @@ export async function sendEmailViaGmail(
         try {
           const { transporter: t, fromEmail: f } = await getGmailTransporter();
           await t.sendMail({
-            from: `"AquaSaaS" <${f}>`,
+            from: `"aGuaSaaS" <${f}>`,
             to: alertTo.join(', '),
             subject: `📧 Alerta 90% Emails Mensuales — ${building.name}`,
             html: emailAlertHtml
@@ -158,7 +158,7 @@ export async function sendEmailViaGmail(
 
   try {
     const info = await transporter.sendMail({
-      from: `"AquaSaaS" <${fromEmail}>`,
+      from: `"aGuaSaaS" <${fromEmail}>`,
       to: to.join(', '),
       subject: subject,
       html: html,

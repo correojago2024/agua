@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       await logAudit({
         req: request,
         building_id,
-        user_email: user_email || 'admin@aquasaas.com',
+        user_email: user_email || 'admin@aguasaas.com',
         operation: 'ERROR',
         entity_type: 'banner',
         entity_id: building_id,
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     await logAudit({
       req: request,
       building_id,
-      user_email: user_email || 'admin@aquasaas.com',
+      user_email: user_email || 'admin@aguasaas.com',
       operation: 'UPDATE',
       entity_type: 'banner',
       entity_id: building_id,

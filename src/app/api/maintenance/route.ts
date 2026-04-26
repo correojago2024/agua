@@ -3,13 +3,13 @@
  * VERSIÓN: 2.0
  * FECHA: 2026-04-10
  *
- * Rutina de mantenimiento automático AquaSaaS.
+ * Rutina de mantenimiento automático aGuaSaaS.
  * Ejecuta cada 15 días via Vercel Cron y envía email de reporte.
  *
  * CRON_SECRET: Créalo tú mismo, cualquier texto largo y seguro.
- * Ejemplo: AquaSaaS-Maint-2026-xK9mP3qL
+ * Ejemplo: aGuaSaaS-Maint-2026-xK9mP3qL
  * Agregar en Vercel → Settings → Environment Variables:
- *   CRON_SECRET = AquaSaaS-Maint-2026-xK9mP3qL
+ *   CRON_SECRET = aGuaSaaS-Maint-2026-xK9mP3qL
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,7 +19,7 @@ import { getGmailTransporter } from '@/lib/server/email';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const CRON_SECRET = process.env.CRON_SECRET || 'aquasaas-cron-2026';
+const CRON_SECRET = process.env.CRON_SECRET || 'aguasaas-cron-2026';
 const ADMIN_EMAIL = 'correojago@gmail.com';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -39,7 +39,7 @@ async function sendMaintenanceEmail(html: string, subject: string): Promise<void
     const { transporter, fromEmail } = await getGmailTransporter();
     
     await transporter.sendMail({
-      from: `"AquaSaaS Sistema" <${fromEmail}>`,
+      from: `"aGuaSaaS Sistema" <${fromEmail}>`,
       to: ADMIN_EMAIL,
       subject,
       html,
@@ -377,7 +377,7 @@ function buildMaintenanceEmailHtml(
             <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;color:#16a34a;">✅ OK</td>
           </tr>
           <tr>
-            <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:bold;">Gmail (aquasaasjg) — Envíos/día</td>
+            <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:bold;">Gmail (aguasaasjg) — Envíos/día</td>
             <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">500 emails / día (Gmail gratuito)</td>
             <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">${d?.email_queue?.sent?.toLocaleString() ?? '—'} enviados en total</td>
             <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;color:#64748b;">Verificar si hay rebotes</td>
@@ -399,7 +399,7 @@ function buildMaintenanceEmailHtml(
 
   <div style="background:${headerColor};color:white;padding:24px;text-align:center;">
     <h1 style="margin:0 0 6px;font-size:20px;">${headerTitle}</h1>
-    <p style="margin:0;opacity:0.85;font-size:13px;">AquaSaaS — Reporte de Mantenimiento Automático</p>
+    <p style="margin:0;opacity:0.85;font-size:13px;">aGuaSaaS — Reporte de Mantenimiento Automático</p>
     <p style="margin:4px 0 0;opacity:0.7;font-size:12px;">Ejecutado: ${new Date(timestamp).toLocaleString('es-ES')} · Duración: ${(elapsedMs/1000).toFixed(1)}s</p>
   </div>
 
@@ -422,7 +422,7 @@ function buildMaintenanceEmailHtml(
     <!-- Estadísticas del sistema -->
     ${d ? `
     <div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:20px;">
-      <h3 style="color:#0f172a;margin:0 0 12px;font-size:15px;">🏢 Estado del Sistema AquaSaaS</h3>
+      <h3 style="color:#0f172a;margin:0 0 12px;font-size:15px;">🏢 Estado del Sistema aGuaSaaS</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
         ${[
           { label: 'Edificios Totales', value: d.edificios?.total ?? '—' },
@@ -472,7 +472,7 @@ function buildMaintenanceEmailHtml(
     </table>
 
     <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:20px;">
-      Sistema AquaSaaS — Reporte automático de mantenimiento · 2026 © Todos los derechos reservados<br>
+      Sistema aGuaSaaS — Reporte automático de mantenimiento · 2026 © Todos los derechos reservados<br>
       Este email se genera automáticamente cada 15 días. No responder a este correo.
     </p>
   </div>
@@ -523,7 +523,7 @@ export async function GET(request: NextRequest) {
   const overallStatus = summary.errors > 0 ? 'ERROR' : summary.warnings > 0 ? 'ADVERTENCIAS' : 'OK';
   const emailHtml = buildMaintenanceEmailHtml(tasks, summary, history, elapsedMs, timestamp);
   await sendMaintenanceEmail(emailHtml,
-    `🔧 AquaSaaS Mantenimiento ${overallStatus} — ${new Date(timestamp).toLocaleDateString('es-ES')}`
+    `🔧 aGuaSaaS Mantenimiento ${overallStatus} — ${new Date(timestamp).toLocaleDateString('es-ES')}`
   );
 
   console.log(`[MAINTENANCE] ═══ FIN — ${elapsedMs}ms — OK:${summary.ok} WARN:${summary.warnings} ERR:${summary.errors} ═══`);

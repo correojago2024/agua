@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 
 // Función Maestra de Anomalías
 function buildAnomalyEmailHtml(building: any, newLiters: number, newPercentage: number, prevLiters: number, prevPercentage: number, variationPct: number, recordedAt: string, reportedBy: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;color:#1e293b;"><div style="background:#dc2626;color:white;padding:15px;border-radius:8px 8px 0 0;text-align:center;"><h2 style="margin:0;font-size:18px;">⚠️ Anomalía detectada — ${building.name}</h2></div><div style="border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 8px 8px;"><p style="font-size:14px;">Se detectó una variación de <strong>${variationPct.toFixed(1)}%</strong>.</p><ul style="font-size:13px;line-height:1.8;"><li><strong>Fecha:</strong> ${new Date(recordedAt).toLocaleString('es-ES')}</li><li><strong>Nivel:</strong> ${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</li><li><strong>Reportado por:</strong> ${reportedBy}</li></ul><p style="font-size:11px;color:#94a3b8;margin-top:20px;">Sistema AquaSaaS.</p></div></body></html>`.trim();
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;color:#1e293b;"><div style="background:#dc2626;color:white;padding:15px;border-radius:8px 8px 0 0;text-align:center;"><h2 style="margin:0;font-size:18px;">⚠️ Anomalía detectada — ${building.name}</h2></div><div style="border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 8px 8px;"><p style="font-size:14px;">Se detectó una variación de <strong>${variationPct.toFixed(1)}%</strong>.</p><ul style="font-size:13px;line-height:1.8;"><li><strong>Fecha:</strong> ${new Date(recordedAt).toLocaleString('es-ES')}</li><li><strong>Nivel:</strong> ${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</li><li><strong>Reportado por:</strong> ${reportedBy}</li></ul><p style="font-size:11px;color:#94a3b8;margin-top:20px;">Sistema aGuaSaaS.</p></div></body></html>`.trim();
 }
 
 // Datos simulados realistas para las pruebas de admin
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
           html = buildReportEmailHtml(b, mockHistory, indicators as any, 105000, 62, false, -9, chartUrls);
           break;
         case 'welcome':
-          subject = `[PRUEBA] 🎉 Bienvenido a AquaSaaS — ${b.name}`;
+          subject = `[PRUEBA] 🎉 Bienvenido a aGuaSaaS — ${b.name}`;
           html = `<div style="font-family:sans-serif;padding:30px;"><h1>¡Bienvenido Admin!</h1><p>Su edificio ha sido registrado.</p></div>`;
           break;
         case 'anomaly_alert':
@@ -91,11 +91,11 @@ export async function POST(request: Request) {
         <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:24px; overflow:hidden; background-color:#ffffff; color:#1e293b; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
           <div style="background:linear-gradient(135deg, #4f46e5, #3730a3); padding:40px; text-align:center; color:white;">
             <h1 style="margin:0; font-size:24px;">¡Bienvenido a la Junta de Condominio!</h1>
-            <p style="opacity:0.9; margin-top:10px;">Acceso al Panel de Control AquaSaaS</p>
+            <p style="opacity:0.9; margin-top:10px;">Acceso al Panel de Control aGuaSaaS</p>
           </div>
           <div style="padding:35px; line-height:1.6;">
             <p style="font-size:16px;">Hola <strong>${member.name || 'Miembro'}</strong>,</p>
-            <p>Has sido agregado como miembro de la junta para el edificio <strong>${building.name}</strong> en el sistema de monitoreo hídrico <strong>AquaSaaS</strong>.</p>
+            <p>Has sido agregado como miembro de la junta para el edificio <strong>${building.name}</strong> en el sistema de monitoreo hídrico <strong>aGuaSaaS</strong>.</p>
             
             <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:16px; padding:25px; margin:25px 0; text-align:center;">
               <p style="margin:0; color:#64748b; font-size:13px; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em;">Tu Clave Temporal de Acceso:</p>
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
               <a href="${baseUrl}/edificio-admin/${building.slug}" style="background:#4f46e5; color:#ffffff; padding:16px 32px; text-decoration:none; border-radius:12px; font-weight:bold; display:inline-block; font-size:15px; box-shadow:0 4px 6px -1px rgba(79, 70, 229, 0.4);">Acceder al Portal Administrativo</a>
             </div>
             
-            <p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:40px; border-top:1px solid #f1f5f9; padding-top:20px;">2026 AquaSaaS — Tecnología para su Comunidad</p>
+            <p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:40px; border-top:1px solid #f1f5f9; padding-top:20px;">2026 aGuaSaaS — Tecnología para su Comunidad</p>
           </div>
         </div>`.trim();
       const res = await sendEmailViaGmail([member.email], `💧 Bienvenido al Sistema de Control del Agua — ${building.name}`, juntaHtml, building.id, 'junta_welcome');
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
 
     if (type === 'welcome') {
       const welcomeHtml = `<h1>Bienvenido ${building.name}</h1><p>Tu edificio ha sido activado.</p>`;
-      const res = await sendEmailViaGmail([building.admin_email], `🎉 Bienvenido a AquaSaaS — ${building.name}`, welcomeHtml, building.id, 'welcome');
+      const res = await sendEmailViaGmail([building.admin_email], `🎉 Bienvenido a aGuaSaaS — ${building.name}`, welcomeHtml, building.id, 'welcome');
       return NextResponse.json({ success: res.success });
     }
 

@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "aquasaas",
+      "name": "aguasaas",
       "dependencies": {
         "@supabase/supabase-js": "^2.101.1",
         "@types/nodemailer": "^8.0.0",

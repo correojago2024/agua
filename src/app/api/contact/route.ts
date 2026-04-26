@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 });
     }
 
-    const subject = 'Nuevo Mensaje de Contacto desde AquaSaaS';
+    const subject = 'Nuevo Mensaje de Contacto desde aGuaSaaS';
     const htmlContent = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; color: #1e293b;">
         <h1 style="color: #2563eb; font-size: 24px; margin-bottom: 20px;">🚀 Nuevo Contacto desde la Web</h1>
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
           <p><strong>Mensaje:</strong></p>
           <p style="white-space: pre-wrap;">${mensaje}</p>
         </div>
-        <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 30px;">AquaSaaS CRM — 2026</p>
+        <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 30px;">aGuaSaaS CRM — 2026</p>
       </div>
     `;
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     // 2. Envío de WhatsApp (Notificación a Admin)
     try {
-      const waMessage = `🚀 *Nuevo Contacto AquaSaaS*\n\n` +
+      const waMessage = `🚀 *Nuevo Contacto aGuaSaaS*\n\n` +
         `👤 *Nombre:* ${nombre_apellido}\n` +
         `🏢 *Edificio:* ${nombre_edificio || '—'}\n` +
         `📧 *Email:* ${email}\n` +

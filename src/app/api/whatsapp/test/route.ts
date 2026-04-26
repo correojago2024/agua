@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 });
     }
 
-    const message = `🧪 *Prueba de Conexión AquaSaaS*\n\n¡Felicidades! Tu configuración de WhatsApp para el servicio *${service}* funciona correctamente.\n\n📅 Fecha: ${new Date().toLocaleString()}`;
+    const message = `🧪 *Prueba de Conexión aGuaSaaS*\n\n¡Felicidades! Tu configuración de WhatsApp para el servicio *${service}* funciona correctamente.\n\n📅 Fecha: ${new Date().toLocaleString()}`;
 
     const result = await sendWhatsApp(building_id, phone, message, service);
 

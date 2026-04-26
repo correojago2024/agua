@@ -1,6 +1,6 @@
 /**
  * ARCHIVO: /src/app/disclaimer/page.tsx
- * Términos y Condiciones - Sistema AquaSaaS
+ * Términos y Condiciones - Sistema aGuaSaaS
  */
 
 export default function TermsPage() {
@@ -9,7 +9,7 @@ export default function TermsPage() {
       <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <span className="text-xl font-bold text-white">AquaSaaS</span>
+            <span className="text-xl font-bold text-white">aGuaSaaS</span>
           </a>
           <nav className="flex items-center gap-6">
             <a href="/" className="hover:text-white transition-colors text-sm">Volver al inicio</a>
@@ -26,7 +26,7 @@ export default function TermsPage() {
             <div>
               <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">1. Identificación del servicio</h2>
               <p>
-                <strong>AquaSaaS</strong> (en adelante, “la Plataforma”) es un ecosistema digital de gestión operativa y monitoreo hídrico diseñado específicamente para condominios, edificios y asociaciones de propietarios en el marco legal de la República Bolivariana de Venezuela. El uso de la Plataforma implica la aceptación total de estos términos.
+                <strong>aGuaSaaS</strong> (en adelante, “la Plataforma”) es un ecosistema digital de gestión operativa y monitoreo hídrico diseñado específicamente para condominios, edificios y asociaciones de propietarios en el marco legal de la República Bolivariana de Venezuela. El uso de la Plataforma implica la aceptación total de estos términos.
               </p>
             </div>
 
@@ -50,7 +50,7 @@ export default function TermsPage() {
                 <li>Gestión de alertas y reportes automáticos.</li>
               </ul>
               <p className="bg-amber-500/10 border-l-4 border-amber-500 p-4 mt-4 italic">
-                <strong>Aviso:</strong> AquaSaaS es una herramienta de apoyo informativo y NO sustituye las obligaciones legales, operativas o contables que el condominio deba cumplir ante las autoridades.
+                <strong>Aviso:</strong> aGuaSaaS es una herramienta de apoyo informativo y NO sustituye las obligaciones legales, operativas o contables que el condominio deba cumplir ante las autoridades.
               </p>
             </div>
 
@@ -62,7 +62,7 @@ export default function TermsPage() {
                 <li>Resguardar la confidencialidad de sus credenciales de acceso.</li>
                 <li>Notificar inmediatamente cualquier sospecha de acceso no autorizado.</li>
               </ul>
-              <p>AquaSaaS no se hace responsable por daños derivados del uso indebido o negligente de las cuentas de usuario.</p>
+              <p>aGuaSaaS no se hace responsable por daños derivados del uso indebido o negligente de las cuentas de usuario.</p>
             </div>
 
             <div>
@@ -99,7 +99,7 @@ export default function TermsPage() {
 
             <div>
               <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">9. Limitación de responsabilidad</h2>
-              <p>AquaSaaS NO será responsable por:</p>
+              <p>aGuaSaaS NO será responsable por:</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Pérdida de datos resultante de causas externas fuera de nuestro control directo.</li>
                 <li>Daños indirectos, accidentales o lucro cesante derivados de fallas en el suministro real de agua.</li>
@@ -127,7 +127,7 @@ export default function TermsPage() {
 
       <footer className="border-t border-slate-800 bg-slate-900/80 py-8">
         <div className="max-w-4xl mx-auto px-6 text-center text-sm text-slate-500">
-          <p>&copy; 2026 AquaSaaS. Gestión Inteligente de Recursos Hídricos.</p>
+          <p>&copy; 2026 aGuaSaaS. Gestión Inteligente de Recursos Hídricos.</p>
         </div>
       </footer>
     </div>

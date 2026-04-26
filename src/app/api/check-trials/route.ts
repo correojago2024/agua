@@ -33,7 +33,7 @@ async function sendEmail(to: string, subject: string, body: string) {
   });
 
   await transporter.sendMail({
-    from: '"AquaSaaS Sistema" <agua.sistema2024@gmail.com>',
+    from: '"aGuaSaaS Sistema" <agua.sistema2024@gmail.com>',
     to,
     subject,
     html: body.replace(/\n/g, '<br>'),
@@ -46,14 +46,14 @@ function getTemplate(templateName: string, building: any): { subject: string; bo
       subject: `⚠️ Tu período de prueba termina en 3 días - ${building.name}`,
       body: `Estimado administrador,
 
-Tu período de prueba del sistema AquaSaaS para ${building.name} termina el ${building.trial_end_date}.
+Tu período de prueba del sistema aGuaSaaS para ${building.name} termina el ${building.trial_end_date}.
 
 Te esperamos que hayas disfrutado del servicio. Recuerda que te quedan 3 días de uso gratuito para decidir si deseas continuar.
 
 Para activar tu edificio y seguir usando el sistema, contacta al administrador: correojago@gmail.com
 
 Saludos,
-Equipo AquaSaaS`,
+Equipo aGuaSaaS`,
     },
     trial_expired: {
       subject: `📅 Período de prueba terminado - ${building.name}`,
@@ -64,7 +64,7 @@ El período de prueba de tu edificio ${building.name} ha terminado.
 El sistema ha sido pausado. Para renovar el servicio, contacta a: correojago@gmail.com
 
 Saludos,
-Equipo AquaSaaS`,
+Equipo aGuaSaaS`,
     },
     building_suspended: {
       subject: `🚫 Edificio pausado - ${building.name}`,
@@ -75,7 +75,7 @@ Tu edificio ${building.name} ha sido pausado y no recibirá más datos de medici
 Para reactivar tu edificio, contacta al administrador: correojago@gmail.com
 
 Saludos,
-Equipo AquaSaaS`,
+Equipo aGuaSaaS`,
     },
   };
   return templates[templateName] || templates.trial_3days;

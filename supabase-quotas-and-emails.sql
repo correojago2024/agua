@@ -21,7 +21,7 @@ Le informamos que el edificio {building_name} ha alcanzado el 90% de su límite 
 Si lo desea, puede aumentar su plan para tener más capacidad. En caso de continuar en el mismo plan, los registros de almacenamiento se sobreescribirán desde el más antiguo (FIFO), por lo que irá perdiendo los registros más viejos.
 
 Saludos,
-Equipo AquaSaaS'),
+Equipo aGuaSaaS'),
 
 ('limit_90_emails', '📧 Alerta de Envío de Emails: 90% alcanzado - {building_name}',
 'Estimado administrador,
@@ -31,7 +31,7 @@ Le informamos que el edificio {building_name} ha alcanzado el 90% de su límite 
 Deberá esperar al mes siguiente para poder seguir recibiendo emails cuando se registre un nuevo dato o cambiar de plan. Los datos seguirán almacenándose en la base de datos, pero no se enviarán notificaciones por email hasta el reinicio del contador o cambio de plan.
 
 Saludos,
-Equipo AquaSaaS')
+Equipo aGuaSaaS')
 ON CONFLICT (name) DO NOTHING;
 
 -- 3. Función para resetear contadores cada 30 días (opcional si se hace por Cron)

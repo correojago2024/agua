@@ -5,8 +5,8 @@ import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 
 const faqs = [
   {
-    question: "¿Es realmente rentable contratar AquaSaaS para mi edificio?",
-    answer: "Absolutamente. El sistema se paga solo con evitar la solicitud de una sola cisterna al año. Una cisterna en Caracas cuesta entre $60 y $120; gracias a la planificación y proyecciones que ofrece AquaSaaS, las juntas de condominio pueden administrar mejor el recurso y evitar pedidos de emergencia por mala gestión."
+    question: "¿Es realmente rentable contratar aGuaSaaS para mi edificio?",
+    answer: "Absolutamente. El sistema se paga solo con evitar la solicitud de una sola cisterna al año. Una cisterna en Caracas cuesta entre $60 y $120; gracias a la planificación y proyecciones que ofrece aGuaSaaS, las juntas de condominio pueden administrar mejor el recurso y evitar pedidos de emergencia por mala gestión."
   },
   {
     question: "¿Cómo se obtienen los datos del nivel del tanque?",
@@ -18,7 +18,7 @@ const faqs = [
   },
   {
     question: "¿Qué pasa si el nivel del tanque llega a un punto crítico?",
-    answer: "AquaSaaS envía alertas automáticas por Email y WhatsApp (según el plan) cuando el tanque baja de ciertos umbrales (ej. 20%). Esto permite a la Junta de Condominio tomar decisiones de racionamiento preventivo antes de que el agua se agote totalmente."
+    answer: "aGuaSaaS envía alertas automáticas por Email y WhatsApp (según el plan) cuando el tanque baja de ciertos umbrales (ej. 20%). Esto permite a la Junta de Condominio tomar decisiones de racionamiento preventivo antes de que el agua se agote totalmente."
   },
   {
     question: "¿Puedo probar el sistema antes de pagar?",
@@ -41,7 +41,7 @@ export default function FAQSection() {
             <HelpCircle size={14} /> Resolviendo Dudas
           </div>
           <h3 className="text-4xl font-extrabold text-white mb-4">Preguntas Frecuentes</h3>
-          <p className="text-slate-400 text-lg">Todo lo que necesita saber sobre el Sistema AquaSaaS</p>
+          <p className="text-slate-400 text-lg">Todo lo que necesita saber sobre el Sistema aGuaSaaS</p>
         </div>
 
         <div className="space-y-4">

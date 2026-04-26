@@ -1,7 +1,7 @@
 /**
  * ARCHIVO: route.ts (API de Cambio de Contraseña)
  * VERSION: 1.0
- * PROYECTO: AquaSaaS
+ * PROYECTO: aGuaSaaS
  */
 
 import { NextResponse } from 'next/server';

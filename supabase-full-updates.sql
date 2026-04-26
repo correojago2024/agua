@@ -43,19 +43,19 @@ CREATE TABLE IF NOT EXISTS email_templates (
 
 -- 4. Insertar templates por defecto
 INSERT INTO email_templates (name, subject_es, body_es) VALUES
-('trial_3days', '⚠️ Tu período de prueba termina en 3 días - AquaSaaS', 
+('trial_3days', '⚠️ Tu período de prueba termina en 3 días - aGuaSaaS', 
 'Estimado administrador,
 
-Tu período de prueba del sistema AquaSaaS para {building_name} termina el {trial_end_date}.
+Tu período de prueba del sistema aGuaSaaS para {building_name} termina el {trial_end_date}.
 
 Te esperamos que hayas disfrutado del servicio. Recuerda que te quedan 3 días de uso gratuito para decidir si deseas continuar.
 
 Para activar tu edificio y seguir usando el sistema, contacta al administrador: correojago@gmail.com
 
 Saludos,
-Equipo AquaSaaS'),
+Equipo aGuaSaaS'),
 
-('trial_expired', '📅 Período de prueba terminado - AquaSaaS',
+('trial_expired', '📅 Período de prueba terminado - aGuaSaaS',
 'Estimado administrador,
 
 El período de prueba de tu edificio {building_name} ha terminado.
@@ -63,9 +63,9 @@ El período de prueba de tu edificio {building_name} ha terminado.
 El sistema ha sido pausado. Para renovar el servicio, contacta a: correojago@gmail.com
 
 Saludos,
-Equipo AquaSaaS'),
+Equipo aGuaSaaS'),
 
-('building_suspended', '🚫 Edificio pausado - AquaSaaS',
+('building_suspended', '🚫 Edificio pausado - aGuaSaaS',
 'Estimado administrador,
 
 Tu edificio {building_name} ha sido pausado y no recibirá más datos de mediciones hasta tanto se solucione la situación de renovación/pago.
@@ -73,9 +73,9 @@ Tu edificio {building_name} ha sido pausado y no recibirá más datos de medicio
 Para reactivar tu edificio, contacta al administrador: correojago@gmail.com
 
 Saludos,
-Equipo AquaSaaS'),
+Equipo aGuaSaaS'),
 
-('payment_reminder', '💰 Recordatorio de pago - AquaSaaS',
+('payment_reminder', '💰 Recordatorio de pago - aGuaSaaS',
 'Estimado administrador,
 
 El edificio {building_name} tiene un pago pendiente de ${pending_amount}.
@@ -83,19 +83,19 @@ El edificio {building_name} tiene un pago pendiente de ${pending_amount}.
 Por favor regularice su situación para continuar disfrutando del servicio.
 
 Saludos,
-Equipo AquaSaaS'),
+Equipo aGuaSaaS'),
 
-('welcome', '🎉 Bienvenido a AquaSaaS',
+('welcome', '🎉 Bienvenido a aGuaSaaS',
 'Estimado administrador,
 
-¡Bienvenido al sistema AquaSaaS! Tu edificio {building_name} ha sido registrado correctamente.
+¡Bienvenido al sistema aGuaSaaS! Tu edificio {building_name} ha sido registrado correctamente.
 
 Ahora tienes 15 días de prueba gratuita para explorar todas las funcionalidades.
 
 Si tienes alguna duda, contacta a: correojago@gmail.com
 
 Saludos,
-Equipo AquaSaaS')
+Equipo aGuaSaaS')
 ON CONFLICT (name) DO NOTHING;
 
 -- 5. Tabla de logs de notificaciones

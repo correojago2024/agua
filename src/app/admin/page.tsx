@@ -269,11 +269,11 @@ export default function AdminPage() {
   // Email Templates State
   const [editingTemplate, setEditingTemplate] = useState<{name: string; subject_es: string; body_es: string} | null>(null);
   const [emailTemplates, setEmailTemplates] = useState([
-    { name: 'trial_3days', subject_es: '⚠️ Tu período de prueba termina en 3 días - AquaSaaS', body_es: 'Estimado administrador,\n\nTu período de prueba del sistema AquaSaaS para {building_name} termina el {trial_end_date}.\n\nTe esperamos que hayas disfrutado del servicio. Recuerda que te quedan 3 días de uso gratuito para decidir si deseas continuar.\n\nPara activar tu edificio y seguir usando el sistema, contacta al administrador: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'trial_expired', subject_es: '📅 Período de prueba terminado - AquaSaaS', body_es: 'Estimado administrador,\n\nEl período de prueba de tu edificio {building_name} ha terminado.\n\nEl sistema ha sido pausado. Para renovar el servicio, contacta a: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'building_suspended', subject_es: '🚫 Edificio pausado - AquaSaaS', body_es: 'Estimado administrador,\n\nTu edificio {building_name} ha sido pausado y no recibirá más datos de mediciones hasta tanto se solucione la situación de renovación/pago.\n\nPara reactivar tu edificio, contacta al administrador: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'payment_reminder', subject_es: '💰 Recordatorio de pago - AquaSaaS', body_es: 'Estimado administrador,\n\nEl edificio {building_name} tiene un pago pendiente de ${pending_amount}.\n\nPor favor regularice su situación para continuar disfrutando del servicio.\n\nSaludos,\nEquipo AquaSaaS' },
-    { name: 'welcome', subject_es: '🎉 Bienvenido a AquaSaaS', body_es: 'Estimado administrador,\n\n¡Bienvenido al sistema AquaSaaS! Tu edificio {building_name} ha sido registrado correctamente.\n\nAhora tienes 15 días de prueba gratuita para explorar todas las funcionalidades.\n\nSi tienes alguna duda, contacta a: correojago@gmail.com\n\nSaludos,\nEquipo AquaSaaS' },
+    { name: 'trial_3days', subject_es: '⚠️ Tu período de prueba termina en 3 días - aGuaSaaS', body_es: 'Estimado administrador,\n\nTu período de prueba del sistema aGuaSaaS para {building_name} termina el {trial_end_date}.\n\nTe esperamos que hayas disfrutado del servicio. Recuerda que te quedan 3 días de uso gratuito para decidir si deseas continuar.\n\nPara activar tu edificio y seguir usando el sistema, contacta al administrador: correojago@gmail.com\n\nSaludos,\nEquipo aGuaSaaS' },
+    { name: 'trial_expired', subject_es: '📅 Período de prueba terminado - aGuaSaaS', body_es: 'Estimado administrador,\n\nEl período de prueba de tu edificio {building_name} ha terminado.\n\nEl sistema ha sido pausado. Para renovar el servicio, contacta a: correojago@gmail.com\n\nSaludos,\nEquipo aGuaSaaS' },
+    { name: 'building_suspended', subject_es: '🚫 Edificio pausado - aGuaSaaS', body_es: 'Estimado administrador,\n\nTu edificio {building_name} ha sido pausado y no recibirá más datos de mediciones hasta tanto se solucione la situación de renovación/pago.\n\nPara reactivar tu edificio, contacta al administrador: correojago@gmail.com\n\nSaludos,\nEquipo aGuaSaaS' },
+    { name: 'payment_reminder', subject_es: '💰 Recordatorio de pago - aGuaSaaS', body_es: 'Estimado administrador,\n\nEl edificio {building_name} tiene un pago pendiente de ${pending_amount}.\n\nPor favor regularice su situación para continuar disfrutando del servicio.\n\nSaludos,\nEquipo aGuaSaaS' },
+    { name: 'welcome', subject_es: '🎉 Bienvenido a aGuaSaaS', body_es: 'Estimado administrador,\n\n¡Bienvenido al sistema aGuaSaaS! Tu edificio {building_name} ha sido registrado correctamente.\n\nAhora tienes 15 días de prueba gratuita para explorar todas las funcionalidades.\n\nSi tienes alguna duda, contacta a: correojago@gmail.com\n\nSaludos,\nEquipo aGuaSaaS' },
   ]);
 
   const saveTemplate = async () => {
@@ -457,7 +457,7 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/maintenance', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer aquasaas-cron-2026' },
+        headers: { 'Authorization': 'Bearer aguasaas-cron-2026' },
       });
       const data = await res.json();
       setMaintResult(data);
@@ -613,7 +613,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Panel de Administración</h1>
-                <p className="text-xs text-slate-400">AquaSaaS</p>
+                <p className="text-xs text-slate-400">aGuaSaaS</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

@@ -13,7 +13,7 @@ import { buildReportEmailHtml } from '@/lib/server/email-templates';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const CRON_SECRET = process.env.CRON_SECRET || 'aquasaas-cron-2026';
+const CRON_SECRET = process.env.CRON_SECRET || 'aguasaas-cron-2026';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

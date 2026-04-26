@@ -1349,7 +1349,7 @@ export default function EdificioAdminPage() {
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-sm text-red-300 text-center">
             <p className="font-bold mb-2">Acceso no disponible</p>
             <p>La cuenta de este edificio está <strong>{building.status}</strong>.</p>
-            <p className="mt-2 text-xs text-red-400">Para reactivarla, contacte al administrador del sistema AquaSaaS.</p>
+            <p className="mt-2 text-xs text-red-400">Para reactivarla, contacte al administrador del sistema aGuaSaaS.</p>
           </div>
         ) : (
           <>
@@ -2014,7 +2014,7 @@ export default function EdificioAdminPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">Estadísticas de Operación</h2>
-                <p className="text-slate-400 text-sm">Monitoreo de actividad y rendimiento del sistema AquaSaaS</p>
+                <p className="text-slate-400 text-sm">Monitoreo de actividad y rendimiento del sistema aGuaSaaS</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={loadData} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
@@ -3448,7 +3448,7 @@ export default function EdificioAdminPage() {
                 <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>AquaSaaS — Guía de Ayuda</title>
+                <title>aGuaSaaS — Guía de Ayuda</title>
                 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
                 <style>
                   :root {
@@ -3814,7 +3814,7 @@ export default function EdificioAdminPage() {
                         <path d="M9 8C9 8 6.5 10 6.5 12C6.5 13.4 7.6 14.5 9 14.5" stroke="white" stroke-width="1" stroke-opacity="0.5" fill="none"/>
                       </svg>
                     </div>
-                    AquaSaaS
+                    aGuaSaaS
                   </a>
                   <ul class="nav-links">
                     <li><a href="#como-funciona">Cómo funciona</a></li>
@@ -3833,7 +3833,7 @@ export default function EdificioAdminPage() {
                     <div class="hero-badge">
                       <span>💧</span> Gestión inteligente del agua
                     </div>
-                    <h1>Guía de Ayuda<br>AquaSaaS</h1>
+                    <h1>Guía de Ayuda<br>aGuaSaaS</h1>
                     <p>Todo lo que necesitas saber para gestionar el consumo de agua de tu edificio de forma inteligente, transparente y colaborativa.</p>
                     <div class="hero-actions">
                       <a href="#como-funciona" class="btn-hero btn-primary">Empezar →</a>
@@ -3853,13 +3853,13 @@ export default function EdificioAdminPage() {
                       <div class="section-icon teal">⚙️</div>
                       <div class="section-header-text">
                         <h2>¿Cómo funciona el sistema?</h2>
-                        <p>AquaSaaS es una plataforma de gestión colaborativa del consumo de agua en edificios residenciales.</p>
+                        <p>aGuaSaaS es una plataforma de gestión colaborativa del consumo de agua en edificios residenciales.</p>
                       </div>
                     </div>
 
                     <div class="alert alert-info">
                       <span class="alert-icon">ℹ️</span>
-                      <div>AquaSaaS centraliza las mediciones de consumo reportadas por los residentes y las presenta en paneles de control detallados para administradores y miembros de la junta, generando informes automáticos por email en tiempo real.</div>
+                      <div>aGuaSaaS centraliza las mediciones de consumo reportadas por los residentes y las presenta en paneles de control detallados para administradores y miembros de la junta, generando informes automáticos por email en tiempo real.</div>
                     </div>
 
                     <!-- Flow diagram SVG -->
@@ -3910,7 +3910,7 @@ export default function EdificioAdminPage() {
                     <div class="grid-2">
                       <div class="card">
                         <h3>🏢 Registro del edificio</h3>
-                        <p>El administrador del sistema AquaSaaS crea el perfil del edificio con un identificador único (slug), capacidad del tanque en litros y el correo del administrador principal. Esto genera el acceso inicial y las URLs únicas del edificio.</p>
+                        <p>El administrador del sistema aGuaSaaS crea el perfil del edificio con un identificador único (slug), capacidad del tanque en litros y el correo del administrador principal. Esto genera el acceso inicial y las URLs únicas del edificio.</p>
                       </div>
                       <div class="card">
                         <h3>👥 Incorporación de miembros</h3>
@@ -4050,7 +4050,7 @@ export default function EdificioAdminPage() {
                 <!-- FOOTER -->
                 <footer>
                   <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:12px;">
-                    <strong style="color:#fff;font-size:15px;">AquaSaaS</strong>
+                    <strong style="color:#fff;font-size:15px;">aGuaSaaS</strong>
                   </div>
                   <p>Gestión inteligente del agua para comunidades residenciales.</p>
                 </footer>

@@ -175,7 +175,7 @@ export function buildReportEmailHtml(
     
     <div style="text-align:center; margin-bottom:30px;">
       <h1 style="margin:0; color:#0f172a; font-size:24px;">✨ Resumen de las Últimas Mediciones de Agua ✨</h1>
-      <p style="margin:5px 0 0; color:#64748b; font-size:16px;">Edificio <strong>${building.name}</strong> — Sistema AquaSaaS</p>
+      <p style="margin:5px 0 0; color:#64748b; font-size:16px;">Edificio <strong>${building.name}</strong> — Sistema aGuaSaaS</p>
       <p style="margin:10px 0 0; color:#94a3b8; font-size:13px;">Generado: ${indicators.reportDate}</p>
     </div>
 
@@ -301,7 +301,7 @@ export function buildReportEmailHtml(
 
     <div style="margin-top:50px; text-align:center; font-size:12px; color:#94a3b8;">
       <p style="margin:0;">Saludos cordiales,<br><b>Comisión de Agua del Edificio</b></p>
-      <p style="margin:15px 0;">Sistema AquaSaaS — Informe automático. 2026 © Todos los derechos reservados.</p>
+      <p style="margin:15px 0;">Sistema aGuaSaaS — Informe automático. 2026 © Todos los derechos reservados.</p>
       <p style="font-size:11px; margin-top:20px;"><b>NOTA:</b> Por favor, no responder al remitente de este email, ya que esta notificación es enviada en forma automática por nuestros sistemas, y se trata de una dirección que solamente se utiliza para el envío de emails y su buzón de entrada no es monitoreado ni será atendido por ninguna persona.</p>
     </div>
 
@@ -332,7 +332,7 @@ export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?:
       <div style="background-color: #f0f9ff; border-left: 4px solid #0d6efd; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 30px;">
         <h2 style="color: #0c4a6e; margin: 0 0 10px 0; font-size: 16px; font-weight: 700;">Resumen del Informe</h2>
         <p style="color: #075985; margin: 0; font-size: 14px; line-height: 1.5;">
-          Este informe ha sido generado automáticamente utilizando algoritmos de Inteligencia Artificial de AquaSaaS, 
+          Este informe ha sido generado automáticamente utilizando algoritmos de Inteligencia Artificial de aGuaSaaS, 
           analizando el comportamiento histórico y los patrones de consumo de su edificación.
         </p>
       </div>
@@ -369,7 +369,7 @@ export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?:
         <p style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">
           Para ver más detalles o configurar los reportes automáticos, acceda a su panel de administración.
         </p>
-        <a href="https://aquasaas.vercel.app/edificio-admin/${building.slug || building.id}" style="background-color: #0d6efd; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">
+        <a href="https://aguasaas.vercel.app/edificio-admin/${building.slug || building.id}" style="background-color: #0d6efd; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-block;">
           Ir al Panel de Administración
         </a>
       </div>
@@ -378,7 +378,7 @@ export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?:
     <!-- Legal Footer -->
     <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
       <p style="margin: 0; font-size: 11px; color: #94a3b8;">
-        &copy; 2026 AquaSaaS — Monitoreo Inteligente de Agua. Todos los derechos reservados.
+        &copy; 2026 aGuaSaaS — Monitoreo Inteligente de Agua. Todos los derechos reservados.
       </p>
     </div>
   </div>

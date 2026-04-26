@@ -51,7 +51,7 @@ async function sendStatusEmail(stats: any) {
     const gmailPct = (stats.emailsSent || 0) / GMAIL_LIMITS.emails_per_day * 100;
     
     const htmlBody = `
-    <h2>📊 Estado del Sistema AquaSaaS</h2>
+    <h2>📊 Estado del Sistema aGuaSaaS</h2>
     <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p>
     
     <h3>🗄️ Supabase - Plan Gratuito</h3>
@@ -124,15 +124,15 @@ async function sendStatusEmail(stats: any) {
 
     <hr>
     <p style="color: #666; font-size: 12px;">
-      Este es un reporte automático del sistema AquaSaaS.<br>
+      Este es un reporte automático del sistema aGuaSaaS.<br>
       Configurable desde el panel de admin.
     </p>
   `;
 
   await transporter.sendMail({
-    from: '"AquaSaaS Sistema" <agua.sistema2024@gmail.com>',
+    from: '"aGuaSaaS Sistema" <agua.sistema2024@gmail.com>',
     to: SYSTEM_ADMIN_EMAIL,
-    subject: `📊 Estado Sistema - ${new Date().toLocaleDateString('es-ES')} | AquaSaaS`,
+    subject: `📊 Estado Sistema - ${new Date().toLocaleDateString('es-ES')} | aGuaSaaS`,
     html: htmlBody,
   });
 }

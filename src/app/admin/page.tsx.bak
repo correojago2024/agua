@@ -193,7 +193,7 @@ export default function AdminPage() {
       const welcomeHtml = `
         <div style="font-family:sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
           <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 30px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 24px;">¡Bienvenido a AquaSaaS!</h1>
+            <h1 style="margin: 0; font-size: 24px;">¡Bienvenido a aGuaSaaS!</h1>
             <p style="opacity: 0.9;">Gestión Inteligente de Agua para su Edificio</p>
           </div>
           <div style="padding: 25px; line-height: 1.6;">
@@ -204,7 +204,7 @@ export default function AdminPage() {
               <p style="font-size: 13px; margin: 5px 0;">Acceda para ver gráficos, bitácora y gestionar a la junta:</p>
               <a href="https://agua-rust.vercel.app/edificio-admin/{slug}" style="color: #2563eb; font-weight: bold;">Ver mi Panel</a>
             </div>
-            <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 30px;">2026 AquaSaaS - Control Hídrico Profesional</p>
+            <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 30px;">2026 aGuaSaaS - Control Hídrico Profesional</p>
           </div>
         </div>
       `.trim();
@@ -224,7 +224,7 @@ export default function AdminPage() {
             <h3 style="color:#1e40af; font-size:16px;">💡 Principales Indicadores</h3>
             <p>Nivel actual: {current_count}% — Capacidad máxima: {max_count} L</p>
           </div>
-          <p style="font-size:11px; color:#94a3b8; text-align:center; margin-top:40px;">Sistema AquaSaaS — Informe Automático</p>
+          <p style="font-size:11px; color:#94a3b8; text-align:center; margin-top:40px;">Sistema aGuaSaaS — Informe Automático</p>
         </div>
       `.trim();
 
@@ -259,7 +259,7 @@ export default function AdminPage() {
       // Si la tabla está vacía o queremos forzar los reales
       if (!data || data.length === 0) {
         const defaults: EmailTemplate[] = [
-          { id: 101, name: 'welcome', subject_es: '🎉 Bienvenido a AquaSaaS - {building_name}', body_es: welcomeHtml, is_active: true },
+          { id: 101, name: 'welcome', subject_es: '🎉 Bienvenido a aGuaSaaS - {building_name}', body_es: welcomeHtml, is_active: true },
           { id: 102, name: 'measurement_report', subject_es: '💧 Reporte de Agua: {building_name}', body_es: reportHtml, is_active: true },
           { id: 103, name: 'anomaly_alert', subject_es: '⚠️ Anomalía Detectada - {building_name}', body_es: alertHtml, is_active: true },
           { id: 104, name: 'limit_90_storage', subject_es: '⚠️ Alerta Almacenamiento 90% - {building_name}', body_es: quotaHtml.replace('{param_name}', 'almacenamiento'), is_active: true },
@@ -581,7 +581,7 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/maintenance', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer aquasaas-cron-2026' },
+        headers: { 'Authorization': 'Bearer aguasaas-cron-2026' },
       });
       const data = await res.json();
       setMaintResult(data);
@@ -737,7 +737,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Panel de Administración</h1>
-                <p className="text-xs text-slate-400">AquaSaaS</p>
+                <p className="text-xs text-slate-400">aGuaSaaS</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

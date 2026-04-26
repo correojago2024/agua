@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AquaSaaS - Gestión Inteligente de Agua",
+  title: "aGuaSaaS - Gestión Inteligente de Agua",
   description: "Monitoreo y gestión de consumo de agua para edificios y condominios",
 };
 

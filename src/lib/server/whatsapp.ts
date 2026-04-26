@@ -250,7 +250,7 @@ export async function checkWaterLevelThresholds(
     return;
   }
 
-  const message = `*AquaSaaS - Alerta de Tanque*\n\n` +
+  const message = `*aGuaSaaS - Alerta de Tanque*\n\n` +
     `${emoji} *${alertType}*\n` +
     `🏢 Edificio: ${building_name}\n` +
     `💧 Nivel Actual: ${p}%\n` +

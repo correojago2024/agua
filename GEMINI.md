@@ -1,9 +1,9 @@
-# Contexto del Proyecto: AquaSAAS
+# Contexto del Proyecto: aGuaSaaS
 
 ## Estado del Proyecto (24 de abril, 2026)
 
 ### Resumen de Integración
-El sistema de monitoreo de agua AquaSAAS está plenamente operativo con integraciones de Email (Gmail API) y WhatsApp (Green API/Whapi/Meta).
+El sistema de monitoreo de agua aGuaSaaS está plenamente operativo con integraciones de Email (Gmail API) y WhatsApp (Green API/Whapi/Meta).
 
 ### Últimas Mejoras Realizadas
 - **Email Report:**

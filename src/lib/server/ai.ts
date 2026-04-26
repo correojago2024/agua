@@ -92,7 +92,7 @@ export async function testAiConnection(customApiKey?: string) {
  */
 export function formatAiReportToHtml(text: string): string {
   // Limpiar menciones a Gemini o modelos
-  let formatted = text.replace(/Gemini/gi, 'AquaSaaS IA').replace(/Google/gi, 'AquaSaaS');
+  let formatted = text.replace(/Gemini/gi, 'aGuaSaaS IA').replace(/Google/gi, 'aGuaSaaS');
 
   // --- PROCESAMIENTO DE TABLAS MARKDOWN ---
   // Detecta bloques de tablas | header | header | y los convierte a <table>

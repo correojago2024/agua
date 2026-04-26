@@ -1,5 +1,5 @@
 /**
- * PLANES Y TARIFAS - AquaSaaS
+ * PLANES Y TARIFAS - aGuaSaaS
  * Sistema de gestión de planes subscription
  */
 

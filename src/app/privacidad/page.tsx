@@ -1,6 +1,6 @@
 /**
  * ARCHIVO: /src/app/privacidad/page.tsx
- * Política de Privacidad - Sistema AquaSaaS
+ * Política de Privacidad - Sistema aGuaSaaS
  */
 
 export default function PrivacyPolicyPage() {
@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
       <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <span className="text-xl font-bold text-white">AquaSaaS</span>
+            <span className="text-xl font-bold text-white">aGuaSaaS</span>
           </a>
           <nav className="flex items-center gap-6">
             <a href="/" className="hover:text-white transition-colors text-sm">Volver al inicio</a>
@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
             <div>
               <h2 className="text-2xl font-semibold text-white border-b border-slate-700 pb-2">1. Responsable del tratamiento</h2>
               <p>
-                El responsable del tratamiento de datos es <strong>AquaSaaS</strong>. Nos comprometemos a proteger la privacidad y seguridad de la información de nuestros usuarios en cumplimiento con las mejores prácticas y el marco legal aplicable.
+                El responsable del tratamiento de datos es <strong>aGuaSaaS</strong>. Nos comprometemos a proteger la privacidad y seguridad de la información de nuestros usuarios en cumplimiento con las mejores prácticas y el marco legal aplicable.
               </p>
             </div>
 
@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
                 <li><strong>Proveedores tecnológicos:</strong> Servicios de infraestructura, base de datos y hosting necesarios para la operación.</li>
                 <li><strong>Autoridades:</strong> Cuando sea estrictamente requerido por ley o mandamiento judicial.</li>
               </ul>
-              <p className="font-bold text-blue-400 italic">Importante: AquaSaaS NO vende ni comercializa sus datos personales ni de consumo con terceros.</p>
+              <p className="font-bold text-blue-400 italic">Importante: aGuaSaaS NO vende ni comercializa sus datos personales ni de consumo con terceros.</p>
             </div>
 
             <div>
@@ -137,7 +137,7 @@ export default function PrivacyPolicyPage() {
 
       <footer className="border-t border-slate-800 bg-slate-900/80 py-8">
         <div className="max-w-4xl mx-auto px-6 text-center text-sm text-slate-500">
-          <p>&copy; 2026 AquaSaaS. Compromiso con la Transparencia Comunitaria.</p>
+          <p>&copy; 2026 aGuaSaaS. Compromiso con la Transparencia Comunitaria.</p>
         </div>
       </footer>
     </div>

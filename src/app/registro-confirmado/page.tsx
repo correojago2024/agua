@@ -84,7 +84,7 @@ function RegistroContent() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-2xl mb-4">
             <Droplets className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">AquaSaaS</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">aGuaSaaS</h1>
         </div>
 
         {/* Card principal */}
@@ -95,7 +95,7 @@ function RegistroContent() {
               <CheckCircle className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white">¡Registro Exitoso!</h2>
-            <p className="text-green-100 mt-1 text-sm">Tu edificio ha sido registrado en AquaSaaS</p>
+            <p className="text-green-100 mt-1 text-sm">Tu edificio ha sido registrado en aGuaSaaS</p>
           </div>
 
           {/* Contenido */}
@@ -170,7 +170,7 @@ function RegistroContent() {
 
         {/* Footer */}
         <p className="text-center text-slate-500 text-sm mt-6">
-          2026 AquaSaaS - Todos los derechos reservados
+          2026 aGuaSaaS - Todos los derechos reservados
         </p>
       </div>
     </div>
