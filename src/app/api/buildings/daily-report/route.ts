@@ -36,17 +36,19 @@ async function logSystemAlert(building_id: string, type: string, message: string
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
-  console.log('[DAILY-REPORT-CRON] Intento de ejecución:', new Date().toISOString());
+  const now = new Date();
+  console.log('[DAILY-REPORT-CRON] Iniciando ejecución:', now.toISOString());
   
   if (authHeader !== `Bearer ${CRON_SECRET}`) {
     console.warn('[DAILY-REPORT-CRON] No autorizado. Header:', authHeader ? 'Presente' : 'Ausente');
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
-  console.log('[DAILY-REPORT-CRON] Inicio ejecución autorizada');
+  console.log('[DAILY-REPORT-CRON] Autorización exitosa');
   
   try {
     // 1. Buscar edificios con reporte diario activado
+    console.log('[DAILY-REPORT-CRON] Buscando edificios con daily_report_enabled=true y status=Activo');
     const { data: buildings, error: bError } = await supabase
       .from('buildings')
       .select('*')
@@ -54,54 +56,81 @@ export async function GET(request: NextRequest) {
       .eq('status', 'Activo');
 
     if (bError) {
-      console.error('[DAILY-REPORT-CRON] Error buscando edificios:', bError);
-      throw bError;
+      console.error('[DAILY-REPORT-CRON] Error crítico buscando edificios:', bError);
+      return NextResponse.json({ error: bError.message }, { status: 500 });
     }
 
     if (!buildings || buildings.length === 0) {
-      console.log('[DAILY-REPORT-CRON] No hay edificios con reportes activados o activos.');
-      return NextResponse.json({ success: true, message: 'No buildings to process' });
+      console.log('[DAILY-REPORT-CRON] No se encontraron edificios para procesar (daily_report_enabled=true).');
+      return NextResponse.json({ success: true, message: 'No buildings with daily_report_enabled=true' });
     }
 
-    console.log(`[DAILY-REPORT-CRON] Procesando ${buildings.length} edificios.`);
+    console.log(`[DAILY-REPORT-CRON] Edificios encontrados: ${buildings.length} [${buildings.map(b => b.name).join(', ')}]`);
 
     const results = [];
 
     for (const building of buildings) {
+      console.log(`[DAILY-REPORT-CRON] >>> Procesando edificio: ${building.name} (${building.id})`);
       try {
         // 2. Obtener miembros de la junta para destinatarios
-        const { data: members } = await supabase
+        const { data: members, error: mError } = await supabase
           .from('building_members')
-          .select('email')
+          .select('email, enable_email')
           .eq('building_id', building.id)
           .eq('is_junta', true);
 
-        const recipients = members?.map(m => m.email).filter(Boolean) || [];
+        if (mError) {
+          console.error(`[DAILY-REPORT-CRON] [${building.name}] Error buscando miembros:`, mError);
+          await logSystemAlert(building.id, 'DAILY_REPORT_ERROR', `Error buscando miembros: ${mError.message}`, 'ERROR');
+          results.push({ building: building.name, status: 'error', reason: 'db_error_members' });
+          continue;
+        }
+
+        const recipients = members?.filter(m => m.enable_email !== false).map(m => m.email).filter(Boolean) || [];
+        console.log(`[DAILY-REPORT-CRON] [${building.name}] Destinatarios encontrados: ${recipients.length}`);
+
         if (recipients.length === 0) {
-          await logSystemAlert(building.id, 'DAILY_REPORT_SKIP', 'No hay destinatarios en la junta', 'WARNING');
+          console.warn(`[DAILY-REPORT-CRON] [${building.name}] Saltando: No hay destinatarios habilitados en la junta.`);
+          await logSystemAlert(building.id, 'DAILY_REPORT_SKIP', 'No hay destinatarios (junta con email habilitado)', 'WARNING');
           results.push({ building: building.name, status: 'skipped', reason: 'no recipients' });
           continue;
         }
 
         // 3. Obtener historial de mediciones
-        const { data: history } = await supabase
+        const { data: history, error: hError } = await supabase
           .from('measurements')
           .select('*')
           .eq('building_id', building.id)
           .order('recorded_at', { ascending: true });
 
+        if (hError) {
+          console.error(`[DAILY-REPORT-CRON] [${building.name}] Error buscando mediciones:`, hError);
+          await logSystemAlert(building.id, 'DAILY_REPORT_ERROR', `Error buscando mediciones: ${hError.message}`, 'ERROR');
+          results.push({ building: building.name, status: 'error', reason: 'db_error_measurements' });
+          continue;
+        }
+
         if (!history || history.length === 0) {
-          await logSystemAlert(building.id, 'DAILY_REPORT_SKIP', 'No hay mediciones para reportar', 'WARNING');
+          console.warn(`[DAILY-REPORT-CRON] [${building.name}] Saltando: No hay mediciones en el historial.`);
+          await logSystemAlert(building.id, 'DAILY_REPORT_SKIP', 'No hay mediciones para generar reporte', 'WARNING');
           results.push({ building: building.name, status: 'skipped', reason: 'no measurements' });
           continue;
         }
 
+        console.log(`[DAILY-REPORT-CRON] [${building.name}] Mediciones en historial: ${history.length}`);
+
         // 4. Calcular indicadores y gráficas
+        console.log(`[DAILY-REPORT-CRON] [${building.name}] Calculando indicadores y gráficas...`);
         const indicators = calculateIndicators(history, building.tank_capacity_liters);
         const lastRecord = history[history.length - 1];
+        
+        // Verificar si la última medición es "reciente" (opcional, pero el usuario quiere reporte diario)
+        // Por ahora lo enviamos siempre si está activo el cron.
+
         const chartUrls = getAllImprovedCharts(history, building.tank_capacity_liters);
 
         // 5. Generar y enviar email
+        console.log(`[DAILY-REPORT-CRON] [${building.name}] Construyendo HTML y enviando vía Gmail...`);
         const emailHtml = buildReportEmailHtml(
           building,
           history,
@@ -122,24 +151,27 @@ export async function GET(request: NextRequest) {
         );
 
         if (sendRes.success) {
+          console.log(`[DAILY-REPORT-CRON] [${building.name}] EXITO: Reporte enviado correctamente.`);
           await logSystemAlert(building.id, 'DAILY_REPORT_SUCCESS', `Reporte enviado a ${recipients.length} miembros`, 'SUCCESS', { recipients });
           results.push({ building: building.name, status: 'success' });
         } else {
-          await logSystemAlert(building.id, 'DAILY_REPORT_ERROR', 'Error enviando email', 'ERROR', { error: sendRes.error });
+          console.error(`[DAILY-REPORT-CRON] [${building.name}] FALLO: Error al enviar email.`, sendRes.error);
+          await logSystemAlert(building.id, 'DAILY_REPORT_ERROR', `Error enviando email: ${sendRes.error}`, 'ERROR', { error: sendRes.error });
           results.push({ building: building.name, status: 'error', error: sendRes.error });
         }
 
       } catch (innerError: any) {
-        console.error(`[DAILY-REPORT-CRON] Error procesando edificio ${building.name}:`, innerError);
+        console.error(`[DAILY-REPORT-CRON] [${building.name}] ERROR CRITICO en loop:`, innerError);
         await logSystemAlert(building.id, 'DAILY_REPORT_CRITICAL_ERROR', innerError.message, 'ERROR');
         results.push({ building: building.name, status: 'critical_error', error: innerError.message });
       }
     }
 
+    console.log('[DAILY-REPORT-CRON] Ejecución finalizada.', { total: buildings.length, results });
     return NextResponse.json({ success: true, processed: results.length, details: results });
 
   } catch (error: any) {
-    console.error('[DAILY-REPORT-CRON] Error general:', error);
+    console.error('[DAILY-REPORT-CRON] ERROR GENERAL FUERA DEL LOOP:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

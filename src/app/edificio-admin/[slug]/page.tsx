@@ -141,6 +141,7 @@ export default function EdificioAdminPage() {
   const [cfgSilenceStart, setCfgSilenceStart] = useState('22:00');
   const [cfgSilenceEnd, setCfgSilenceEnd] = useState('06:00');
   const [cfgEnableResidentNotifications, setCfgEnableResidentNotifications] = useState(true);
+  const [cfgDailyReportEnabled, setCfgDailyReportEnabled] = useState(false);
   const [cfgMsg, setCfgMsg]         = useState('');
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerMsg, setBannerMsg]   = useState('');
@@ -283,9 +284,9 @@ export default function EdificioAdminPage() {
     if (error) {
       setWaMsg('❌ Error al guardar: ' + error.message);
     } else {
-      setWaMsg('✅ Configuración de WhatsApp y horario guardados');
+      setWaMsg('✅ Cambios guardados exitosamente');
       logClientAudit('UPDATE', 'whatsapp_settings', building.id, { service: waService, daily_enabled: waDailyReportEnabled });
-      setTimeout(() => setWaMsg(''), 3000);
+      setTimeout(() => setWaMsg(''), 4000);
       loadWhatsAppSettings();
     }
     setWaLoading(false);
@@ -376,6 +377,7 @@ export default function EdificioAdminPage() {
         setCfgName(data.name || '');
         setCfgCapacity(data.tank_capacity_liters?.toString() || '');
         setCfgAdminEmail(data.admin_email || '');
+        setCfgDailyReportEnabled(data.daily_report_enabled || false);
         
         // Cargar settings adicionales
         const { data: set } = await supabase.from('building_settings').select('*').eq('building_id', data.id).single();
@@ -989,6 +991,7 @@ export default function EdificioAdminPage() {
       name:                 cfgName,
       tank_capacity_liters: parseInt(cfgCapacity) || 169000,
       admin_email:          cfgAdminEmail,
+      daily_report_enabled: cfgDailyReportEnabled,
     }).eq('id', building.id);
 
     const { error: sErr } = await supabase.from('building_settings').upsert({
@@ -1004,10 +1007,13 @@ export default function EdificioAdminPage() {
     });
 
     if (!bErr && !sErr) {
-      setCfgMsg('✅ Configuración guardada');
+      setCfgMsg('✅ Configuración guardada exitosamente');
       setEditingConfig(false);
-      logClientAudit('UPDATE', 'building_config', building.id, { name: cfgName });
-      setTimeout(() => setCfgMsg(''), 3000);
+      logClientAudit('UPDATE', 'building_config', building.id, { 
+        name: cfgName, 
+        daily_report_enabled: cfgDailyReportEnabled 
+      });
+      setTimeout(() => setCfgMsg(''), 4000);
       // Reload building
       const { data } = await supabase.from('buildings').select('*').eq('id', building.id).single();
       if (data) setBuilding(data);
@@ -2448,18 +2454,39 @@ export default function EdificioAdminPage() {
                           readOnly={isDemo}
                           className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                       </div>
+                      
+                      <div className="md:col-span-2 flex items-center gap-3 bg-slate-700/50 p-3 rounded-xl border border-slate-600">
+                        <input 
+                          type="checkbox" 
+                          id="cfgDailyReport"
+                          checked={cfgDailyReportEnabled}
+                          onChange={e => setCfgDailyReportEnabled(e.target.checked)}
+                          className="w-5 h-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="cfgDailyReport" className="text-slate-200 text-sm font-medium cursor-pointer">
+                          Activar envío de Reporte Diario Automático por Email
+                        </label>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={saveConfig}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                        <Save className="w-4 h-4" />
-                        Guardar cambios
-                      </button>
-                      <button onClick={() => setEditingConfig(false)}
-                        className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                        <X className="w-4 h-4" />
-                        Cancelar
-                      </button>
+
+                    <div className="flex items-center gap-4">
+                      <div className="flex gap-2">
+                        <button onClick={saveConfig}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md active:scale-95">
+                          <Save className="w-4 h-4" />
+                          Guardar cambios
+                        </button>
+                        <button onClick={() => setEditingConfig(false)}
+                          className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                          <X className="w-4 h-4" />
+                          Cancelar
+                        </button>
+                      </div>
+                      {cfgMsg && (
+                        <span className={`text-sm font-bold animate-in fade-in slide-in-from-left-2 ${cfgMsg.includes('❌') ? 'text-red-400' : 'text-green-400'}`}>
+                          {cfgMsg}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -2853,311 +2880,646 @@ export default function EdificioAdminPage() {
         )}
       </div>
 
-      {/* MODAL DE AYUDA SISTEMA (VERSIÓN COMPLETA PROFESIONAL) */}
+      {/* MODAL DE AYUDA SISTEMA (VERSIÓN COMPLETA) */}
       {showHelpModal && (
-        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl flex items-center justify-center z-[100] p-0 md:p-4 animate-in fade-in duration-300">
-          <div className="bg-[#f7f6f2] w-full md:max-w-5xl h-full md:max-h-[95vh] md:rounded-[32px] overflow-hidden flex flex-col shadow-2xl border border-white/20">
-            {/* Header del Modal */}
-            <div className="bg-gradient-to-br from-[#04342C] via-[#0F6E56] to-[#1D9E75] p-6 md:p-10 shrink-0 relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='12'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
-               <div className="flex justify-between items-start relative z-10">
-                  <div>
-                    <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-[11px] px-3 py-1 rounded-full mb-6 font-bold uppercase tracking-wider">
-                      💧 Gestión inteligente del agua
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[100] p-0 md:p-4 animate-in fade-in duration-300">
+          <div className="bg-white w-full md:max-w-6xl h-full md:max-h-[95vh] md:rounded-3xl overflow-hidden flex flex-col shadow-2xl relative">
+            
+            {/* Botón de cierre flotante para el modal */}
+            <button 
+              onClick={() => setShowHelpModal(false)}
+              className="absolute top-4 right-4 z-[110] bg-black/20 hover:bg-black/40 text-white p-2 rounded-full transition-all active:scale-90 md:hidden"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <div dangerouslySetInnerHTML={{ __html: `
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>AquaSaaS — Guía de Ayuda</title>
+                <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+                <style>
+                  :root {
+                    --blue-900: #042C53;
+                    --blue-800: #0C447C;
+                    --blue-600: #185FA5;
+                    --blue-400: #378ADD;
+                    --blue-200: #85B7EB;
+                    --blue-100: #B5D4F4;
+                    --blue-50:  #E6F1FB;
+                    --teal-900: #04342C;
+                    --teal-800: #085041;
+                    --teal-600: #0F6E56;
+                    --teal-400: #1D9E75;
+                    --teal-200: #5DCAA5;
+                    --teal-100: #9FE1CB;
+                    --teal-50:  #E1F5EE;
+                    --amber-800: #633806;
+                    --amber-600: #854F0B;
+                    --amber-400: #BA7517;
+                    --amber-100: #FAC775;
+                    --amber-50:  #FAEEDA;
+                    --gray-900: #2C2C2A;
+                    --gray-800: #444441;
+                    --gray-600: #5F5E5A;
+                    --gray-400: #888780;
+                    --gray-100: #D3D1C7;
+                    --gray-50:  #F1EFE8;
+                    --coral-600: #993C1D;
+                    --coral-400: #D85A30;
+                    --coral-50:  #FAECE7;
+                    --purple-800: #3C3489;
+                    --purple-400: #7F77DD;
+                    --purple-50:  #EEEDFE;
+                    --bg: #f7f6f2;
+                    --surface: #ffffff;
+                    --border: rgba(68,68,65,0.12);
+                    --text-primary: #2C2C2A;
+                    --text-secondary: #5F5E5A;
+                    --text-muted: #888780;
+                    --radius-sm: 8px;
+                    --radius-md: 12px;
+                    --radius-lg: 18px;
+                    --radius-xl: 24px;
+                  }
+                  * { box-sizing: border-box; margin: 0; padding: 0; }
+                  html { scroll-behavior: smooth; }
+                  body {
+                    font-family: 'DM Sans', sans-serif;
+                    background: var(--bg);
+                    color: var(--text-primary);
+                    font-size: 16px;
+                    line-height: 1.7;
+                    -webkit-font-smoothing: antialiased;
+                  }
+
+                  /* NAV */
+                  nav {
+                    position: sticky; top: 0; z-index: 100;
+                    background: rgba(247,246,242,0.92);
+                    backdrop-filter: blur(12px);
+                    border-bottom: 0.5px solid var(--border);
+                    padding: 0 2rem;
+                    display: flex; align-items: center; justify-content: space-between;
+                    height: 60px;
+                  }
+                  .nav-brand {
+                    display: flex; align-items: center; gap: 10px;
+                    font-weight: 600; font-size: 15px; color: var(--text-primary);
+                    text-decoration: none;
+                  }
+                  .nav-logo {
+                    width: 32px; height: 32px;
+                    background: var(--teal-400);
+                    border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                  }
+                  .nav-logo svg { width: 18px; height: 18px; }
+                  .nav-links {
+                    display: flex; gap: 6px; list-style: none;
+                    flex-wrap: wrap;
+                  }
+                  .nav-links a {
+                    font-size: 13px; color: var(--text-secondary);
+                    text-decoration: none; padding: 5px 10px;
+                    border-radius: 6px; transition: background .15s, color .15s;
+                  }
+                  .nav-links a:hover { background: var(--gray-50); color: var(--text-primary); }
+
+                  /* HERO */
+                  .hero {
+                    background: linear-gradient(135deg, var(--teal-900) 0%, var(--teal-600) 60%, var(--teal-400) 100%);
+                    padding: 80px 2rem 72px;
+                    text-align: center;
+                    position: relative; overflow: hidden;
+                  }
+                  .hero::before {
+                    content: '';
+                    position: absolute; inset: 0;
+                    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='12'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                  }
+                  .hero-content { position: relative; max-width: 700px; margin: 0 auto; }
+                  .hero-badge {
+                    display: inline-flex; align-items: center; gap: 6px;
+                    background: rgba(255,255,255,0.15);
+                    border: 0.5px solid rgba(255,255,255,0.25);
+                    color: #fff; font-size: 13px; padding: 5px 14px;
+                    border-radius: 100px; margin-bottom: 24px;
+                  }
+                  .hero h1 {
+                    font-family: 'DM Serif Display', serif;
+                    font-size: clamp(2.2rem, 5vw, 3.4rem);
+                    font-weight: 400; line-height: 1.15;
+                    color: #fff; margin-bottom: 16px;
+                  }
+                  .hero p {
+                    font-size: 1.05rem; color: rgba(255,255,255,0.8);
+                    max-width: 560px; margin: 0 auto 32px;
+                  }
+                  .hero-actions {
+                    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+                  }
+                  .btn-hero {
+                    padding: 11px 22px; border-radius: var(--radius-sm);
+                    font-size: 14px; font-weight: 500;
+                    text-decoration: none; transition: all .15s;
+                    display: inline-flex; align-items: center; gap: 6px;
+                  }
+                  .btn-primary { background: #fff; color: var(--teal-800); }
+                  .btn-primary:hover { background: var(--teal-50); }
+                  .btn-ghost { background: rgba(255,255,255,0.15); color: #fff; border: 0.5px solid rgba(255,255,255,0.3); }
+                  .btn-ghost:hover { background: rgba(255,255,255,0.25); }
+
+                  /* LAYOUT */
+                  .page { max-width: 900px; margin: 0 auto; padding: 0 2rem 80px; }
+
+                  /* SECTIONS */
+                  .section { margin-top: 72px; }
+                  .section-header {
+                    display: flex; align-items: flex-start; gap: 16px;
+                    margin-bottom: 32px;
+                  }
+                  .section-icon {
+                    width: 48px; height: 48px; border-radius: 14px;
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0; font-size: 22px;
+                  }
+                  .section-icon.teal { background: var(--teal-50); }
+                  .section-icon.blue { background: var(--blue-50); }
+                  .section-icon.amber { background: var(--amber-50); }
+                  .section-icon.purple { background: var(--purple-50); }
+                  .section-icon.coral { background: var(--coral-50); }
+                  .section-header-text h2 {
+                    font-family: 'DM Serif Display', serif;
+                    font-size: 1.6rem; font-weight: 400;
+                    color: var(--text-primary); margin-bottom: 4px;
+                  }
+                  .section-header-text p { font-size: 14px; color: var(--text-secondary); }
+
+                  /* CARDS */
+                  .card {
+                    background: var(--surface);
+                    border: 0.5px solid var(--border);
+                    border-radius: var(--radius-lg);
+                    padding: 24px 28px;
+                    margin-bottom: 16px;
+                  }
+                  .card h3 {
+                    font-size: 15px; font-weight: 600;
+                    color: var(--text-primary); margin-bottom: 10px;
+                  }
+                  .card p, .card li { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+                  .card ul { padding-left: 18px; }
+                  .card ul li { margin-bottom: 6px; }
+
+                  /* GRID */
+                  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+                  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+                  @media (max-width: 640px) {
+                    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+                    nav .nav-links { display: none; }
+                  }
+
+                  /* STEPS */
+                  .steps { display: flex; flex-direction: column; gap: 0; }
+                  .step {
+                    display: flex; gap: 20px;
+                    padding: 0 0 28px;
+                    position: relative;
+                  }
+                  .step:not(:last-child)::after {
+                    content: ''; position: absolute;
+                    left: 19px; top: 44px; bottom: 0;
+                    width: 1px; background: var(--border);
+                  }
+                  .step-num {
+                    width: 40px; height: 40px; flex-shrink: 0;
+                    border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 14px; font-weight: 600;
+                    position: relative; z-index: 1;
+                  }
+                  .step-num.teal { background: var(--teal-50); color: var(--teal-800); border: 0.5px solid var(--teal-100); }
+                  .step-num.blue { background: var(--blue-50); color: var(--blue-800); border: 0.5px solid var(--blue-100); }
+                  .step-num.amber { background: var(--amber-50); color: var(--amber-800); border: 0.5px solid var(--amber-100); }
+                  .step-content { flex: 1; padding-top: 8px; }
+                  .step-content h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+                  .step-content p { font-size: 14px; color: var(--text-secondary); }
+
+                  /* ALERT */
+                  .alert {
+                    display: flex; gap: 12px; align-items: flex-start;
+                    padding: 14px 18px; border-radius: var(--radius-md);
+                    margin-bottom: 16px; font-size: 14px;
+                  }
+                  .alert-info { background: var(--blue-50); color: var(--blue-800); border: 0.5px solid var(--blue-100); }
+                  .alert-tip  { background: var(--teal-50); color: var(--teal-800); border: 0.5px solid var(--teal-100); }
+                  .alert-warn { background: var(--amber-50); color: var(--amber-800); border: 0.5px solid var(--amber-100); }
+                  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+                  /* FLOW DIAGRAM */
+                  .flow-diagram {
+                    background: var(--surface); border: 0.5px solid var(--border);
+                    border-radius: var(--radius-lg); padding: 32px 24px;
+                    margin-bottom: 24px; overflow-x: auto;
+                  }
+
+                  /* URL BLOCK */
+                  .url-block {
+                    background: var(--gray-50); border: 0.5px solid var(--border);
+                    border-radius: var(--radius-sm); padding: 12px 16px;
+                    margin: 12px 0;
+                    display: flex; align-items: center; gap: 10px;
+                  }
+                  .url-block .url-label {
+                    font-size: 11px; font-weight: 600; color: var(--text-muted);
+                    text-transform: uppercase; letter-spacing: .05em;
+                    flex-shrink: 0;
+                  }
+                  .url-block code {
+                    font-family: 'DM Mono', 'Courier New', monospace;
+                    font-size: 12px; color: var(--teal-800);
+                    word-break: break-all;
+                  }
+
+                  /* METRIC CARDS */
+                  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+                  .metric {
+                    background: var(--gray-50); border-radius: var(--radius-sm);
+                    padding: 16px; text-align: center;
+                  }
+                  .metric-val { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+                  .metric-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+                  /* TABLE */
+                  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                  th { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); padding: 8px 12px; text-align: left; border-bottom: 0.5px solid var(--border); }
+                  td { padding: 10px 12px; border-bottom: 0.5px solid var(--border); color: var(--text-secondary); }
+                  tr:last-child td { border-bottom: none; }
+                  tr:hover td { background: var(--gray-50); }
+
+                  /* EMAIL PREVIEW */
+                  .email-preview {
+                    background: var(--surface); border: 0.5px solid var(--border);
+                    border-radius: var(--radius-lg); overflow: hidden;
+                  }
+                  .email-header {
+                    background: var(--teal-800); padding: 20px 24px;
+                    display: flex; align-items: center; gap: 12px;
+                  }
+                  .email-header-icon { font-size: 28px; }
+                  .email-header h3 { color: #fff; font-size: 16px; font-weight: 500; }
+                  .email-header p { color: rgba(255,255,255,0.7); font-size: 13px; }
+                  .email-body { padding: 24px; }
+                  .email-section { margin-bottom: 20px; }
+                  .email-section h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 10px; }
+                  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+                  .stat-row:last-child { border-bottom: none; }
+                  .stat-row .label { font-size: 13px; color: var(--text-secondary); }
+                  .stat-row .value { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+                  /* CYCLE DIAGRAM */
+                  .cycle {
+                    display: flex; align-items: center; justify-content: center;
+                    gap: 0; flex-wrap: wrap; padding: 8px 0;
+                  }
+                  .cycle-node {
+                    background: var(--teal-50); border: 0.5px solid var(--teal-100);
+                    border-radius: var(--radius-sm); padding: 10px 14px;
+                    font-size: 13px; font-weight: 500; color: var(--teal-800);
+                    text-align: center; flex: 1; min-width: 120px;
+                  }
+                  .cycle-arrow {
+                    font-size: 18px; color: var(--teal-400);
+                    padding: 0 8px; flex-shrink: 0;
+                  }
+
+                  /* DIVIDER */
+                  .divider { height: 0.5px; background: var(--border); margin: 56px 0; }
+
+                  /* FOOTER */
+                  footer {
+                    background: var(--teal-900); color: rgba(255,255,255,0.6);
+                    padding: 40px 2rem; text-align: center;
+                  }
+                  footer p { font-size: 13px; }
+                  footer a { color: var(--teal-200); text-decoration: none; }
+
+                  /* ACCORDION */
+                  details { margin-bottom: 8px; }
+                  summary {
+                    cursor: pointer; list-style: none;
+                    display: flex; align-items: center; justify-content: space-between;
+                    padding: 14px 18px;
+                    background: var(--surface); border: 0.5px solid var(--border);
+                    border-radius: var(--radius-md);
+                    font-size: 14px; font-weight: 500;
+                    transition: background .15s;
+                  }
+                  summary:hover { background: var(--gray-50); }
+                  summary::-webkit-details-marker { display: none; }
+                  summary::after { content: '+'; font-size: 18px; color: var(--text-muted); }
+                  details[open] summary { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+                  details[open] summary::after { content: '−'; }
+                  .details-body {
+                    padding: 16px 18px;
+                    background: var(--surface);
+                    border: 0.5px solid var(--border); border-top: none;
+                    border-radius: 0 0 var(--radius-md) var(--radius-md);
+                    font-size: 14px; color: var(--text-secondary); line-height: 1.7;
+                  }
+
+                  /* PROCESS FLOW SVG WRAPPER */
+                  .process-flow { margin: 8px 0 24px; overflow-x: auto; }
+                  .process-flow svg { min-width: 500px; }
+
+                  /* COMMUNITY CARDS */
+                  .community-grid {
+                    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+                  }
+                  @media (max-width: 600px) { .community-grid { grid-template-columns: 1fr; } }
+                  .community-card {
+                    background: var(--surface); border: 0.5px solid var(--border);
+                    border-radius: var(--radius-lg); padding: 20px;
+                    text-align: center;
+                  }
+                  .community-card .cc-icon {
+                    width: 48px; height: 48px; border-radius: 14px; margin: 0 auto 14px;
+                    display: flex; align-items: center; justify-content: center; font-size: 22px;
+                  }
+                  .community-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+                  .community-card p { font-size: 13px; color: var(--text-secondary); }
+                </style>
+                </head>
+                <body>
+
+                <!-- NAV -->
+                <nav>
+                  <a class="nav-brand" href="#inicio">
+                    <div class="nav-logo">
+                      <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 2C9 2 4 6.5 4 10.5C4 13.5 6.2 16 9 16C11.8 16 14 13.5 14 10.5C14 6.5 9 2 9 2Z" fill="white" fill-opacity="0.9"/>
+                        <path d="M9 8C9 8 6.5 10 6.5 12C6.5 13.4 7.6 14.5 9 14.5" stroke="white" stroke-width="1" stroke-opacity="0.5" fill="none"/>
+                      </svg>
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-serif text-white leading-tight">Guía de Ayuda<br/>AquaSaaS</h2>
-                    <p className="text-white/70 text-base mt-4 max-w-xl leading-relaxed font-medium">Todo lo que necesitas saber para gestionar el consumo de agua de tu edificio de forma inteligente, transparente y colaborativa.</p>
-                  </div>
-                  <button onClick={() => setShowHelpModal(false)} className="bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-all border border-white/25 shadow-xl active:scale-90">
-                    <X className="w-6 h-6" />
-                  </button>
-               </div>
-            </div>
-
-            {/* Cuerpo del Modal (Navegable y completo) */}
-            <div className="p-6 md:p-10 overflow-y-auto space-y-20 custom-scrollbar bg-[#f7f6f2] text-[#2C2C2A] flex-1">
-              
-              {/* SECCIÓN 1: CÓMO FUNCIONA */}
-              <section id="help-como-funciona" className="space-y-8">
-                <div className="flex items-center gap-4">
-                   <div className="w-14 h-14 bg-[#E1F5EE] border border-[#9FE1CB] rounded-2xl flex items-center justify-center text-3xl shadow-sm">⚙️</div>
-                   <div>
-                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#04342C]">¿Cómo funciona el sistema?</h3>
-                     <p className="text-sm text-[#5F5E5A] font-medium italic">AquaSaaS es una plataforma de gestión colaborativa para comunidades inteligentes.</p>
-                   </div>
-                </div>
-
-                <div className="bg-[#E6F1FB] border border-[#B5D4F4] p-5 rounded-2xl flex gap-4 items-start text-sm md:text-base text-[#0C447C] shadow-sm leading-relaxed">
-                   <span className="text-2xl">ℹ️</span>
-                   <p>AquaSaaS centraliza las mediciones de consumo reportadas por los residentes y las presenta en paneles de control detallados para administradores y miembros de la junta, generando informes automáticos por email.</p>
-                </div>
-
-                {/* Grid de pasos */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { t: '🏢 Registro del edificio', p: 'El administrador del sistema AquaSaaS crea el perfil con un identificador único (slug), capacidad del tanque y correo administrativo.' },
-                    { t: '👥 Incorporación de miembros', p: 'Se invita a residentes y miembros de junta por email. Cada uno recibe instrucciones de acceso y el enlace a su panel.' },
-                    { t: '📊 Reporte y análisis', p: 'Los residentes ingresan mediciones (L o %) en cualquier momento. El sistema detecta anomalías y calcula tendencias.' },
-                    { t: '📧 Notificaciones automáticas', p: 'Tras cada medición, se envía un informe completo por email al colaborador y a la junta con estadísticas detalladas.' }
-                  ].map(item => (
-                    <div key={item.t} className="bg-white border border-black/5 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
-                      <h4 className="font-bold text-base text-[#042C53] mb-2">{item.t}</h4>
-                      <p className="text-sm text-[#5F5E5A] leading-relaxed">{item.p}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm overflow-hidden">
-                   <h4 className="font-bold text-sm uppercase tracking-widest text-[#888780] mb-6">Los tres roles del sistema</h4>
-                   <div className="overflow-x-auto">
-                     <table className="w-full text-sm text-left">
-                        <thead>
-                          <tr className="text-[#888780] uppercase tracking-tighter border-b border-black/10 text-[10px]">
-                            <th className="py-4 px-2">Rol</th>
-                            <th className="py-4 px-2">Acceso</th>
-                            <th className="py-4 px-2">Funciones principales</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-black/5 text-[#5F5E5A]">
-                          <tr>
-                            <td className="py-5 px-2"><span className="bg-[#E1F5EE] text-[#085041] px-2.5 py-1 rounded-full text-xs font-bold border border-[#9FE1CB]">Residente</span></td>
-                            <td className="py-5 px-2 font-medium">Formulario público sin clave</td>
-                            <td className="py-5 px-2">Reportar mediciones y recibir informes por email.</td>
-                          </tr>
-                          <tr>
-                            <td className="py-5 px-2"><span className="bg-[#E6F1FB] text-[#0C447C] px-2.5 py-1 rounded-full text-xs font-bold border border-[#B5D4F4]">Administrador</span></td>
-                            <td className="py-5 px-2 font-medium">Panel privado con login</td>
-                            <td className="py-5 px-2">Gestionar miembros, estadísticas y configurar alertas críticas.</td>
-                          </tr>
-                          <tr>
-                            <td className="py-5 px-2"><span className="bg-[#FAEEDA] text-[#633806] px-2.5 py-1 rounded-full text-xs font-bold border border-[#FAC775]">Junta</span></td>
-                            <td className="py-5 px-2 font-medium">Panel privado con login</td>
-                            <td className="py-5 px-2">Monitorear consumo y recibir informes periódicos detallados.</td>
-                          </tr>
-                        </tbody>
-                     </table>
-                   </div>
-                </div>
-              </section>
-
-              {/* SECCIÓN 2: RESIDENTES */}
-              <section id="help-residente" className="space-y-8">
-                <div className="flex items-center gap-4">
-                   <div className="w-14 h-14 bg-[#FAEEDA] border border-[#FAC775] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🏠</div>
-                   <div>
-                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#633806]">Guía para Residentes</h3>
-                     <p className="text-sm text-[#5F5E5A] font-medium italic">Cómo reportar tu medición de consumo y qué sucede después.</p>
-                   </div>
-                </div>
-
-                <div className="bg-[#E1F5EE] border border-[#9FE1CB] p-5 rounded-2xl flex gap-4 items-start text-sm md:text-base text-[#085041] shadow-sm leading-relaxed">
-                   <span className="text-2xl">✅</span>
-                   <div>
-                     <p><strong>Sin contraseña necesaria.</strong> Los residentes acceden directamente a través de un enlace único de su edificio. No hay registro previo ni proceso de login tradicional para ellos.</p>
-                   </div>
-                </div>
-
-                <div className="bg-white border border-black/5 p-8 rounded-[32px] shadow-sm space-y-6">
-                   <h4 className="font-bold text-[#2C2C2A] text-lg">Tu enlace de acceso</h4>
-                   <p className="text-[#5F5E5A] text-sm">Recibirás por correo o de tu administrador el enlace único de tu edificio. Guárdalo como favorito para acceso rápido.</p>
-                   <div className="bg-[#F1EFE8] border border-black/10 rounded-xl p-4 flex items-center justify-between group overflow-hidden">
-                      <code className="text-xs md:text-sm text-[#0F6E56] font-mono break-all font-bold">https://agua-rust.vercel.app/edificio/<strong>{building?.slug || '[slug]'}</strong></code>
-                   </div>
-                   <p className="text-[11px] text-[#888780] italic">Nota: El slug es el identificador único del edificio.</p>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="font-bold text-base text-[#2C2C2A] px-2 uppercase tracking-widest text-xs opacity-60">Pasos para registrar una medición</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { n: '1', t: 'Accede al formulario', p: 'Abre el enlace único en tu navegador. El formulario está disponible las 24 horas.' },
-                      { n: '2', t: 'Ingresa la medición', p: 'Introduce el dato en Litros o el Porcentaje de llenado del tanque (ej: 75%).' },
-                      { n: '3', t: 'Completa tus datos', p: 'Ingresa tu Email (requerido) y tu Nombre (opcional) para identificarte.' },
-                      { n: '4', t: 'Envía el reporte', p: 'Haz clic en enviar y en segundos recibirás el informe completo en tu correo.' }
-                    ].map(step => (
-                      <div key={step.n} className="flex gap-4 p-5 bg-white rounded-2xl border border-black/5 shadow-sm">
-                        <div className="w-10 h-10 bg-[#FAEEDA] text-[#BA7517] rounded-full flex items-center justify-center font-bold text-sm shrink-0 border border-[#FAC775]">{step.n}</div>
-                        <div><h5 className="font-bold text-sm mb-1">{step.t}</h5><p className="text-xs text-[#5F5E5A] leading-relaxed">{step.p}</p></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-[#0F6E56] to-[#1D9E75] p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden">
-                   <div className="relative z-10 space-y-6">
-                     <h4 className="text-xl font-bold flex items-center gap-2">📧 ¿Qué pasa después de reportar?</h4>
-                     <p className="text-white/80 text-sm leading-relaxed">El sistema activa un ciclo de comunicación inteligente para mantenerte informado sin saturar tu buzón:</p>
-                     
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white/10 p-4 rounded-2xl border border-white/20">
-                          <p className="font-black text-xs uppercase mb-2 text-white/60 tracking-widest">Paso 1</p>
-                          <p className="text-sm font-bold">Tú reportas un dato y recibes el informe detallado.</p>
-                        </div>
-                        <div className="bg-white/10 p-4 rounded-2xl border border-white/20">
-                          <p className="font-black text-xs uppercase mb-2 text-white/60 tracking-widest">Paso 2</p>
-                          <p className="text-sm font-bold">Recibes los siguientes 5 reportes hechos por tus vecinos.</p>
-                        </div>
-                        <div className="bg-white/10 p-4 rounded-2xl border border-white/20 border-dashed">
-                          <p className="font-black text-xs uppercase mb-2 text-white/60 tracking-widest">Paso 3</p>
-                          <p className="text-sm font-bold opacity-80 italic">El ciclo se pausa hasta que vuelvas a colaborar reportando un dato.</p>
-                        </div>
-                     </div>
-                   </div>
-                </div>
-              </section>
-
-              {/* SECCIÓN 3: ADMINISTRADOR */}
-              <section id="help-administrador" className="space-y-8">
-                <div className="flex items-center gap-4">
-                   <div className="w-14 h-14 bg-[#E6F1FB] border border-[#B5D4F4] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🔧</div>
-                   <div>
-                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#0C447C]">Guía para Administradores</h3>
-                     <p className="text-sm text-[#5F5E5A] font-medium italic">Panel completo de gestión: miembros, alertas y configuración.</p>
-                   </div>
-                </div>
-
-                <div className="bg-white border border-[#B5D4F4] rounded-[32px] overflow-hidden shadow-sm">
-                   <div className="bg-[#E6F1FB] p-6 border-b border-[#B5D4F4] flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <span className="text-2xl">🔐</span>
-                        <h4 className="font-bold text-[#0C447C]">Acceso al panel privado</h4>
-                     </div>
-                     <span className="bg-white/60 text-[#0C447C] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Requiere Contraseña</span>
-                   </div>
-                   <div className="p-8 space-y-6">
-                      <p className="text-sm text-[#5F5E5A]">Inicia sesión con tu correo y la contraseña configurada. Tendrás control total sobre:</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                         {[
-                           { i: '📉', t: 'Tendencias', c: 'Histórico diario/mensual.' },
-                           { i: '👥', t: 'Miembros', c: 'Añade o quita junta.' },
-                           { i: '⚙️', t: 'Alertas', c: 'Umbrales de WhatsApp.' },
-                           { i: '⚠️', t: 'Anomalías', c: 'Detección de fugas.' }
-                         ].map(item => (
-                           <div key={item.t} className="bg-[#F1EFE8]/50 p-4 rounded-2xl text-center border border-black/5">
-                              <div className="text-2xl mb-2">{item.i}</div>
-                              <p className="font-bold text-[11px] uppercase mb-1">{item.t}</p>
-                              <p className="text-[10px] text-[#888780] leading-tight">{item.c}</p>
-                           </div>
-                         ))}
-                      </div>
-                   </div>
-                </div>
-              </section>
-
-              {/* SECCIÓN 4: JUNTA */}
-              <section id="help-junta" className="space-y-8">
-                <div className="flex items-center gap-4">
-                   <div className="w-14 h-14 bg-[#EEEDFE] border border-[#AFA9EC] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🏛️</div>
-                   <div>
-                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#3C3489]">Guía para la Junta</h3>
-                     <p className="text-sm text-[#5F5E5A] font-medium italic">Acceso de supervisión y recepción de informes periódicos.</p>
-                   </div>
-                </div>
-
-                <div className="card bg-white p-8 rounded-[32px] border border-black/5 shadow-sm space-y-6">
-                  <h4 className="font-bold text-lg">Lo que puedes hacer como miembro:</h4>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                    {[
-                      'Ver todos los gráficos avanzados del Dashboard.',
-                      'Consultar el historial ilimitado de mediciones.',
-                      'Acceder a las estadísticas y exportar reportes.',
-                      'Recibir emails con cada nuevo reporte vecinal.',
-                      'Supervisar los umbrales de configuración (Solo lectura).',
-                      'Enviar reportes manuales a cualquier correo.'
-                    ].map(text => (
-                      <li key={text} className="flex gap-3 text-sm text-[#5F5E5A] items-start">
-                        <span className="text-[#7F77DD] font-bold">✓</span> {text}
-                      </li>
-                    ))}
+                    AquaSaaS
+                  </a>
+                  <ul class="nav-links">
+                    <li><a href="#como-funciona">Cómo funciona</a></li>
+                    <li><a href="#residente">Residente</a></li>
+                    <li><a href="#administrador">Administrador</a></li>
+                    <li><a href="#junta">Junta</a></li>
+                    <li><a href="#emails">Informes</a></li>
+                    <li><a href="#comunidad">Datos</a></li>
+                    <li><a href="#faq">FAQ</a></li>
                   </ul>
-                </div>
-              </section>
+                </nav>
 
-              {/* SECCIÓN 5: INFORMES EMAIL */}
-              <section id="help-emails" className="space-y-8">
-                <div className="flex items-center gap-4">
-                   <div className="w-14 h-14 bg-[#E1F5EE] border border-[#9FE1CB] rounded-2xl flex items-center justify-center text-3xl shadow-sm">📧</div>
-                   <div>
-                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#0F6E56]">Informes por correo</h3>
-                     <p className="text-sm text-[#5F5E5A] font-medium italic">Transparencia y datos en la palma de tu mano.</p>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="bg-white p-6 rounded-[24px] border border-black/5 shadow-sm">
-                      <h4 className="font-bold text-[#04342C] mb-4">Para Residentes</h4>
-                      <p className="text-xs text-[#5F5E5A] leading-relaxed">Contiene su medición, nivel actual (%) y estadísticas rápidas comparativas con días anteriores.</p>
-                   </div>
-                   <div className="bg-white p-6 rounded-[24px] border border-black/5 shadow-sm">
-                      <h4 className="font-bold text-[#04342C] mb-4">Para Admin y Junta</h4>
-                      <p className="text-xs text-[#5F5E5A] leading-relaxed">Incluye quién reportó, estado detallado de autonomía hídrica, gráficos y resumen de consumo diario.</p>
-                   </div>
-                </div>
-
-                <div className="bg-[#FAEEDA] border border-[#FAC775] p-6 rounded-2xl flex gap-4 items-start text-sm text-[#633806] shadow-sm">
-                   <span className="text-2xl">⚠️</span>
-                   <p><strong>Alerta de Anomalía:</strong> Si el sistema detecta una caída inusual (posible fuga), el Administrador recibe un email crítico inmediato con los datos del evento.</p>
-                </div>
-              </section>
-
-              {/* SECCIÓN 6: COMUNIDAD */}
-              <section id="help-comunidad" className="space-y-8">
-                <div className="flex items-center gap-4 text-[#0F6E56]">
-                   <div className="w-14 h-14 bg-[#E1F5EE] border border-[#9FE1CB] rounded-2xl flex items-center justify-center text-3xl shadow-sm">🌊</div>
-                   <h3 className="text-2xl md:text-3xl font-serif font-bold">Datos Comunitarios</h3>
-                </div>
-                <div className="bg-[#F1EFE8] p-8 rounded-[32px] border border-black/5 shadow-inner">
-                   <p className="text-sm text-[#2C2C2A] leading-relaxed text-center italic font-medium">"AquaSaaS promueve el uso responsable del agua a través de la transparencia compartiendo datos agregados con toda la comunidad del edificio."</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { i: '📈', t: 'Tendencias', p: 'Visualización histórica del nivel del tanque para todos.' },
-                    { i: '👥', t: 'Participación', p: 'Indicador de cuántos vecinos están colaborando hoy.' },
-                    { i: '🚰', t: 'Estado', p: 'Nivel hídrico actual disponible desde el link vecinal.' }
-                  ].map(c => (
-                    <div key={c.t} className="bg-white p-5 rounded-2xl text-center border border-black/5 shadow-sm">
-                       <div className="text-2xl mb-2">{c.i}</div>
-                       <h5 className="font-bold text-sm mb-1">{c.t}</h5>
-                       <p className="text-[10px] text-[#888780] uppercase font-medium">{c.p}</p>
+                <!-- HERO -->
+                <section class="hero" id="inicio">
+                  <div class="hero-content">
+                    <div class="hero-badge">
+                      <span>💧</span> Gestión inteligente del agua
                     </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* SECCIÓN 7: FAQ */}
-              <section id="help-faq" className="space-y-6">
-                <div className="flex items-center gap-4 text-[#0C447C]">
-                   <div className="w-14 h-14 bg-[#E6F1FB] border border-[#B5D4F4] rounded-2xl flex items-center justify-center text-3xl shadow-sm">❓</div>
-                   <h3 className="text-2xl md:text-3xl font-serif font-bold">Preguntas Frecuentes</h3>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { q: '¿Necesito cuenta para reportar?', a: 'No. Solo necesitas el link único de tu edificio que te dará el administrador.' },
-                    { q: '¿Cuándo debo reportar?', a: 'Cada vez que revises el nivel del tanque. A más datos, estadísticas más precisas.' },
-                    { q: '¿Por qué dejé de recibir emails?', a: 'Tu ciclo de 5 emails terminó. Debes registrar una medición nueva para reactivarlo.' },
-                    { q: '¿Es público mi email?', a: 'No. El correo es para identificación interna. Solo tu nombre (opcional) es comunitario.' },
-                    { q: '¿Puedo borrar una medición?', a: 'Solo el Administrador del edificio puede editar o eliminar registros desde su panel.' }
-                  ].map((item, idx) => (
-                    <div key={idx} className="bg-white border border-black/5 rounded-2xl p-5 hover:border-[#B5D4F4] transition-colors shadow-sm">
-                       <p className="font-bold text-sm text-[#0C447C] mb-2">Q: {item.q}</p>
-                       <p className="text-xs text-[#5F5E5A] leading-relaxed">A: {item.a}</p>
+                    <h1>Guía de Ayuda<br>AquaSaaS</h1>
+                    <p>Todo lo que necesitas saber para gestionar el consumo de agua de tu edificio de forma inteligente, transparente y colaborativa.</p>
+                    <div class="hero-actions">
+                      <a href="#como-funciona" class="btn-hero btn-primary">Empezar →</a>
+                      <a href="/" class="btn-hero btn-ghost">Ir a la plataforma ↗</a>
                     </div>
-                  ))}
-                </div>
-              </section>
+                  </div>
+                </section>
 
+                <!-- PAGE -->
+                <div class="page">
+
+                  <!-- ========================================================== -->
+                  <!-- CÓMO FUNCIONA -->
+                  <!-- ========================================================== -->
+                  <section class="section" id="como-funciona">
+                    <div class="section-header">
+                      <div class="section-icon teal">⚙️</div>
+                      <div class="section-header-text">
+                        <h2>¿Cómo funciona el sistema?</h2>
+                        <p>AquaSaaS es una plataforma de gestión colaborativa del consumo de agua en edificios residenciales.</p>
+                      </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                      <span class="alert-icon">ℹ️</span>
+                      <div>AquaSaaS centraliza las mediciones de consumo reportadas por los residentes y las presenta en paneles de control detallados para administradores y miembros de la junta, generando informes automáticos por email en tiempo real.</div>
+                    </div>
+
+                    <!-- Flow diagram SVG -->
+                    <div class="flow-diagram process-flow">
+                      <svg width="100%" viewBox="0 0 800 160" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M2 1L8 5L2 9" fill="none" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          </marker>
+                        </defs>
+                        <!-- Step 1 -->
+                        <rect x="10" y="40" width="130" height="56" rx="10" fill="#E1F5EE" stroke="#9FE1CB" stroke-width="0.5"/>
+                        <text font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#085041" x="75" y="65" text-anchor="middle">1. Registro</text>
+                        <text font-family="DM Sans,sans-serif" font-size="11" fill="#0F6E56" x="75" y="82" text-anchor="middle">Edificio en sistema</text>
+                        <!-- Arrow -->
+                        <line x1="140" y1="68" x2="170" y2="68" stroke="#1D9E75" stroke-width="1" marker-end="url(#arr)"/>
+                        <!-- Step 2 -->
+                        <rect x="172" y="40" width="130" height="56" rx="10" fill="#E6F1FB" stroke="#B5D4F4" stroke-width="0.5"/>
+                        <text font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#0C447C" x="237" y="65" text-anchor="middle">2. Miembros</text>
+                        <text font-family="DM Sans,sans-serif" font-size="11" fill="#185FA5" x="237" y="82" text-anchor="middle">Admin invita vecinos</text>
+                        <!-- Arrow -->
+                        <line x1="302" y1="68" x2="332" y2="68" stroke="#1D9E75" stroke-width="1" marker-end="url(#arr)"/>
+                        <!-- Step 3 -->
+                        <rect x="334" y="40" width="130" height="56" rx="10" fill="#FAEEDA" stroke="#FAC775" stroke-width="0.5"/>
+                        <text font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#633806" x="399" y="65" text-anchor="middle">3. Reporte</text>
+                        <text font-family="DM Sans,sans-serif" font-size="11" fill="#854F0B" x="399" y="82" text-anchor="middle">Vecino registra dato</text>
+                        <!-- Arrow -->
+                        <line x1="464" y1="68" x2="494" y2="68" stroke="#1D9E75" stroke-width="1" marker-end="url(#arr)"/>
+                        <!-- Step 4 -->
+                        <rect x="496" y="40" width="130" height="56" rx="10" fill="#EEEDFE" stroke="#AFA9EC" stroke-width="0.5"/>
+                        <text font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#3C3489" x="561" y="65" text-anchor="middle">4. Análisis</text>
+                        <text font-family="DM Sans,sans-serif" font-size="11" fill="#534AB7" x="561" y="82" text-anchor="middle">Sistema calcula stats</text>
+                        <!-- Arrow -->
+                        <line x1="626" y1="68" x2="656" y2="68" stroke="#1D9E75" stroke-width="1" marker-end="url(#arr)"/>
+                        <!-- Step 5 -->
+                        <rect x="658" y="40" width="130" height="56" rx="10" fill="#E1F5EE" stroke="#9FE1CB" stroke-width="0.5"/>
+                        <text font-family="DM Sans,sans-serif" font-size="12" font-weight="600" fill="#085041" x="723" y="65" text-anchor="middle">5. Informe</text>
+                        <text font-family="DM Sans,sans-serif" font-size="11" fill="#0F6E56" x="723" y="82" text-anchor="middle">Email automático</text>
+                        <!-- Labels below -->
+                        <text font-family="DM Sans,sans-serif" font-size="10" fill="#888780" x="75" y="118" text-anchor="middle">Admin sistema</text>
+                        <text font-family="DM Sans,sans-serif" font-size="10" fill="#888780" x="237" y="118" text-anchor="middle">Admin edificio</text>
+                        <text font-family="DM Sans,sans-serif" font-size="10" fill="#888780" x="399" y="118" text-anchor="middle">Residente</text>
+                        <text font-family="DM Sans,sans-serif" font-size="10" fill="#888780" x="561" y="118" text-anchor="middle">Automático</text>
+                        <text font-family="DM Sans,sans-serif" font-size="10" fill="#888780" x="723" y="118" text-anchor="middle">Todos los roles</text>
+                      </svg>
+                    </div>
+
+                    <div class="grid-2">
+                      <div class="card">
+                        <h3>🏢 Registro del edificio</h3>
+                        <p>El administrador del sistema AquaSaaS crea el perfil del edificio con un identificador único (slug), capacidad del tanque en litros y el correo del administrador principal. Esto genera el acceso inicial y las URLs únicas del edificio.</p>
+                      </div>
+                      <div class="card">
+                        <h3>👥 Incorporación de miembros</h3>
+                        <p>El administrador del edificio invita a residentes y miembros de junta por email. Cada invitado recibe un correo de bienvenida con instrucciones de acceso y el enlace al formulario o panel correspondiente a su rol.</p>
+                      </div>
+                      <div class="card">
+                        <h3>📊 Reporte y análisis</h3>
+                        <p>Los residentes ingresan mediciones (litros o porcentaje) en cualquier momento. El sistema detecta automáticamente variaciones anómalas y envía alertas al administrador si el consumo supera umbrales configurados.</p>
+                      </div>
+                      <div class="card">
+                        <h3>📧 Notificaciones automáticas</h3>
+                        <p>Tras cada medición, el sistema envía un informe completo por email al colaborador. Administradores y miembros de junta reciben también reportes con estadísticas, gráficos y alertas en tiempo real.</p>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div class="divider"></div>
+
+                  <!-- ========================================================== -->
+                  <!-- RESIDENTE -->
+                  <!-- ========================================================== -->
+                  <section class="section" id="residente">
+                    <div class="section-header">
+                      <div class="section-icon amber">🏠</div>
+                      <div class="section-header-text">
+                        <h2>Guía para Residentes</h2>
+                        <p>Cómo reportar tu medición de consumo de agua y qué pasa después.</p>
+                      </div>
+                    </div>
+
+                    <div class="alert alert-tip">
+                      <span class="alert-icon">✅</span>
+                      <div><strong>Sin contraseña necesaria.</strong> Los residentes acceden directamente a través de un enlace único de su edificio. No hay registro previo ni proceso de autenticación tradicional.</div>
+                    </div>
+
+                    <!-- Steps to report -->
+                    <div class="card">
+                      <h3>Cómo registrar una medición — paso a paso</h3>
+                      <div class="steps" style="margin-top:16px;">
+                        <div class="step">
+                          <div class="step-num amber">1</div>
+                          <div class="step-content">
+                            <h4>Accede al formulario</h4>
+                            <p>Abre el enlace de tu edificio en tu navegador. Encontrarás el formulario de reporte siempre disponible, los 365 días del año, las 24 horas.</p>
+                          </div>
+                        </div>
+                        <div class="step">
+                          <div class="step-num amber">2</div>
+                          <div class="step-content">
+                            <h4>Ingresa la medición</h4>
+                            <p>Puedes ingresar la información de dos formas:</p>
+                            <ul style="margin-top:8px; font-size:14px; color:var(--text-secondary);">
+                              <li><strong>En litros:</strong> la cantidad de litros consumidos o el nivel actual del tanque.</li>
+                              <li><strong>En porcentaje:</strong> el porcentaje de llenado del tanque (ej: 75%).</li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div class="step">
+                          <div class="step-num amber">3</div>
+                          <div class="step-content">
+                            <h4>Completa tus datos</h4>
+                            <p><strong>Correo electrónico</strong> (requerido): para identificación y para recibir tu informe.</p>
+                            <p style="margin-top:4px;"><strong>Nombre</strong> (opcional): aparecerá en el reporte comunitario como colaborador.</p>
+                          </div>
+                        </div>
+                        <div class="step">
+                          <div class="step-num amber">4</div>
+                          <div class="step-content">
+                            <h4>Envía el reporte</h4>
+                            <p>Haz clic en el botón de envío. El sistema procesa tu medición de inmediato. En segundos recibirás un informe completo en tu correo.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Email cycle -->
+                    <div class="card">
+                      <h3>📧 ¿Qué pasa después de reportar?</h3>
+                      <p style="margin-bottom:16px; font-size:14px; color:var(--text-secondary);">El sistema activa un ciclo de comunicación para mantenerte informado:</p>
+
+                      <div class="cycle" style="margin-bottom:16px;">
+                        <div class="cycle-node">Tú reportas un dato</div>
+                        <div class="cycle-arrow">→</div>
+                        <div class="cycle-node">Recibes informe completo</div>
+                        <div class="cycle-arrow">→</div>
+                        <div class="cycle-node">5 emails por reportes de vecinos</div>
+                        <div class="cycle-arrow">→</div>
+                        <div class="cycle-node">Debes reportar para reactivar</div>
+                      </div>
+
+                      <div class="alert alert-info" style="margin-bottom:0;">
+                        <span class="alert-icon">🔄</span>
+                        <div>
+                          <strong>Cómo funciona el ciclo:</strong>
+                          <ol style="margin-top:8px; padding-left:18px; font-size:14px;">
+                            <li>Cada vez que <em>tú</em> registras un dato, recibes un informe completo con estadísticas históricas.</li>
+                            <li>Durante los siguientes <strong>5 reportes de cualquier vecino</strong>, recibirás un email por cada uno.</li>
+                            <li>Tras recibir esos 5 emails, el sistema se pausa hasta que <strong>tú vuelvas a reportar</strong> un dato para reactivar el ciclo.</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div class="divider"></div>
+
+                  <!-- ========================================================== -->
+                  <!-- FAQ -->
+                  <!-- ========================================================== -->
+                  <section class="section" id="faq">
+                    <div class="section-header">
+                      <div class="section-icon blue">❓</div>
+                      <div class="section-header-text">
+                        <h2>Preguntas frecuentes</h2>
+                        <p>Respuestas a las dudas más comunes del sistema.</p>
+                      </div>
+                    </div>
+
+                    <details>
+                      <summary>¿Necesito crear una cuenta para reportar una medición?</summary>
+                      <div class="details-body">No. Los residentes no necesitan crear una cuenta ni contraseña. Simplemente acceden al enlace único de su edificio.</div>
+                    </details>
+
+                    <details>
+                      <summary>¿Cuándo debo reportar una medición?</summary>
+                      <div class="details-body">Puedes reportar en cualquier momento. Se recomienda reportar cada vez que se revise el medidor del tanque.</div>
+                    </details>
+
+                    <details>
+                      <summary>¿Por qué dejé de recibir emails de mis vecinos?</summary>
+                      <div class="details-body">El sistema usa un ciclo de 5 emails. Tras recibir 5 reportes ajenos, debes volver a reportar tú para reactivar tu suscripción.</div>
+                    </details>
+                  </section>
+
+                </div>
+
+                <!-- FOOTER -->
+                <footer>
+                  <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:12px;">
+                    <strong style="color:#fff;font-size:15px;">AquaSaaS</strong>
+                  </div>
+                  <p>Gestión inteligente del agua para comunidades residenciales.</p>
+                </footer>
+
+                </body>
+                </html>
+              `}} />
             </div>
 
-            {/* Footer Modal */}
-            <div className="bg-white p-8 border-t border-black/5 text-center shrink-0 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 bg-[#04342C] rounded-xl flex items-center justify-center shadow-lg"><Droplets className="w-6 h-6 text-white" /></div>
-                 <div className="text-left"><p className="font-bold text-sm leading-none mb-1">AquaSaaS</p><p className="text-[10px] text-[#888780] font-medium tracking-tighter">Control Hídrico Residencial</p></div>
-              </div>
-              <button onClick={() => setShowHelpModal(false)} className="bg-[#04342C] hover:bg-[#0F6E56] text-white px-16 py-3.5 rounded-2xl font-black transition-all shadow-xl active:scale-95 text-sm uppercase tracking-widest">
-                Cerrar Guía
+            {/* Footer Modal para cerrar en Desktop */}
+            <div className="bg-white p-6 border-t border-black/5 text-center shrink-0 hidden md:block">
+              <button 
+                onClick={() => setShowHelpModal(false)} 
+                className="bg-[#04342C] hover:bg-[#0F6E56] text-white px-16 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95 text-sm"
+              >
+                Cerrar Guía de Ayuda
               </button>
-              <p className="text-[9px] text-[#888780] font-bold uppercase tracking-widest hidden md:block">2026 — v2.0</p>
             </div>
           </div>
         </div>
