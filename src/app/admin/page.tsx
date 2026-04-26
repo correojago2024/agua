@@ -189,16 +189,83 @@ export default function AdminPage() {
       
       if (error) throw error;
 
-      // Si la tabla está vacía, mostramos las plantillas base del sistema
+      // Diseños Reales del Sistema (Extraídos de la lógica interna)
+      const welcomeHtml = `
+        <div style="font-family:sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 30px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 24px;">¡Bienvenido a AquaSaaS!</h1>
+            <p style="opacity: 0.9;">Gestión Inteligente de Agua para su Edificio</p>
+          </div>
+          <div style="padding: 25px; line-height: 1.6;">
+            <p>Hola <strong>{building_name}</strong>,</p>
+            <p>Es un placer darle la bienvenida. Su edificio ha sido registrado exitosamente como Administrador Principal.</p>
+            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+              <p style="color: #1e40af; font-weight: bold; margin: 0;">🏢 Su Panel Administrativo</p>
+              <p style="font-size: 13px; margin: 5px 0;">Acceda para ver gráficos, bitácora y gestionar a la junta:</p>
+              <a href="https://agua-rust.vercel.app/edificio-admin/{slug}" style="color: #2563eb; font-weight: bold;">Ver mi Panel</a>
+            </div>
+            <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 30px;">2026 AquaSaaS - Control Hídrico Profesional</p>
+          </div>
+        </div>
+      `.trim();
+
+      const reportHtml = `
+        <div style="font-family:sans-serif; color:#1e293b; max-width:800px; margin:0 auto; border:1px solid #e2e8f0; padding:20px;">
+          <div style="text-align:center; margin-bottom:30px;">
+            <h1 style="color:#0f172a; font-size:22px;">✨ Resumen de Mediciones de Agua ✨</h1>
+            <p style="color:#64748b;">Edificio <strong>{building_name}</strong></p>
+          </div>
+          <div style="text-align:center; padding:25px; border-radius:20px; border:2px solid #f1f5f9; background:#fff;">
+            <p style="font-size:14px; font-weight:bold; color:#64748b; text-transform:uppercase;">Estado de Reserva</p>
+            <p style="font-size:32px; font-weight:bold; color:#16a34a;">✅ ÓPTIMO</p>
+            <p style="font-size:24px; font-weight:bold;">{current_count}% de capacidad</p>
+          </div>
+          <div style="background:#f1f5f9; padding:20px; border-radius:12px; margin-top:20px;">
+            <h3 style="color:#1e40af; font-size:16px;">💡 Principales Indicadores</h3>
+            <p>Nivel actual: {current_count}% — Capacidad máxima: {max_count} L</p>
+          </div>
+          <p style="font-size:11px; color:#94a3b8; text-align:center; margin-top:40px;">Sistema AquaSaaS — Informe Automático</p>
+        </div>
+      `.trim();
+
+      const alertHtml = `
+        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:2px solid #dc2626; border-radius:16px; overflow:hidden;">
+          <div style="background:#dc2626; color:white; padding:20px; text-align:center;">
+            <h2 style="margin:0;">⚠️ Alerta de Anomalía Detectada</h2>
+          </div>
+          <div style="padding:25px; line-height:1.6;">
+            <p>Se ha detectado una variación inusual en el nivel de agua del edificio <strong>{building_name}</strong>.</p>
+            <div style="background:#fef2f2; padding:15px; border-radius:12px; border:1px solid #fecaca; margin:20px 0;">
+              <p style="margin:0; color:#991b1b;"><strong>Variación detectada:</strong> {variation}%</p>
+            </div>
+            <p>Le recomendamos revisar el tanque por posibles fugas o fallas en el suministro.</p>
+          </div>
+        </div>
+      `.trim();
+
+      const quotaHtml = `
+        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #f59e0b; border-radius:16px; overflow:hidden;">
+          <div style="background:#fffbeb; border-bottom:1px solid #fef3c7; padding:20px; text-align:center;">
+            <h2 style="margin:0; color:#92400e;">📧 Alerta de Límite (90%)</h2>
+          </div>
+          <div style="padding:25px; line-height:1.6;">
+            <p>El edificio <strong>{building_name}</strong> ha alcanzado el 90% de su límite de {param_name}.</p>
+            <p>Uso actual: <strong>{current_count}</strong> de <strong>{max_count}</strong>.</p>
+            <p>Puede aumentar su plan para evitar restricciones o continuar con el plan actual.</p>
+          </div>
+        </div>
+      `.trim();
+
+      // Si la tabla está vacía o queremos forzar los reales
       if (!data || data.length === 0) {
         const defaults: EmailTemplate[] = [
-          { id: 101, name: 'welcome', subject_es: '🎉 Bienvenido a AquaSaaS - {building_name}', body_es: '<h1>¡Bienvenido!</h1><p>Tu edificio {building_name} ha sido registrado.</p>', is_active: true },
-          { id: 102, name: 'measurement_report', subject_es: '💧 Reporte de Agua: {building_name}', body_es: '<h3>Resumen de Consumo</h3><p>Nivel actual: {current_count}%</p>', is_active: true },
-          { id: 103, name: 'anomaly_alert', subject_es: '⚠️ Anomalía Detectada - {building_name}', body_es: '<p>Se detectó una variación inusual.</p>', is_active: true },
-          { id: 104, name: 'limit_90_storage', subject_es: '⚠️ Alerta Almacenamiento 90% - {building_name}', body_es: '<p>Has alcanzado el 90% de almacenamiento.</p>', is_active: true },
-          { id: 105, name: 'limit_90_emails', subject_es: '📧 Alerta Emails 90% - {building_name}', body_es: '<p>Has alcanzado el 90% de emails mensuales.</p>', is_active: true },
-          { id: 106, name: 'trial_3days', subject_es: '⏳ Tu prueba termina en 3 días - {building_name}', body_es: '<p>Tu período de prueba está por terminar.</p>', is_active: true },
-          { id: 107, name: 'trial_expired', subject_es: '📅 Prueba Terminada - {building_name}', body_es: '<p>Tu período de prueba ha finalizado.</p>', is_active: true },
+          { id: 101, name: 'welcome', subject_es: '🎉 Bienvenido a AquaSaaS - {building_name}', body_es: welcomeHtml, is_active: true },
+          { id: 102, name: 'measurement_report', subject_es: '💧 Reporte de Agua: {building_name}', body_es: reportHtml, is_active: true },
+          { id: 103, name: 'anomaly_alert', subject_es: '⚠️ Anomalía Detectada - {building_name}', body_es: alertHtml, is_active: true },
+          { id: 104, name: 'limit_90_storage', subject_es: '⚠️ Alerta Almacenamiento 90% - {building_name}', body_es: quotaHtml.replace('{param_name}', 'almacenamiento'), is_active: true },
+          { id: 105, name: 'limit_90_emails', subject_es: '📧 Alerta Emails 90% - {building_name}', body_es: quotaHtml.replace('{param_name}', 'emails mensuales'), is_active: true },
+          { id: 106, name: 'trial_3days', subject_es: '⏳ Tu prueba termina en 3 días - {building_name}', body_es: quotaHtml.replace('90%', 'Fin de Prueba'), is_active: true },
+          { id: 107, name: 'trial_expired', subject_es: '📅 Prueba Terminada - {building_name}', body_es: alertHtml.replace('Anomalía Detectada', 'Período de Prueba Terminado'), is_active: true },
         ];
         setEmailTemplates(defaults);
       } else {
