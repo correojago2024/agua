@@ -156,7 +156,46 @@ async function cleanOldLeads(): Promise<TaskResult> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAREA 6: Estadísticas y monitoreo de recursos gratuitos
+// TAREA 6: Reinicio de Cuotas de Email (cada 30 días)
+// ─────────────────────────────────────────────────────────────────────────────
+async function resetEmailQuotas(): Promise<TaskResult> {
+  try {
+    const { data: buildings, error: bErr } = await supabase
+      .from('buildings')
+      .select('id, name, last_quota_reset_at');
+    
+    if (bErr) throw bErr;
+    
+    const now = new Date();
+    let resetCount = 0;
+    
+    for (const b of (buildings || [])) {
+      const lastReset = new Date(b.last_quota_reset_at || 0);
+      const daysSince = (now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (daysSince >= 30) {
+        await supabase.from('buildings').update({
+          emails_sent_this_month: 0,
+          last_quota_reset_at: now.toISOString(),
+          notified_90_emails: false,
+          notified_90_storage: false // También reseteamos alertas de storage para el nuevo ciclo
+        }).eq('id', b.id);
+        resetCount++;
+      }
+    }
+    
+    return { 
+      task: 'Reinicio de cuotas de email (ciclo 30 días)', 
+      status: 'ok', 
+      message: `${resetCount} edificio(s) reiniciados` 
+    };
+  } catch (e: any) {
+    return { task: 'Reinicio de cuotas', status: 'error', message: e.message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAREA 7: Estadísticas y monitoreo de recursos gratuitos
 // ─────────────────────────────────────────────────────────────────────────────
 async function systemStatsAndLimits(): Promise<TaskResult> {
   try {
@@ -460,6 +499,7 @@ export async function GET(request: NextRequest) {
     reviewSubscriptions(),
     detectAnomalies(),
     cleanOldLeads(),
+    resetEmailQuotas(),
     systemStatsAndLimits(),
   ]);
 

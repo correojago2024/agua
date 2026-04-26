@@ -52,28 +52,42 @@ export async function POST(request: Request) {
 
     // 2. Validar límites de almacenamiento según plan
     const plan = building.subscription_status?.toLowerCase() || 'prueba';
-    let maxStorage = 200; // Esencial
-    if (plan === 'profesional') maxStorage = 1000;
-    if (plan === 'premium') maxStorage = 5000;
-    if (plan === 'ia' || plan === 'activo') maxStorage = 50000;
+    const maxStorage = building.max_storage_records || (plan === 'profesional' ? 1000 : plan === 'premium' ? 5000 : (plan === 'ia' || plan === 'activo') ? 50000 : 200);
 
     const { count: currentCount } = await supabase
       .from('measurements')
       .select('*', { count: 'exact', head: true })
       .eq('building_id', building_id);
 
+    const storageUsagePct = ((currentCount || 0) / maxStorage) * 100;
+
+    // --- LÓGICA DE ALERTA 90% ALMACENAMIENTO ---
+    if (storageUsagePct >= 90 && !building.notified_90_storage) {
+      const adminAndDev = [building.admin_email, 'correojago@gmail.com'].filter(Boolean);
+      const storageAlertHtml = `
+        <h3>⚠️ Alerta de Almacenamiento: 90% alcanzado</h3>
+        <p>El edificio <b>${building.name}</b> ha alcanzado el 90% de su límite de almacenamiento (${currentCount} de ${maxStorage}).</p>
+        <p>Si desea más capacidad, puede aumentar su plan. Si continúa en el mismo, los registros más antiguos se sobreescribirán (FIFO).</p>
+      `;
+      await sendEmailViaGmail(adminAndDev, `⚠️ Alerta 90% Almacenamiento — ${building.name}`, storageAlertHtml, building_id, 'limit_90_storage');
+      await supabase.from('buildings').update({ notified_90_storage: true }).eq('id', building_id);
+    }
+
+    // --- LÓGICA FIFO (Sobre-escritura) ---
     if ((currentCount || 0) >= maxStorage) {
-      await logAudit({ 
-        req: request, 
-        building_id, 
-        user_email: email || 'SYSTEM', 
-        operation: 'WARNING', 
-        entity_type: 'measurement', 
-        data_after: { message: 'Límite de almacenamiento alcanzado', count: currentCount, plan } 
-      });
-      return NextResponse.json({ 
-        error: `Límite de almacenamiento alcanzado para el Plan ${plan.toUpperCase()} (${maxStorage} registros). Por favor, limpie su historial o actualice su plan.` 
-      }, { status: 403 });
+      // Buscar el registro más antiguo
+      const { data: oldest } = await supabase
+        .from('measurements')
+        .select('id')
+        .eq('building_id', building_id)
+        .order('recorded_at', { ascending: true })
+        .limit(1)
+        .single();
+      
+      if (oldest) {
+        await supabase.from('measurements').delete().eq('id', oldest.id);
+        await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'DELETE', entity_type: 'measurement', entity_id: oldest.id, data_after: { message: 'FIFO: Registro antiguo eliminado para liberar espacio' } });
+      }
     }
 
     const { data: history } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });

@@ -93,6 +93,62 @@ export async function sendEmailViaGmail(
   let transporter: nodemailer.Transporter;
   let fromEmail: string;
 
+  // --- LÓGICA DE CUOTAS Y LÍMITES POR EDIFICIO ---
+  if (building_id) {
+    const { data: building } = await supabaseAdmin
+      .from('buildings')
+      .select('name, admin_email, emails_sent_this_month, max_emails_per_month, last_quota_reset_at, notified_90_emails')
+      .eq('id', building_id)
+      .single();
+
+    if (building) {
+      const now = new Date();
+      const lastReset = new Date(building.last_quota_reset_at || now);
+      const daysSinceReset = (now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24);
+
+      // 1. Reiniciar contador si pasaron 30 días
+      if (daysSinceReset >= 30) {
+        await supabaseAdmin.from('buildings').update({
+          emails_sent_this_month: 0,
+          last_quota_reset_at: now.toISOString(),
+          notified_90_emails: false
+        }).eq('id', building_id);
+        building.emails_sent_this_month = 0;
+      }
+
+      // 2. Verificar límite mensual
+      const maxEmails = building.max_emails_per_month || 100;
+      if (building.emails_sent_this_month >= maxEmails) {
+        console.warn(`[EMAIL] Límite alcanzado para ${building.name} (${building.emails_sent_this_month}/${maxEmails})`);
+        return { success: false, error: 'Límite mensual de emails alcanzado para este edificio.' };
+      }
+
+      // 3. Alerta 90% Emails
+      const usagePct = (building.emails_sent_this_month / maxEmails) * 100;
+      if (usagePct >= 90 && !building.notified_90_emails) {
+        const alertTo = [building.admin_email, 'correojago@gmail.com'].filter(Boolean);
+        const emailAlertHtml = `
+          <h3>📧 Alerta de Envío de Emails: 90% alcanzado</h3>
+          <p>El edificio <b>${building.name}</b> ha alcanzado el 90% de su límite mensual (${building.emails_sent_this_month} de ${maxEmails}).</p>
+          <p>Deberá esperar al mes siguiente para seguir recibiendo emails o cambiar de plan. Los datos se seguirán guardando, pero sin notificaciones.</p>
+        `;
+        // Evitamos recursividad infinita enviando la alerta directamente
+        try {
+          const { transporter: t, fromEmail: f } = await getGmailTransporter();
+          await t.sendMail({
+            from: `"AquaSaaS" <${f}>`,
+            to: alertTo.join(', '),
+            subject: `📧 Alerta 90% Emails Mensuales — ${building.name}`,
+            html: emailAlertHtml
+          });
+          await supabaseAdmin.from('buildings').update({ notified_90_emails: true }).eq('id', building_id);
+        } catch (e) {
+          console.error('[EMAIL] Error enviando alerta de cuota:', e);
+        }
+      }
+    }
+  }
+
   try {
     ({ transporter, fromEmail } = await getGmailTransporter());
   } catch (err: any) {
@@ -107,6 +163,12 @@ export async function sendEmailViaGmail(
       subject: subject,
       html: html,
     });
+    
+    // Incrementar contador en la base de datos
+    if (building_id) {
+      await supabaseAdmin.rpc('increment_building_emails', { b_id: building_id, count: to.length });
+    }
+
     for (const email of to) await saveToEmailQueue(email, subject, html, emailType, 'sent', undefined, building_id || undefined);
     return { success: true, messageId: info.messageId };
   } catch (err: any) {

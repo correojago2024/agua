@@ -133,8 +133,35 @@ function generateJuntaWelcomeEmailHtml(member: any, building: any, siteUrl: stri
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, building, member } = body;
+    const { type, building, member, template, to, building_id, subject: customSubject } = body;
     const siteUrl = getSiteUrl();
+
+    // --- NUEVO: SOPORTE PARA PLANTILLAS DINÁMICAS (TAB MENSAJES) ---
+    if (template) {
+      const { data: tpl } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('name', template)
+        .single();
+
+      if (tpl) {
+        let htmlBody = tpl.body_es;
+        let subject = customSubject || tpl.subject_es;
+
+        // Reemplazar variables básicas
+        const bName = building?.name || 'Edificio de Prueba';
+        htmlBody = htmlBody.replace(/{building_name}/g, bName);
+        htmlBody = htmlBody.replace(/{trial_end_date}/g, building?.trial_end_date || 'N/A');
+        htmlBody = htmlBody.replace(/{current_count}/g, body.current_count || '0');
+        htmlBody = htmlBody.replace(/{max_count}/g, body.max_count || '100');
+        
+        subject = subject.replace(/{building_name}/g, bName);
+
+        const recipients = to || [building?.admin_email];
+        const result = await sendEmailViaGmail(recipients, subject, htmlBody, building_id || building?.id || null, 'template_email');
+        return NextResponse.json({ success: result.success, error: result.error });
+      }
+    }
 
     if (type === 'welcome') {
       const htmlContent = generateWelcomeEmailHtml(building, siteUrl);
