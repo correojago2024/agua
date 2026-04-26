@@ -116,7 +116,7 @@ export default function EdificioAdminPage() {
   const [iaMsg, setIaMsg] = useState('');
   const [generatingAi, setGeneratingAi] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
-  const [iaTestResult, setIaTestResult] = useState<{success: boolean, msg: string} | null>(null);
+  const [iaTestResult, setIaTestResult] = useState<{success: boolean, msg: string, diagnostico?: any[]} | null>(null);
   const [selectedAiReport, setSelectedAiReport] = useState<any>(null);
   const [iaDateStart, setIaDateStart] = useState('');
   const [iaDateEnd, setIaDateEnd] = useState('');
