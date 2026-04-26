@@ -6,14 +6,16 @@
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyACK6P75MupwOMHFVD3MwkiHYHz-EW5iVs';
 
-// Lista de modelos a probar en orden. Basado en los que funcionan en el AppScript del usuario.
+// Lista de modelos a probar. Prioridad absoluta al que el usuario confirma que funciona.
 const MODELOS_RESPALDO = [
   'gemini-2.5-flash',
-  'gemini-2.5-pro',
+  'gemini-1.5-flash',
   'gemini-2.0-flash',
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-flash'
+  'gemini-1.5-pro'
 ];
+
+// Versiones de la API a intentar
+const API_VERSIONS = ['v1beta', 'v1'];
 
 export async function generateWaterAnalysis(prompt: string) {
   const payload = {
@@ -26,54 +28,43 @@ export async function generateWaterAnalysis(prompt: string) {
     },
   };
 
-  let ultimoError = '';
+  let erroresDetallados: string[] = [];
 
   for (const modelo of MODELOS_RESPALDO) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`;
-    
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+    for (const version of API_VERSIONS) {
+      const url = `https://generativelanguage.googleapis.com/${version}/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`;
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData?.error?.message || 'Error desconocido';
-        
-        console.warn(`[AI] Modelo ${modelo} falló: ${response.status} - ${errorMessage}`);
-        ultimoError = `Error ${response.status}: ${errorMessage}`;
-        
-        // Si el modelo no existe o se agotó la cuota (429), continuamos con el siguiente de la lista
-        if (response.status === 429 || response.status === 404 || response.status === 503) {
+        const data = await response.json();
+
+        if (response.ok) {
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (text.length > 100) {
+            console.log(`[AI] ✅ ÉXITO con ${modelo} (${version})`);
+            return text;
+          }
+        } else {
+          const msg = data?.error?.message || 'Error desconocido';
+          console.warn(`[AI] Falló ${modelo} en ${version}: ${response.status} - ${msg}`);
+          erroresDetallados.push(`${modelo}(${version}): ${response.status}`);
+          
+          // Si es un error de cuota (429) o no encontrado (404), probamos la siguiente combinación
           continue;
         }
-        
-        // Si es otro error grave, lo lanzamos
-        throw new Error(ultimoError);
+      } catch (error: any) {
+        console.error(`[AI] Error de red en ${modelo} (${version}):`, error.message);
+        erroresDetallados.push(`${modelo}(${version}): Network Error`);
       }
-
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
-      if (text.length > 200) {
-        console.log(`[AI] ✅ Respuesta exitosa usando modelo: ${modelo}`);
-        return text;
-      } else {
-        ultimoError = 'Respuesta demasiado corta';
-        continue;
-      }
-
-    } catch (error: any) {
-      ultimoError = error.message;
-      console.error(`[AI] Error intentando con ${modelo}:`, error.message);
     }
   }
 
-  // Si fallan todos los modelos, retornamos un error claro
-  console.error('[AI] ❌ Todos los modelos de Gemini fallaron.');
-  throw new Error(`Los servidores de IA (Gemini) han agotado su cuota o no están disponibles. Intentamos con: ${MODELOS_RESPALDO.join(', ')}. Último error: ${ultimoError}`);
+  throw new Error(`No se pudo conectar con los servidores de IA. Intentamos: ${erroresDetallados.join(', ')}. Verifica que la API Key sea válida para estos modelos en Vercel.`);
 }
 
 /**
