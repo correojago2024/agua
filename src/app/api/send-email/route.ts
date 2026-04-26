@@ -134,15 +134,37 @@ export async function POST(request: Request) {
     }
 
     if (type === 'password_changed') {
+      const ip = request.headers.get('x-forwarded-for') || 'Desconocida';
+      const userAgent = body.metadata?.userAgent || 'Desconocido';
+      const localTime = body.metadata?.localTime || new Date().toLocaleString();
+
       const pcHtml = `
         <div style="font-family:sans-serif; max-width:500px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; padding:30px; color:#1e293b;">
-          <h2 style="color:#0d6efd; margin-top:0;">🔒 Contraseña Actualizada</h2>
+          <div style="text-align:center; margin-bottom:20px;">
+            <div style="background:#f0f7ff; width:60px; height:60px; line-height:60px; border-radius:50%; display:inline-block; font-size:30px;">🔒</div>
+          </div>
+          <h2 style="color:#0d6efd; margin-top:0; text-align:center;">Seguridad Actualizada</h2>
           <p>Hola,</p>
           <p>Te informamos que la contraseña de tu cuenta en <strong>aGuaSaaS</strong> ha sido cambiada exitosamente para el edificio <strong>${building.name}</strong>.</p>
-          <p style="background:#f8fafc; padding:15px; border-radius:8px; font-size:13px; color:#64748b;">Si no realizaste este cambio, por favor contacta de inmediato al administrador del sistema.</p>
-          <p style="margin-bottom:0;">Atentamente,<br>Equipo aGuaSaaS</p>
+          
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin:20px 0;">
+            <h3 style="margin-top:0; font-size:14px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Detalles de la Actividad:</h3>
+            <table style="width:100%; font-size:13px; color:#334155;">
+              <tr><td style="padding:5px 0; color:#64748b;">Fecha/Hora:</td><td style="padding:5px 0; font-weight:bold;">${localTime}</td></tr>
+              <tr><td style="padding:5px 0; color:#64748b;">Dirección IP:</td><td style="padding:5px 0; font-weight:bold;">${ip}</td></tr>
+              <tr><td style="padding:5px 0; color:#64748b;">Navegador:</td><td style="padding:5px 0; font-weight:bold; font-size:11px;">${userAgent}</td></tr>
+            </table>
+          </div>
+
+          <p style="font-size:12px; color:#dc2626; background:#fef2f2; padding:10px; border-radius:8px; border:1px solid #fee2e2;">
+            <strong>¿No fuiste tú?</strong> Si no realizaste este cambio, por favor contacta de inmediato al administrador del sistema para proteger tu cuenta.
+          </p>
+          
+          <p style="margin-top:25px; border-top:1px solid #eee; padding-top:20px; font-size:13px; color:#94a3b8; text-align:center;">
+            Atentamente,<br><strong>Equipo de Seguridad aGuaSaaS</strong>
+          </p>
         </div>`.trim();
-      const res = await sendEmailViaGmail([member.email], `🔒 Tu contraseña ha sido cambiada — aGuaSaaS`, pcHtml, building.id, 'password_changed');
+      const res = await sendEmailViaGmail([member.email], `🔒 Seguridad: Tu contraseña ha sido cambiada — aGuaSaaS`, pcHtml, building.id, 'password_changed');
       return NextResponse.json({ success: res.success });
     }
 

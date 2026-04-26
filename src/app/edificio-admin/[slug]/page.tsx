@@ -850,7 +850,11 @@ export default function EdificioAdminPage() {
           body: JSON.stringify({ 
             type: 'password_changed', 
             building: building, 
-            member: { email: currentUser.email } 
+            member: { email: currentUser.email },
+            metadata: {
+              userAgent: navigator.userAgent,
+              localTime: new Date().toLocaleString()
+            }
           })
         });
       } catch (e) {
@@ -3169,8 +3173,8 @@ export default function EdificioAdminPage() {
                           </div>
                         </div>
                         <button 
-                          onClick={() => setIaSettings({...iaSettings, is_enabled: !iaSettings.is_enabled})}
-                          className={`w-12 h-6 rounded-full transition-all relative ${iaSettings.is_enabled ? 'bg-blue-600' : 'bg-slate-700'}`}
+                          onClick={() => isUserAdmin && setIaSettings({...iaSettings, is_enabled: !iaSettings.is_enabled})}
+                          className={`w-12 h-6 rounded-full transition-all relative ${iaSettings.is_enabled ? 'bg-blue-600' : 'bg-slate-700'} ${!isUserAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${iaSettings.is_enabled ? 'left-7' : 'left-1'}`} />
                         </button>
