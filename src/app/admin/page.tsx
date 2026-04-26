@@ -173,7 +173,7 @@ export default function AdminPage() {
   // Email Templates
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailMsg, setEmailMsg] = useState('');
-  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState<string | boolean>(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [testEmailLoading, setTestEmailLoading] = useState(false);
 
@@ -598,7 +598,7 @@ export default function AdminPage() {
     } catch (e: any) {
       setEmailMsg(`❌ ${e.message}`);
     } finally {
-      setEmailLoading(null);
+      setEmailLoading(false);
       setTimeout(() => setEmailMsg(''), 3000);
     }
   };
