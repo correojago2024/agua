@@ -1,143 +1,121 @@
 /**
- * ARCHIVO: route.ts (API de Envío de Emails - VERSIÓN FINAL IDÉNTICA A PRODUCCIÓN)
+ * ARCHIVO: route.ts (API de Envío de Emails - VERSIÓN FINAL UNIFICADA)
  */
 
 import { NextResponse } from 'next/server';
 import { sendEmailViaGmail } from '@/lib/server/email';
 import { buildReportEmailHtml } from '@/lib/server/email-templates';
+import { supabase } from '@/lib/supabase';
 
-// Función Maestra de Anomalías (Idéntica a producción)
+// Función Maestra de Anomalías
 function buildAnomalyEmailHtml(building: any, newLiters: number, newPercentage: number, prevLiters: number, prevPercentage: number, variationPct: number, recordedAt: string, reportedBy: string): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;color:#1e293b;"><div style="background:#dc2626;color:white;padding:15px;border-radius:8px 8px 0 0;text-align:center;"><h2 style="margin:0;font-size:18px;">⚠️ Anomalía detectada — ${building.name}</h2></div><div style="border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 8px 8px;"><p style="font-size:14px;">Se detectó una variación de <strong>${variationPct.toFixed(1)}%</strong>.</p><ul style="font-size:13px;line-height:1.8;"><li><strong>Fecha:</strong> ${new Date(recordedAt).toLocaleString('es-ES')}</li><li><strong>Nivel:</strong> ${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</li><li><strong>Reportado por:</strong> ${reportedBy}</li></ul><p style="font-size:11px;color:#94a3b8;margin-top:20px;">Sistema AquaSaaS.</p></div></body></html>`.trim();
 }
 
-// Generador de datos simulados realistas para las pruebas de admin
+// Datos simulados realistas para las pruebas de admin
 function getProductionMockData() {
-  const building = {
-    name: "Residencias El Faro (DEMO)",
-    tank_capacity_liters: 169000,
-    slug: "el-faro-demo"
-  };
-
+  const building = { name: "Residencias El Faro (DEMO)", tank_capacity_liters: 169000, slug: "el-faro-demo" };
   const now = new Date();
   const mockHistory = [
-    { recorded_at: new Date(now.getTime() - 86400000 * 3).toISOString(), liters: 150000, percentage: 88, variation_lts: 0 },
-    { recorded_at: new Date(now.getTime() - 86400000 * 2).toISOString(), liters: 135000, percentage: 79, variation_lts: -15000 },
-    { recorded_at: new Date(now.getTime() - 86400000 * 1).toISOString(), liters: 120000, percentage: 71, variation_lts: -15000 },
-    { recorded_at: now.toISOString(), liters: 105000, percentage: 62, variation_lts: -15000 }
+    { recorded_at: new Date(now.getTime() - 86400000 * 3).toISOString(), liters: 150000, percentage: 88 },
+    { recorded_at: now.toISOString(), liters: 105000, percentage: 62 }
   ];
-
   const indicators = {
     reportDate: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }),
     balance24h: { consumed: 15000, filled: 0, net: -15000 },
-    avgFlow24h: -625,
-    projection11pm: 58.2,
-    projectedLiters11pm: 98000,
-    timeEstimate: "3.2 días",
-    estimateDate: formatRelativeDate(3.2),
-    filledToday: 0,
+    avgFlow24h: -625, projection11pm: 58.2, projectedLiters11pm: 98000, timeEstimate: "3.2 días",
+    estimateDate: "30 de Abril", filledToday: 0,
     heatmapData: Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => Math.floor(Math.random() * 100)))
   };
-
-  const chartUrls = {
-    combinadoChart: "https://quickchart.io/chart?c={type:'line',data:{labels:['D-3','D-2','D-1','Hoy'],datasets:[{label:'Nivel',data:[88,79,71,62],borderColor:'blue',fill:true}]}}",
-    caudalChart: "https://quickchart.io/chart?c={type:'bar',data:{labels:['D-3','D-2','D-1','Hoy'],datasets:[{label:'Consumo',data:[0,-15000,-15000,-15000],backgroundColor:'red'}]}}",
-    dayOfWeekChart: "https://quickchart.io/chart?c={type:'bar',data:{labels:['L','M','X','J','V','S','D'],datasets:[{data:[10,12,15,11,18,25,20],backgroundColor:'blue'}]}}"
-  };
-
+  const chartUrls = { combinadoChart: "", caudalChart: "", dayOfWeekChart: "" };
   return { building, mockHistory, indicators, chartUrls };
-}
-
-function formatRelativeDate(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long' });
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { template, to } = body;
-    const targetEmail = to || ['correojago@gmail.com'];
-    const { building, mockHistory, indicators, chartUrls } = getProductionMockData();
+    const { type, template, building, member, to, building_id } = body;
+    const targetTemplate = template || type;
 
-    let html = '';
-    let subject = '';
+    // 1. SI ES UNA PRUEBA REAL DESDE EL PANEL ADMIN (Galería)
+    if (body.template) {
+      const { building: b, mockHistory, indicators, chartUrls } = getProductionMockData();
+      let html = '';
+      let subject = '';
 
-    switch (template) {
-      case 'measurement_report':
-        subject = `💧 Reporte de Agua: 62% — ${building.name}`;
-        html = buildReportEmailHtml(building, mockHistory, indicators as any, 105000, 62, false, -9, chartUrls);
-        break;
-
-      case 'welcome':
-        subject = `🎉 Bienvenido a AquaSaaS — ${building.name}`;
-        html = `
-          <div style="font-family:sans-serif; max-width:600px; margin:0 auto; background-color:#f8fafc; color:#1e293b; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
-            <div style="background:linear-gradient(135deg, #2563eb, #1d4ed8); padding:40px; text-align:center; color:white;">
-              <h1 style="margin:0; font-size:24px;">¡Bienvenido a AquaSaaS!</h1>
-              <p style="opacity:0.9; margin-top:10px;">Gestión Inteligente de Agua para su Edificio</p>
-            </div>
-            <div style="padding:30px; line-height:1.6;">
-              <p>Hola <strong>Administrador</strong>,</p>
-              <p>Es un placer darle la bienvenida. Su edificio ha sido registrado exitosamente en nuestra plataforma.</p>
-              <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:20px; margin:25px 0; border-radius:0 12px 12px 0;">
-                <p style="color:#1e40af; font-weight:bold; margin:0; font-size:16px;">🏢 Su Panel Administrativo</p>
-                <p style="font-size:14px; color:#1e3a8a; margin:8px 0;">Acceda para visualizar estadísticas en tiempo real, bitácora de eventos y gestión de miembros.</p>
-                <a href="#" style="color:#2563eb; font-weight:bold; text-decoration:none; font-size:14px;">Ingresar al Panel →</a>
-              </div>
-              <p style="font-size:12px; color:#64748b; text-align:center; margin-top:40px; border-top:1px solid #f1f5f9; pt-20">2026 AquaSaaS — Control Hídrico Profesional</p>
-            </div>
-          </div>`;
-        break;
-
-      case 'anomaly_alert':
-        subject = `⚠️ ALERTA: Anomalía detectada en ${building.name}`;
-        html = buildAnomalyEmailHtml(building, 85000, 50, 120000, 71, 15.5, new Date().toISOString(), "Colaborador de Prueba");
-        break;
-
-      case 'limit_90_storage':
-        subject = `⚠️ Alerta Almacenamiento (90%) — ${building.name}`;
-        html = `
-          <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #f59e0b; border-radius:16px; overflow:hidden;">
-            <div style="background:#fffbeb; border-bottom:1px solid #fef3c7; padding:20px; text-align:center;">
-              <h2 style="margin:0; color:#92400e;">📦 Alerta de Almacenamiento</h2>
-            </div>
-            <div style="padding:30px; line-height:1.6; color:#1e293b;">
-              <p>El edificio <strong>${building.name}</strong> ha alcanzado el <strong>90%</strong> de su límite de almacenamiento de registros.</p>
-              <p>Uso actual: <strong>180</strong> de <strong>200</strong>.</p>
-              <p style="background:#fff7ed; padding:15px; border-radius:12px; font-size:13px; color:#c2410c;">
-                <strong>Nota:</strong> Al alcanzar el 100%, el sistema aplicará la política FIFO, eliminando los registros más antiguos para permitir la entrada de nuevos datos.
-              </p>
-            </div>
-          </div>`;
-        break;
-
-      case 'limit_90_emails':
-        subject = `📧 Alerta Cuota Emails (90%) — ${building.name}`;
-        html = `
-          <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #3b82f6; border-radius:16px; overflow:hidden;">
-            <div style="background:#eff6ff; border-bottom:1px solid #dbeafe; padding:20px; text-align:center;">
-              <h2 style="margin:0; color:#1e40af;">📧 Alerta de Envío de Emails</h2>
-            </div>
-            <div style="padding:30px; line-height:1.6; color:#1e293b;">
-              <p>El edificio <strong>${building.name}</strong> ha alcanzado el <strong>90%</strong> de su cuota mensual de correos.</p>
-              <p>Enviados: <strong>90</strong> de <strong>100</strong>.</p>
-              <p style="background:#f0f9ff; padding:15px; border-radius:12px; font-size:13px; color:#0369a1;">
-                <strong>Aviso:</strong> Una vez alcanzado el límite, los datos se seguirán guardando pero las notificaciones por email se pausarán hasta el próximo ciclo mensual.
-              </p>
-            </div>
-          </div>`;
-        break;
-
-      default:
-        return NextResponse.json({ error: `Plantilla no reconocida: ${template}` }, { status: 400 });
+      switch (targetTemplate) {
+        case 'measurement_report':
+          subject = `[PRUEBA] 💧 Reporte de Agua: 62% — ${b.name}`;
+          html = buildReportEmailHtml(b, mockHistory, indicators as any, 105000, 62, false, -9, chartUrls);
+          break;
+        case 'welcome':
+          subject = `[PRUEBA] 🎉 Bienvenido a AquaSaaS — ${b.name}`;
+          html = `<div style="font-family:sans-serif;padding:30px;"><h1>¡Bienvenido Admin!</h1><p>Su edificio ha sido registrado.</p></div>`;
+          break;
+        case 'anomaly_alert':
+          subject = `[PRUEBA] ⚠️ ALERTA: Anomalía detectada en ${b.name}`;
+          html = buildAnomalyEmailHtml(b, 85000, 50, 120000, 71, 15.5, new Date().toISOString(), "Prueba");
+          break;
+        case 'limit_90_storage':
+          subject = `[PRUEBA] 📦 Alerta Almacenamiento (90%)`;
+          html = `<h3>Almacenamiento al 90%</h3><p>Uso actual: 180 de 200 registros.</p>`;
+          break;
+        case 'limit_90_emails':
+          subject = `[PRUEBA] 📧 Alerta Cuota Emails (90%)`;
+          html = `<h3>Emails al 90%</h3><p>Enviados: 90 de 100.</p>`;
+          break;
+        case 'junta_welcome':
+          subject = `[PRUEBA] 🏛️ Bienvenida Junta`;
+          html = `<h3>Bienvenido a la Junta</h3><p>Usted ha sido invitado a supervisar el edificio.</p>`;
+          break;
+        case 'recover':
+          subject = `[PRUEBA] 🔐 Recuperación de Clave`;
+          html = `<h3>Recuperación de Clave</h3><p>Su clave maestra es: 123456</p>`;
+          break;
+        default:
+          html = `<h3>Prueba de Mensaje: ${targetTemplate}</h3><p>Este es un mensaje de prueba genérico.</p>`;
+          subject = `[PRUEBA] Mensaje del Sistema: ${targetTemplate}`;
+      }
+      const res = await sendEmailViaGmail(to || ['correojago@gmail.com'], subject, html, null, 'admin_test');
+      return NextResponse.json({ success: res.success });
     }
 
-    const result = await sendEmailViaGmail(targetEmail, `[PRUEBA SISTEMA] ${subject}`, html, null, 'admin_test_real');
-    return NextResponse.json({ success: result.success, error: result.error });
+    // 2. FLUJOS DE PRODUCCIÓN REALES (Registro de Miembros, Bienvenida, etc.)
+    if (type === 'junta_welcome') {
+      const juntaHtml = `
+        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
+          <div style="background:#4f46e5; padding:30px; text-align:center; color:white;">
+            <h1 style="margin:0; font-size:20px;">🏛️ Invitación a la Junta de Condominio</h1>
+          </div>
+          <div style="padding:25px; line-height:1.6; color:#1e293b;">
+            <p>Hola <strong>${member.name || 'Miembro'}</strong>,</p>
+            <p>Has sido invitado a formar parte del panel de supervisión de <strong>${building.name}</strong> en AquaSaaS.</p>
+            <p>Desde tu panel podrás visualizar gráficos de consumo, historial y recibir informes automáticos.</p>
+            <div style="margin:25px 0; text-align:center;">
+              <a href="https://agua-rust.vercel.app/edificio-admin/${building.slug}" style="background:#4f46e5; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;">Acceder a mi Panel</a>
+            </div>
+          </div>
+        </div>`.trim();
+      const res = await sendEmailViaGmail([member.email], `🏛️ Acceso al Panel Administrativo — ${building.name}`, juntaHtml, building.id, 'junta_welcome');
+      return NextResponse.json({ success: res.success });
+    }
+
+    if (type === 'welcome') {
+      const welcomeHtml = `<h1>Bienvenido ${building.name}</h1><p>Tu edificio ha sido activado.</p>`;
+      const res = await sendEmailViaGmail([building.admin_email], `🎉 Bienvenido a AquaSaaS — ${building.name}`, welcomeHtml, building.id, 'welcome');
+      return NextResponse.json({ success: res.success });
+    }
+
+    if (type === 'recover') {
+      const recoverHtml = `<h3>Recuperación de Clave</h3><p>Tu clave para ${building.name} es: <strong>${building.password}</strong></p>`;
+      const res = await sendEmailViaGmail([building.admin_email], `🔑 Clave de Acceso — ${building.name}`, recoverHtml, building.id, 'recover');
+      return NextResponse.json({ success: res.success });
+    }
+
+    return NextResponse.json({ error: 'Tipo no soportado' }, { status: 400 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[API-EMAIL-ERROR]', error.message);
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
