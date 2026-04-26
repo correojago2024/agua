@@ -83,17 +83,33 @@ export async function POST(request: Request) {
     // 2. FLUJOS DE PRODUCCIÓN REALES (Registro de Miembros, Bienvenida, etc.)
     if (type === 'junta_welcome') {
       const juntaHtml = `
-        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
-          <div style="background:#4f46e5; padding:30px; text-align:center; color:white;">
-            <h1 style="margin:0; font-size:20px;">🏛️ Invitación a la Junta de Condominio</h1>
+        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:24px; overflow:hidden; background-color:#ffffff; color:#1e293b; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+          <div style="background:linear-gradient(135deg, #4f46e5, #3730a3); padding:40px; text-align:center; color:white;">
+            <h1 style="margin:0; font-size:24px;">¡Bienvenido a la Junta de Condominio!</h1>
+            <p style="opacity:0.9; margin-top:10px;">Acceso al Panel de Control AquaSaaS</p>
           </div>
-          <div style="padding:25px; line-height:1.6; color:#1e293b;">
-            <p>Hola <strong>${member.name || 'Miembro'}</strong>,</p>
-            <p>Has sido invitado a formar parte del panel de supervisión de <strong>${building.name}</strong> en AquaSaaS.</p>
-            <p>Desde tu panel podrás visualizar gráficos de consumo, historial y recibir informes automáticos.</p>
-            <div style="margin:25px 0; text-align:center;">
-              <a href="https://agua-rust.vercel.app/edificio-admin/${building.slug}" style="background:#4f46e5; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;">Acceder a mi Panel</a>
+          <div style="padding:35px; line-height:1.6;">
+            <p style="font-size:16px;">Hola <strong>${member.name || 'Miembro'}</strong>,</p>
+            <p>Has sido agregado como miembro de la junta para el edificio <strong>${building.name}</strong> en el sistema de monitoreo hídrico <strong>AquaSaaS</strong>.</p>
+            
+            <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:16px; padding:25px; margin:25px 0; text-align:center;">
+              <p style="margin:0; color:#64748b; font-size:13px; font-weight:bold; uppercase; tracking-wider;">Tu Clave Temporal de Acceso:</p>
+              <p style="margin:10px 0 0; color:#4f46e5; font-size:32px; font-weight:900; letter-spacing:4px;">123456</p>
             </div>
+
+            <h3 style="color:#1e293b; font-size:18px; margin-top:30px;">🚀 Pasos para empezar:</h3>
+            <ol style="padding-left:20px; color:#475569;">
+              <li style="margin-bottom:10px;">Haz clic en el enlace del portal abajo.</li>
+              <li style="margin-bottom:10px;">Ingresa con tu correo: <strong>${member.email}</strong> y la clave temporal.</li>
+              <li style="margin-bottom:10px;">El sistema te pedirá crear tu propia contraseña de usuario por seguridad.</li>
+              <li>¡Listo! Podrás ver los gráficos, reportes y configurar alertas.</li>
+            </ol>
+
+            <div style="margin:40px 0; text-align:center;">
+              <a href="https://agua-rust.vercel.app/edificio-admin/${building.slug}" style="background:#4f46e5; color:#ffffff; padding:16px 32px; text-decoration:none; border-radius:12px; font-weight:bold; display:inline-block; font-size:15px; box-shadow:0 4px 6px -1px rgba(79, 70, 229, 0.4);">Acceder al Portal Administrativo</a>
+            </div>
+            
+            <p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:40px; border-top:1px solid #f1f5f9; padding-top:20px;">2026 AquaSaaS — Tecnología para su Comunidad</p>
           </div>
         </div>`.trim();
       const res = await sendEmailViaGmail([member.email], `🏛️ Acceso al Panel Administrativo — ${building.name}`, juntaHtml, building.id, 'junta_welcome');
