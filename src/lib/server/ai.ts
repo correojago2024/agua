@@ -4,7 +4,7 @@
  * DESCRIPCIÓN: Servicio para interactuar con Gemini AI para el análisis de agua.
  */
 
-const DEFAULT_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyACK6P75MupwOMHFVD3MwkiHYHz-EW5iVs';
+const DEFAULT_API_KEY = process.env.GEMINI_API_KEY;
 
 // Lista de modelos verificados y posibles variaciones
 const MODELOS_A_PROBAR = [
@@ -20,6 +20,10 @@ const API_VERSIONS = ['v1beta', 'v1'];
 export async function generateWaterAnalysis(prompt: string, customApiKey?: string) {
   const apiKey = customApiKey || DEFAULT_API_KEY;
   
+  if (!apiKey) {
+    throw new Error('Configuración incompleta: No se encontró la variable GEMINI_API_KEY en el servidor ni una llave personalizada para este edificio.');
+  }
+
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
