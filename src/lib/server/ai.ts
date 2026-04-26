@@ -6,13 +6,13 @@
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyACK6P75MupwOMHFVD3MwkiHYHz-EW5iVs';
 
-// Lista de modelos a probar en orden. Si uno falla por quota, intenta con el siguiente.
+// Lista de modelos a probar en orden. Basado en los que funcionan en el AppScript del usuario.
 const MODELOS_RESPALDO = [
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
   'gemini-2.0-flash',
   'gemini-2.0-flash-exp',
-  'gemini-pro'
+  'gemini-1.5-flash'
 ];
 
 export async function generateWaterAnalysis(prompt: string) {
