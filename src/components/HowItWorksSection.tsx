@@ -192,7 +192,7 @@ const HowItWorksSection = () => {
             <div className="space-y-4 group">
               <div className="bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-all shadow-xl">
                 <img 
-                  src="https://raw.githubusercontent.com/correojago2024/agua/main/grafico1.jpg" 
+                  src="/grafico1.jpg" 
                   alt="Estadísticas de Consumo" 
                   className="w-full h-auto object-cover"
                 />
@@ -206,7 +206,7 @@ const HowItWorksSection = () => {
             <div className="space-y-4 group">
               <div className="bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-all shadow-xl">
                 <img 
-                  src="https://raw.githubusercontent.com/correojago2024/agua/main/grafico2.jpg" 
+                  src="/grafico2.jpg" 
                   alt="Dashboard de Gestión" 
                   className="w-full h-auto object-cover"
                 />
@@ -220,7 +220,7 @@ const HowItWorksSection = () => {
             <div className="space-y-4 group">
               <div className="bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-all shadow-xl">
                 <img 
-                  src="https://raw.githubusercontent.com/correojago2024/agua/main/grafico3email.jpg" 
+                  src="/grafico3email.jpg" 
                   alt="Reporte por Email" 
                   className="w-full h-auto object-cover"
                 />
