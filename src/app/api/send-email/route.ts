@@ -65,7 +65,7 @@ export async function POST(request: Request) {
           html = `<h3>Emails al 90%</h3><p>Enviados: 90 de 100.</p>`;
           break;
         case 'junta_welcome':
-          subject = `[PRUEBA] 🏛️ Bienvenida Junta`;
+          subject = `[PRUEBA] 💧 Bienvenido al Sistema de Control del Agua`;
           html = `<h3>Bienvenido a la Junta</h3><p>Usted ha sido invitado a supervisar el edificio.</p>`;
           break;
         case 'recover':
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
             <p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:40px; border-top:1px solid #f1f5f9; padding-top:20px;">2026 AquaSaaS — Tecnología para su Comunidad</p>
           </div>
         </div>`.trim();
-      const res = await sendEmailViaGmail([member.email], `🏛️ Acceso al Panel Administrativo — ${building.name}`, juntaHtml, building.id, 'junta_welcome');
+      const res = await sendEmailViaGmail([member.email], `💧 Bienvenido al Sistema de Control del Agua — ${building.name}`, juntaHtml, building.id, 'junta_welcome');
       return NextResponse.json({ success: res.success });
     }
 
