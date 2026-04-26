@@ -1280,37 +1280,114 @@ export default function AdminPage() {
         {/* Emails tab */}
         {activeView === 'emails' && (
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">📧 Plantillas de Emails</h2>
-            <p className="text-slate-400 text-xs mb-4">Clic en una plantilla para editar. Usa {'{building_name}'}, {'{trial_end_date}'}, etc. para variables.</p>
-            
-            {editingTemplate ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-slate-400 text-xs">Asunto</label>
-                  <input type="text" value={editingTemplate.subject_es} 
-                    onChange={(e) => setEditingTemplate({...editingTemplate, subject_es: e.target.value})}
-                    className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm" />
-                </div>
-                <div>
-                  <label className="text-slate-400 text-xs">Cuerpo (HTML)</label>
-                  <textarea value={editingTemplate.body_es} 
-                    onChange={(e) => setEditingTemplate({...editingTemplate, body_es: e.target.value})}
-                    className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg text-sm h-64 font-mono" />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={saveTemplate} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm">💾 Guardar</button>
-                  <button onClick={() => setEditingTemplate(null)} className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg text-sm">✕ Cancelar</button>
-                </div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Mail className="w-5 h-5 text-blue-400" />
+                Gestión de Plantillas de Email
+              </h2>
+              <button onClick={loadEmailTemplates} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">
+                {emailLoading === true ? <RefreshCw className="w-4 h-4 animate-spin" /> : '🔄 Recargar'}
+              </button>
+            </div>
+
+            {emailMsg && (
+              <div className={`mb-6 p-3 rounded-lg text-sm font-bold ${emailMsg.includes('❌') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                {emailMsg}
               </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-3">
-                {emailTemplates.map(t => (
-                  <div key={t.name} className="bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 cursor-pointer"
-                    onClick={() => setEditingTemplate(t)}>
-                    <p className="text-blue-400 font-medium">{t.name}</p>
-                    <p className="text-slate-400 text-xs mt-1">{t.subject_es.substring(0, 50)}...</p>
+            )}
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {emailTemplates.map((template) => (
+                <div key={template.id || template.name} className="bg-slate-700/30 border border-slate-600 rounded-xl p-5 hover:border-blue-500/50 transition-all group">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-blue-400 font-bold text-sm uppercase tracking-wider">{template.name}</h3>
+                      <p className="text-slate-400 text-[10px] mt-1 italic">Plantilla del sistema</p>
+                    </div>
+                    <div className={`w-2 h-2 rounded-full ${template.is_active !== false ? 'bg-green-500' : 'bg-slate-500'}`}></div>
                   </div>
-                ))}
+                  
+                  <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700 mb-4 h-24 overflow-hidden relative">
+                    <p className="text-white text-xs font-bold mb-1 truncate">{template.subject_es}</p>
+                    <p className="text-slate-400 text-[10px] line-clamp-3">{template.body_es}</p>
+                    <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setEditingTemplate(template)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+                    >
+                      <Edit className="w-3 h-3" /> Editar
+                    </button>
+                    <button 
+                      onClick={() => testEmailTemplate(template.name)}
+                      disabled={testEmailLoading}
+                      className="bg-slate-700 hover:bg-slate-600 text-white px-3 rounded-lg transition-colors disabled:opacity-50"
+                      title="Probar envío a correojago@gmail.com"
+                    >
+                      {testEmailLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Editar Plantilla */}
+            {editingTemplate && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                  <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                    <div>
+                      <h3 className="text-white font-bold flex items-center gap-2">
+                        <Edit className="w-4 h-4 text-blue-400" />
+                        Editando: {editingTemplate.name}
+                      </h3>
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mt-1">Localización: Español (ES)</p>
+                    </div>
+                    <button onClick={() => setEditingTemplate(null)} className="p-2 hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  
+                  <div className="p-6 overflow-y-auto space-y-6 bg-slate-900/20">
+                    <div>
+                      <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2">Asunto del Correo</label>
+                      <input 
+                        type="text"
+                        value={editingTemplate.subject_es}
+                        onChange={e => setEditingTemplate({...editingTemplate, subject_es: e.target.value})}
+                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 text-[10px] font-bold uppercase mb-2">Cuerpo del Mensaje (Soporta HTML)</label>
+                      <textarea 
+                        rows={12}
+                        value={editingTemplate.body_es}
+                        onChange={e => setEditingTemplate({...editingTemplate, body_es: e.target.value})}
+                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 font-mono"
+                        placeholder="Escribe el contenido aquí..."
+                      />
+                      <p className="text-[10px] text-slate-500 mt-2 italic">Variables disponibles: {`{building_name}, {trial_end_date}, {current_count}, {max_count}`}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border-t border-slate-700 bg-slate-900/50 flex justify-end gap-3">
+                    <button 
+                      onClick={() => setEditingTemplate(null)}
+                      className="bg-slate-600 hover:bg-slate-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={updateEmailTemplate}
+                      className="bg-green-600 hover:bg-green-500 text-white px-10 py-2 rounded-xl text-sm font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" /> Guardar Cambios
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
