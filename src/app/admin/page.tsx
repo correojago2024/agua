@@ -184,8 +184,29 @@ export default function AdminPage() {
 
   const loadEmailTemplates = async () => {
     setEmailLoading(true);
-    const { data } = await supabase.from('email_templates').select('*').order('id');
-    if (data) setEmailTemplates(data);
+    try {
+      const { data, error } = await supabase.from('email_templates').select('*').order('id');
+      
+      if (error) throw error;
+
+      // Si la tabla está vacía, mostramos las plantillas base del sistema
+      if (!data || data.length === 0) {
+        const defaults: EmailTemplate[] = [
+          { id: 101, name: 'welcome', subject_es: '🎉 Bienvenido a AquaSaaS - {building_name}', body_es: '<h1>¡Bienvenido!</h1><p>Tu edificio {building_name} ha sido registrado.</p>', is_active: true },
+          { id: 102, name: 'measurement_report', subject_es: '💧 Reporte de Agua: {building_name}', body_es: '<h3>Resumen de Consumo</h3><p>Nivel actual: {current_count}%</p>', is_active: true },
+          { id: 103, name: 'anomaly_alert', subject_es: '⚠️ Anomalía Detectada - {building_name}', body_es: '<p>Se detectó una variación inusual.</p>', is_active: true },
+          { id: 104, name: 'limit_90_storage', subject_es: '⚠️ Alerta Almacenamiento 90% - {building_name}', body_es: '<p>Has alcanzado el 90% de almacenamiento.</p>', is_active: true },
+          { id: 105, name: 'limit_90_emails', subject_es: '📧 Alerta Emails 90% - {building_name}', body_es: '<p>Has alcanzado el 90% de emails mensuales.</p>', is_active: true },
+          { id: 106, name: 'trial_3days', subject_es: '⏳ Tu prueba termina en 3 días - {building_name}', body_es: '<p>Tu período de prueba está por terminar.</p>', is_active: true },
+          { id: 107, name: 'trial_expired', subject_es: '📅 Prueba Terminada - {building_name}', body_es: '<p>Tu período de prueba ha finalizado.</p>', is_active: true },
+        ];
+        setEmailTemplates(defaults);
+      } else {
+        setEmailTemplates(data);
+      }
+    } catch (err: any) {
+      setEmailMsg('❌ Error cargando plantillas: ' + err.message);
+    }
     setEmailLoading(false);
   };
 
