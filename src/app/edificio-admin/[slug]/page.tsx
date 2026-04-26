@@ -711,6 +711,7 @@ export default function EdificioAdminPage() {
             role: newMemberRole || 'Vocal', 
             is_admin: newMemberIsAdmin,
             is_junta: true,
+            password: existing.password || '123456', // Asegurar que tenga clave para entrar
             enable_email: newMemberEnableEmail,
             enable_whatsapp: newMemberEnableWhatsapp
           })
@@ -724,6 +725,7 @@ export default function EdificioAdminPage() {
           role: newMemberRole || 'Vocal',
           is_admin: newMemberIsAdmin,
           is_junta: true,
+          password: '123456', // Clave por defecto
           enable_email: newMemberEnableEmail,
           enable_whatsapp: newMemberEnableWhatsapp
         });
@@ -740,8 +742,9 @@ export default function EdificioAdminPage() {
       logClientAudit('INSERT', 'junta_member', memberEmail, { name: memberNameVal, role: newMemberRole, email: memberEmail });
 
       // ENVIAR EMAIL DE BIENVENIDA (Implementación del workflow de EdifiSaaS_v1)
+      setMemberMsg('📧 Enviando email de invitación...');
       try {
-        await fetch('/api/send-email', {
+        const emailRes = await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -750,13 +753,20 @@ export default function EdificioAdminPage() {
             member: { email: memberEmail, name: memberNameVal } 
           })
         });
+        const emailData = await emailRes.json();
+        if (!emailRes.ok || !emailData.success) {
+          console.error('Error enviando email:', emailData.error);
+          setMemberMsg('⚠️ Miembro agregado, pero falló el envío del email: ' + (emailData.error || 'Error desconocido'));
+        } else {
+          setMemberMsg('✅ Miembro agregado e invitación enviada.');
+        }
       } catch (err) {
         console.error('Error enviando email de bienvenida:', err);
+        setMemberMsg('⚠️ Miembro agregado, pero hubo un error de red al enviar el email.');
       }
 
       setNewMemberEmail(''); setNewMemberName(''); setNewMemberRole('Vocal'); setNewMemberIsAdmin(false);
       setShowAddMember(false);
-      setMemberMsg('✅ Miembro agregado correctamente.');
       
       setTimeout(() => {
         setMemberMsg('');

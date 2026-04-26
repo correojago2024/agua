@@ -37,6 +37,11 @@ export async function POST(request: Request) {
     const { type, template, building, member, to, building_id } = body;
     const targetTemplate = template || type;
 
+    // Obtener host para links dinámicos
+    const host = request.headers.get('host') || 'agua-rust.vercel.app';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const baseUrl = `${protocol}://${host}`;
+
     // 1. SI ES UNA PRUEBA REAL DESDE EL PANEL ADMIN (Galería)
     if (body.template) {
       const { building: b, mockHistory, indicators, chartUrls } = getProductionMockData();
@@ -93,7 +98,7 @@ export async function POST(request: Request) {
             <p>Has sido agregado como miembro de la junta para el edificio <strong>${building.name}</strong> en el sistema de monitoreo hídrico <strong>AquaSaaS</strong>.</p>
             
             <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:16px; padding:25px; margin:25px 0; text-align:center;">
-              <p style="margin:0; color:#64748b; font-size:13px; font-weight:bold; uppercase; tracking-wider;">Tu Clave Temporal de Acceso:</p>
+              <p style="margin:0; color:#64748b; font-size:13px; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em;">Tu Clave Temporal de Acceso:</p>
               <p style="margin:10px 0 0; color:#4f46e5; font-size:32px; font-weight:900; letter-spacing:4px;">123456</p>
             </div>
 
@@ -106,14 +111,14 @@ export async function POST(request: Request) {
             </ol>
 
             <div style="margin:40px 0; text-align:center;">
-              <a href="https://agua-rust.vercel.app/edificio-admin/${building.slug}" style="background:#4f46e5; color:#ffffff; padding:16px 32px; text-decoration:none; border-radius:12px; font-weight:bold; display:inline-block; font-size:15px; box-shadow:0 4px 6px -1px rgba(79, 70, 229, 0.4);">Acceder al Portal Administrativo</a>
+              <a href="${baseUrl}/edificio-admin/${building.slug}" style="background:#4f46e5; color:#ffffff; padding:16px 32px; text-decoration:none; border-radius:12px; font-weight:bold; display:inline-block; font-size:15px; box-shadow:0 4px 6px -1px rgba(79, 70, 229, 0.4);">Acceder al Portal Administrativo</a>
             </div>
             
             <p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:40px; border-top:1px solid #f1f5f9; padding-top:20px;">2026 AquaSaaS — Tecnología para su Comunidad</p>
           </div>
         </div>`.trim();
       const res = await sendEmailViaGmail([member.email], `💧 Bienvenido al Sistema de Control del Agua — ${building.name}`, juntaHtml, building.id, 'junta_welcome');
-      return NextResponse.json({ success: res.success });
+      return NextResponse.json({ success: res.success, error: res.error });
     }
 
     if (type === 'welcome') {
