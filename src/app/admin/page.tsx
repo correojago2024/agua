@@ -153,6 +153,10 @@ export default function AdminPage() {
   const [maintLoading, setMaintLoading] = useState(false);
   const [maintResult, setMaintResult] = useState<any>(null);
 
+  // Email Test Gallery States
+  const [testEmailLoading, setTestEmailLoading] = useState<string | null>(null);
+  const [emailMsg, setEmailMsg] = useState('');
+
   // System Status
   const [systemStatusLoading, setSystemStatusLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState<any>(null);
