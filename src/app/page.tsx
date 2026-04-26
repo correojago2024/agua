@@ -1723,8 +1723,9 @@ export default function HomePage() {
 
       {/* Zapier Chatbot */}
       <div dangerouslySetInnerHTML={{ __html: `
+        <script async type='module' src='https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js'></script>
         <zapier-interfaces-chatbot-embed 
-          is-popup='false' 
+          is-popup='true' 
           chatbot-id='cmoby1wx90033arnq1e04imh7' 
           height='600px' 
           width='400px'>
