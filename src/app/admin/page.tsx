@@ -155,7 +155,6 @@ export default function AdminPage() {
 
   // Email Test Gallery States
   const [testEmailLoading, setTestEmailLoading] = useState<string | null>(null);
-  const [emailMsg, setEmailMsg] = useState('');
 
   // System Status
   const [systemStatusLoading, setSystemStatusLoading] = useState(false);
