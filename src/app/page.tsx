@@ -30,6 +30,8 @@ import { createClient } from '@supabase/supabase-js';
 import { Droplets, Building, Mail, Lock, AlertCircle, ArrowRight, ArrowLeft, Phone, Users, BarChart3, CheckCircle, User, MessageSquare, KeyRound, Eye, EyeOff, X } from 'lucide-react';
 import PricingSection from '@/components/PricingSection';
 import FAQSection from '@/components/FAQSection';
+import HowItWorksSection from '@/components/HowItWorksSection';
+import Script from 'next/script';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodnluaGhiZ3BpdHRpbXlvcHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMyOTM3NTYsImV4cCI6MjA1ODg2OTc1Nn0.sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
@@ -1039,6 +1041,7 @@ export default function HomePage() {
           </div>
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6 text-gray-200">
+            <a href="#como-funciona" className="hover:text-white transition-colors">Cómo funciona</a>
             <a href="#features" className="hover:text-white transition-colors">Características</a>
             <a href="#planes" className="hover:text-white transition-colors">Planes</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
@@ -1056,6 +1059,7 @@ export default function HomePage() {
         {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-slate-900 border-t border-slate-700 px-6 py-4 flex flex-col gap-4">
+            <a href="#como-funciona" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">Cómo funciona</a>
             <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">Características</a>
             <a href="#planes" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">Planes</a>
             <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="text-gray-200 hover:text-white py-2 border-b border-slate-800">FAQ</a>
@@ -1175,6 +1179,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <HowItWorksSection />
 
       {/* CARACTERISTICAS */}
       <section id="features" className="py-20 px-6 bg-slate-800/30">
@@ -1715,6 +1721,20 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Zapier Chatbot */}
+      <Script 
+        async 
+        type="module" 
+        src="https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js" 
+      />
+      {/* @ts-ignore */}
+      <zapier-interfaces-chatbot-embed 
+        is-popup="true" 
+        chatbot-id="cmoby1wx90033arnq1e04imh7" 
+        height="600px" 
+        width="400px" 
+      />
 
     </div>
   );
