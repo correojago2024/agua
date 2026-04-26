@@ -6,13 +6,15 @@
 
 const DEFAULT_API_KEY = process.env.GEMINI_API_KEY;
 
-// Lista de modelos verificados y posibles variaciones
+// Lista ampliada con sufijos -latest para evitar errores 404
 const MODELOS_A_PROBAR = [
   'gemini-1.5-flash',
-  'gemini-2.0-flash',
+  'gemini-1.5-flash-latest',
   'gemini-2.0-flash-exp',
+  'gemini-2.0-flash',
   'gemini-1.5-pro',
-  'gemini-2.5-flash' // Mantenemos este por si es una versión especial del usuario
+  'gemini-1.5-pro-latest',
+  'gemini-2.5-flash'
 ];
 
 const API_VERSIONS = ['v1beta', 'v1'];
@@ -21,28 +23,21 @@ export async function generateWaterAnalysis(prompt: string, customApiKey?: strin
   const apiKey = customApiKey || DEFAULT_API_KEY;
   
   if (!apiKey) {
-    throw new Error('Configuración incompleta: No se encontró la variable GEMINI_API_KEY en el servidor ni una llave personalizada para este edificio.');
+    throw new Error('Falta GEMINI_API_KEY');
   }
 
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 8192,
-    },
+    generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
   };
 
-  let diagnostico: any[] = [];
-  let exito = false;
-  let responseText = '';
+  let ultimoStatus = 0;
+  let ultimoError = '';
 
   for (const modelo of MODELOS_A_PROBAR) {
     for (const version of API_VERSIONS) {
-      const url = `https://generativelanguage.googleapis.com/${version}/models/${modelo}:generateContent?key=${apiKey}`;
-      
       try {
+        const url = `https://generativelanguage.googleapis.com/${version}/models/${modelo}:generateContent?key=${apiKey}`;
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -50,58 +45,41 @@ export async function generateWaterAnalysis(prompt: string, customApiKey?: strin
         });
 
         const data = await response.json();
-        const status = response.status;
-
         if (response.ok) {
-          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (text.length > 5) {
-            console.log(`[AI] ✅ ÉXITO: ${modelo} (${version})`);
-            diagnostico.push({ modelo, version, status: 'OK', message: 'Funcionando' });
-            return text; // Retorna inmediatamente el primero que funcione
-          }
-        } else {
-          const errorMsg = data?.error?.message || 'Sin mensaje';
-          diagnostico.push({ modelo, version, status, message: errorMsg });
-          console.warn(`[AI] Fallo ${modelo} (${version}): ${status} - ${errorMsg}`);
+          return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         }
-      } catch (error: any) {
-        diagnostico.push({ modelo, version, status: 'Error', message: error.message });
+        
+        ultimoStatus = response.status;
+        ultimoError = data?.error?.message || 'Error';
+        if (ultimoStatus === 429) continue; // Si es cuota, probamos otro modelo
+      } catch (e: any) {
+        ultimoError = e.message;
       }
     }
   }
 
-  // Si llegamos aquí es que nada funcionó
-  const errorDetalle = diagnostico.map(d => `${d.modelo}(${d.status})`).join(', ');
-  throw new Error(`Diagnóstico de Fallo: ${errorDetalle}. Posiblemente la cuota de la API Key se agotó o el servidor de Google está restringiendo el acceso desde esta región.`);
+  throw new Error(`Agotados todos los intentos. Último fallo: ${ultimoStatus} - ${ultimoError}`);
 }
 
-/**
- * Función especial para el botón de TEST que devuelve el diagnóstico completo
- */
 export async function testAiConnection(customApiKey?: string) {
   const apiKey = customApiKey || DEFAULT_API_KEY;
-  const prompt = 'Responde OK';
   let diagnostico: any[] = [];
 
   for (const modelo of MODELOS_A_PROBAR) {
-    // Para el test rápido probamos solo v1beta por defecto para ahorrar tiempo
-    const version = 'v1beta';
-    const url = `https://generativelanguage.googleapis.com/${version}/models/${modelo}:generateContent?key=${apiKey}`;
-    
+    // Probamos v1beta que es la más común para flash
     try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({ contents: [{ parts: [{ text: 'Hi' }] }] }),
       });
-      const status = response.status;
       const data = await response.json();
-      
       diagnostico.push({ 
         modelo, 
-        status, 
+        status: response.status, 
         ok: response.ok,
-        msg: response.ok ? 'Disponible' : (data?.error?.message?.substring(0, 50) || 'Error')
+        msg: response.ok ? 'Disponible' : (data?.error?.message?.substring(0, 40) || 'Error')
       });
     } catch (e: any) {
       diagnostico.push({ modelo, status: 'Error', ok: false, msg: e.message });
