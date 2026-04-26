@@ -137,38 +137,38 @@ export async function POST(request: Request) {
       ).join('\n');
 
       const prompt = `
-Actúa como un ingeniero hidráulico experto en gestión de edificios residenciales.
-Tu objetivo es generar un INFORME TÉCNICO DE GESTIÓN HÍDRICA basado en estos datos reales:
+Actúa como un ingeniero hidráulico experto senior en gestión de recursos hídricos para edificaciones residenciales.
+Tu objetivo es generar un INFORME TÉCNICO DE GESTIÓN HÍDRICA de nivel ejecutivo.
 
-📊 RESUMEN ESTADÍSTICO CALCULADO (Úsalo para tus tablas):
+📊 DATOS DEL EDIFICIO Y ESTADÍSTICAS CALCULADAS:
 - Edificio: ${building.name}
-- Capacidad Total: ${building.tank_capacity_liters} Litros
-- Periodo Analizado: ${new Date(firstM.recorded_at).toLocaleDateString()} al ${new Date(lastM.recorded_at).toLocaleDateString()}
-- Registros procesados: ${measurements.length}
+- Apartamentos: ${building.apartments_count || '43'}
+- Capacidad Tanque: ${building.tank_capacity_liters} Litros
+- Periodo: ${new Date(firstM.recorded_at).toLocaleDateString()} al ${new Date(lastM.recorded_at).toLocaleDateString()}
+- Registros: ${measurements.length}
 - Nivel Promedio: ${avgLevel.toFixed(1)}%
-- Consumo Total en el periodo: ${Math.round(totalConsumed).toLocaleString()} L
-- Llenado Total en el periodo: ${Math.round(totalFilled).toLocaleString()} L
+- Consumo Total: ${Math.round(totalConsumed).toLocaleString()} L
+- Llenado Total: ${Math.round(totalFilled).toLocaleString()} L
 - Consumo Diario Promedio: ${Math.round(consDiarioProm).toLocaleString()} L/día
-- Autonomía Actual Estimada: ${(autonomiaEstimada / 24).toFixed(1)} días
+- Autonomía Actual: ${(autonomiaEstimada / 24).toFixed(1)} días
 
-🎯 ESTRUCTURA OBLIGATORIA DEL INFORME:
+⚠️ NORMAS ESTRICTAS DE FORMATO Y CONTENIDO:
+1. PROHIBICIÓN DE CEROS: Queda terminantemente prohibido usar placeholders como "$0", "0" o vacíos para datos que no tengas. Si no hay una comparativa, redacta un análisis cualitativo o usa "N/A".
+2. COMPARATIVA ESTÁNDAR: Usa como referencia que una persona consume aprox. 200L/día. Para un edificio de ${building.apartments_count || '43'} aptos (promedio 3.5 personas/apto), el consumo esperado sería de aprox. ${((building.apartments_count || 43) * 3.5 * 200).toLocaleString()} L/día. Compara este estándar con el real de ${Math.round(consDiarioProm).toLocaleString()} L/día.
+3. TABLAS OBLIGATORIAS: Genera tablas Markdown para el Resumen Ejecutivo (KPIs) y para el Balance Hídrico (Consumo vs Llenado).
+4. FIRMA: Finaliza el informe con una firma profesional del "Departamento de Ingeniería aGuaSaaS".
 
-1. RESUMEN EJECUTIVO: Incluye una TABLA Markdown con los KPIs principales (Nivel actual, Consumo promedio, Autonomía).
-2. VALIDACIÓN DE DATOS: Evalúa la calidad de los datos reportados por los colaboradores.
-3. ANÁLISIS TÉCNICO: Crea una TABLA con el resumen de consumo vs llenado. Analiza si el llenado compensa el gasto.
-4. DETECCIÓN DE ANOMALÍAS: Busca fugas nocturnas o descensos bruscos. Menciona fechas/horas específicas de los datos adjuntos.
-5. REFERENCIAS: Compara el consumo de ${Math.round(consDiarioProm)} L/día con el estándar para ${building.apartments_count || '43'} apartamentos.
-6. RECOMENDACIONES: Mínimo 5 acciones concretas (Corto, Mediano y Largo Plazo).
+🎯 ESTRUCTURA REQUERIDA:
+# INFORME TÉCNICO DE GESTIÓN HÍDRICA
+1. RESUMEN EJECUTIVO (Con tabla de KPIs)
+2. CALIDAD DE LA DATA (Menciona si la frecuencia de reportes es suficiente)
+3. ANÁLISIS DE BALANCE HÍDRICO (Tabla Comparativa y Conclusión sobre si el llenado es suficiente)
+4. DETECCIÓN DE ANOMALÍAS (Analiza fugas nocturnas o picos atípicos en la data adjunta)
+5. REFERENCIAS INTERNACIONALES (Compara con el estándar de 200L/persona/día)
+6. RECOMENDACIONES TÉCNICAS (Mínimo 5 acciones priorizadas)
 
-MUESTRA DE ÚLTIMOS DATOS (Para identificar patrones específicos):
+ÚLTIMOS REGISTROS PARA ANÁLISIS DE PATRONES:
 ${csvData}
-
-📈 REQUERIMIENTOS:
-- Usa lenguaje técnico profesional.
-- No inventes datos, usa los del RESUMEN ESTADÍSTICO.
-- SIEMPRE incluye tablas para comparar cifras.
-- Si un valor parece bajo o alto, explícalo técnicamente.
-- NO uses placeholders como "$0", usa las cifras reales proporcionadas.
 `;
 
       const aiText = await generateWaterAnalysis(prompt, currentSettings?.ia_api_key);
