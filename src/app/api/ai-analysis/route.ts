@@ -137,38 +137,34 @@ export async function POST(request: Request) {
       ).join('\n');
 
       const prompt = `
-Actúa como un ingeniero hidráulico experto senior en gestión de recursos hídricos para edificaciones residenciales.
-Tu objetivo es generar un INFORME TÉCNICO DE GESTIÓN HÍDRICA de nivel ejecutivo.
+Actúa como un ingeniero hidráulico experto senior de nivel mundial.
+Tu misión es redactar un INFORME TÉCNICO DE ALTA GERENCIA impecable.
 
-📊 DATOS DEL EDIFICIO Y ESTADÍSTICAS CALCULADAS:
+📊 ESTADÍSTICAS REALES (Usa estos números exactos, prohibido inventar o dejar en cero):
 - Edificio: ${building.name}
-- Apartamentos: ${building.apartments_count || '43'}
-- Capacidad Tanque: ${building.tank_capacity_liters} Litros
-- Periodo: ${new Date(firstM.recorded_at).toLocaleDateString()} al ${new Date(lastM.recorded_at).toLocaleDateString()}
-- Registros: ${measurements.length}
-- Nivel Promedio: ${avgLevel.toFixed(1)}%
-- Consumo Total: ${Math.round(totalConsumed).toLocaleString()} L
-- Llenado Total: ${Math.round(totalFilled).toLocaleString()} L
-- Consumo Diario Promedio: ${Math.round(consDiarioProm).toLocaleString()} L/día
+- Capacidad: ${building.tank_capacity_liters} Litros
+- Consumo Diario Real: ${Math.round(consDiarioProm).toLocaleString()} L/día
 - Autonomía Actual: ${(autonomiaEstimada / 24).toFixed(1)} días
+- Nivel Promedio: ${avgLevel.toFixed(1)}%
 
-⚠️ NORMAS ESTRICTAS DE FORMATO Y CONTENIDO:
-1. PROHIBICIÓN DE CEROS: Queda terminantemente prohibido usar placeholders como "$0", "0" o vacíos para datos que no tengas. Si no hay una comparativa, redacta un análisis cualitativo o usa "N/A".
-2. COMPARATIVA ESTÁNDAR: Usa como referencia que una persona consume aprox. 200L/día. Para un edificio de ${building.apartments_count || '43'} aptos (promedio 3.5 personas/apto), el consumo esperado sería de aprox. ${((building.apartments_count || 43) * 3.5 * 200).toLocaleString()} L/día. Compara este estándar con el real de ${Math.round(consDiarioProm).toLocaleString()} L/día.
-3. TABLAS OBLIGATORIAS: Genera tablas Markdown para el Resumen Ejecutivo (KPIs) y para el Balance Hídrico (Consumo vs Llenado).
-4. FIRMA: Finaliza el informe con una firma profesional del "Departamento de Ingeniería aGuaSaaS".
+🌍 BENCHMARKS DE REFERENCIA (Úsalos para comparar):
+- Estándar Mundial: 200 Litros por persona al día.
+- Para este edificio de ${building.apartments_count || 43} aptos (est. 150 personas), el consumo ideal sería: ${((building.apartments_count || 43) * 3.5 * 200).toLocaleString()} L/día.
+- Si el consumo real (${Math.round(consDiarioProm).toLocaleString()} L/día) es menor al ideal, felicita a la comunidad por su ahorro o menciona posible sub-registro.
 
-🎯 ESTRUCTURA REQUERIDA:
-# INFORME TÉCNICO DE GESTIÓN HÍDRICA
-1. RESUMEN EJECUTIVO (Con tabla de KPIs)
-2. CALIDAD DE LA DATA (Menciona si la frecuencia de reportes es suficiente)
-3. ANÁLISIS DE BALANCE HÍDRICO (Tabla Comparativa y Conclusión sobre si el llenado es suficiente)
-4. DETECCIÓN DE ANOMALÍAS (Analiza fugas nocturnas o picos atípicos en la data adjunta)
-5. REFERENCIAS INTERNACIONALES (Compara con el estándar de 200L/persona/día)
-6. RECOMENDACIONES TÉCNICAS (Mínimo 5 acciones priorizadas)
+🚫 REGLAS DE ORO:
+- PROHIBIDO usar símbolos como "$0", "0" o guiones para datos faltantes. Si no tienes un dato, usa "Dato no disponible" o "Pendiente de medición".
+- PROHIBIDO usar placeholders como "[Tu Nombre]". Firma siempre como "Departamento de Ingeniería aGuaSaaS".
+- OBLIGATORIO: Usa tablas Markdown para los KPIs y el Balance Hídrico.
+- TONO: Técnico, preciso, ejecutivo y propositivo.
 
-ÚLTIMOS REGISTROS PARA ANÁLISIS DE PATRONES:
-${csvData}
+🎯 ESTRUCTURA DEL INFORME:
+# INFORME DE INTELIGENCIA HÍDRICA PROFESIONAL
+1. RESUMEN EJECUTIVO (Con tabla de KPIs principales)
+2. ANÁLISIS DE EFICIENCIA (Compara el consumo real vs el estándar internacional calculado arriba)
+3. BALANCE HÍDRICO (Tabla de Consumo vs Llenado y diagnóstico de sostenibilidad)
+4. HALLAZGOS Y ANOMALÍAS (Basado en la data adjunta)
+5. RECOMENDACIONES TÉCNICAS (Mínimo 5 acciones numeradas y priorizadas)
 `;
 
       const aiText = await generateWaterAnalysis(prompt, currentSettings?.ia_api_key);
