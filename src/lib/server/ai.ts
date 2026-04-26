@@ -5,11 +5,17 @@
  */
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyACK6P75MupwOMHFVD3MwkiHYHz-EW5iVs';
-const GEMINI_MODEL = 'gemini-2.0-flash'; // Usando el modelo más reciente y rápido
+
+// Lista de modelos a probar en orden. Si uno falla por quota, intenta con el siguiente.
+const MODELOS_RESPALDO = [
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-exp',
+  'gemini-pro'
+];
 
 export async function generateWaterAnalysis(prompt: string) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
@@ -20,33 +26,54 @@ export async function generateWaterAnalysis(prompt: string) {
     },
   };
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+  let ultimoError = '';
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Gemini API Error:', errorData);
-      throw new Error(`Gemini API returned ${response.status}: ${JSON.stringify(errorData)}`);
-    }
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  for (const modelo of MODELOS_RESPALDO) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`;
     
-    if (!text) {
-      throw new Error('Gemini returned an empty response');
-    }
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    return text;
-  } catch (error) {
-    console.error('Error in generateWaterAnalysis:', error);
-    throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData?.error?.message || 'Error desconocido';
+        
+        console.warn(`[AI] Modelo ${modelo} falló: ${response.status} - ${errorMessage}`);
+        ultimoError = `Error ${response.status}: ${errorMessage}`;
+        
+        // Si el modelo no existe o se agotó la cuota (429), continuamos con el siguiente de la lista
+        if (response.status === 429 || response.status === 404 || response.status === 503) {
+          continue;
+        }
+        
+        // Si es otro error grave, lo lanzamos
+        throw new Error(ultimoError);
+      }
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      if (text.length > 200) {
+        console.log(`[AI] ✅ Respuesta exitosa usando modelo: ${modelo}`);
+        return text;
+      } else {
+        ultimoError = 'Respuesta demasiado corta';
+        continue;
+      }
+
+    } catch (error: any) {
+      ultimoError = error.message;
+      console.error(`[AI] Error intentando con ${modelo}:`, error.message);
+    }
   }
+
+  // Si fallan todos los modelos, retornamos un error claro o un mensaje de respaldo
+  console.error('[AI] ❌ Todos los modelos de Gemini fallaron. Último error:', ultimoError);
+  throw new Error(`Los servidores de IA están ocupados o excedieron su límite de cuota. Por favor intente generar el informe más tarde. Detalle: ${ultimoError}`);
 }
 
 /**
