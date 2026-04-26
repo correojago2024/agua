@@ -103,41 +103,60 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'No hay datos suficientes para el rango seleccionado' }, { status: 400 });
       }
 
+      // --- CÁLCULO DE ESTADÍSTICAS PREVIAS PARA LA IA ---
+      const ltsVals = measurements.map(m => m.liters).filter(v => v > 0);
+      const pcts = measurements.map(m => m.percentage);
+      const variations = measurements.map(m => m.variation_lts || 0);
+      
+      const totalConsumed = Math.abs(variations.filter(v => v < 0).reduce((a, b) => a + b, 0));
+      const totalFilled = variations.filter(v => v > 0).reduce((a, b) => a + b, 0);
+      const avgLevel = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+      
+      const lastM = measurements[measurements.length - 1];
+      const firstM = measurements[0];
+      const daysDiff = Math.max(1, (new Date(lastM.recorded_at).getTime() - new Date(firstM.recorded_at).getTime()) / (1000 * 60 * 60 * 24));
+      
+      const consDiarioProm = totalConsumed / daysDiff;
+      const autonomiaEstimada = lastM.liters / (consDiarioProm / 24 || 1);
+
       // Preparar datos para el prompt
-      const csvData = measurements.map(m => 
-        `${m.recorded_at},${m.liters},${m.percentage}%,${m.collaborator_name || 'Anónimo'}`
+      const csvData = measurements.slice(-100).map(m => 
+        `${m.recorded_at},${Math.round(m.liters)}L,${Math.round(m.percentage)}%,${m.collaborator_name || 'Anónimo'}`
       ).join('\n');
 
       const prompt = `
-Actúa como un ingeniero hidráulico / especialista en gestión de recursos hídricos en edificaciones residenciales.
+Actúa como un ingeniero hidráulico experto en gestión de edificios residenciales.
+Tu objetivo es generar un INFORME TÉCNICO DE GESTIÓN HÍDRICA basado en estos datos reales:
 
-Voy a proporcionarte un conjunto de datos reales del edificio "${building.name}" con ${building.apartments_count || 'xx'} apartamentos, capacidad de tanque de ${building.tank_capacity_liters}L.
+📊 RESUMEN ESTADÍSTICO CALCULADO (Úsalo para tus tablas):
+- Edificio: ${building.name}
+- Capacidad Total: ${building.tank_capacity_liters} Litros
+- Periodo Analizado: ${new Date(firstM.recorded_at).toLocaleDateString()} al ${new Date(lastM.recorded_at).toLocaleDateString()}
+- Registros procesados: ${measurements.length}
+- Nivel Promedio: ${avgLevel.toFixed(1)}%
+- Consumo Total en el periodo: ${Math.round(totalConsumed).toLocaleString()} L
+- Llenado Total en el periodo: ${Math.round(totalFilled).toLocaleString()} L
+- Consumo Diario Promedio: ${Math.round(consDiarioProm).toLocaleString()} L/día
+- Autonomía Actual Estimada: ${(autonomiaEstimada / 24).toFixed(1)} días
 
-🎯 OBJETIVO DEL ANÁLISIS
-Realiza un informe técnico completo y profesional que incluya:
-1. Resumen Ejecutivo
-2. Validación y Calidad de Datos
-3. Análisis Técnico del Consumo
-4. Detección de Anomalías (fugas, consumos nocturnos)
-5. Comparación con Referencias Estándar
-6. Evaluación del Sistema de Almacenamiento
-7. Hallazgos Principales
-8. Recomendaciones Técnicas (Corto, mediano y largo plazo)
-9. Conclusión Profesional
+🎯 ESTRUCTURA OBLIGATORIA DEL INFORME:
 
-📊 DATOS DEL EDIFICIO
-Nombre: ${building.name}
-Capacidad Tanque: ${building.tank_capacity_liters} L
-Total Registros: ${measurements.length}
-Rango: ${date_range?.start || 'Inicio'} hasta ${date_range?.end || 'Fin'}
+1. RESUMEN EJECUTIVO: Incluye una TABLA Markdown con los KPIs principales (Nivel actual, Consumo promedio, Autonomía).
+2. VALIDACIÓN DE DATOS: Evalúa la calidad de los datos reportados por los colaboradores.
+3. ANÁLISIS TÉCNICO: Crea una TABLA con el resumen de consumo vs llenado. Analiza si el llenado compensa el gasto.
+4. DETECCIÓN DE ANOMALÍAS: Busca fugas nocturnas o descensos bruscos. Menciona fechas/horas específicas de los datos adjuntos.
+5. REFERENCIAS: Compara el consumo de ${Math.round(consDiarioProm)} L/día con el estándar para ${building.apartments_count || '43'} apartamentos.
+6. RECOMENDACIONES: Mínimo 5 acciones concretas (Corto, Mediano y Largo Plazo).
 
-DATOS DE MEDICIONES (Fecha, Litros, Porcentaje, Colaborador):
+MUESTRA DE ÚLTIMOS DATOS (Para identificar patrones específicos):
 ${csvData}
 
-📈 REQUERIMIENTOS ADICIONALES
-Usa lenguaje técnico pero claro.
-NO menciones a Gemini ni a Google.
-Genera el informe listo para ser presentado.
+📈 REQUERIMIENTOS:
+- Usa lenguaje técnico profesional.
+- No inventes datos, usa los del RESUMEN ESTADÍSTICO.
+- SIEMPRE incluye tablas para comparar cifras.
+- Si un valor parece bajo o alto, explícalo técnicamente.
+- NO uses placeholders como "$0", usa las cifras reales proporcionadas.
 `;
 
       const aiText = await generateWaterAnalysis(prompt, currentSettings?.ia_api_key);
