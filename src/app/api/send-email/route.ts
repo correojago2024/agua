@@ -133,6 +133,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: res.success });
     }
 
+    if (type === 'password_changed') {
+      const pcHtml = `
+        <div style="font-family:sans-serif; max-width:500px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; padding:30px; color:#1e293b;">
+          <h2 style="color:#0d6efd; margin-top:0;">🔒 Contraseña Actualizada</h2>
+          <p>Hola,</p>
+          <p>Te informamos que la contraseña de tu cuenta en <strong>aGuaSaaS</strong> ha sido cambiada exitosamente para el edificio <strong>${building.name}</strong>.</p>
+          <p style="background:#f8fafc; padding:15px; border-radius:8px; font-size:13px; color:#64748b;">Si no realizaste este cambio, por favor contacta de inmediato al administrador del sistema.</p>
+          <p style="margin-bottom:0;">Atentamente,<br>Equipo aGuaSaaS</p>
+        </div>`.trim();
+      const res = await sendEmailViaGmail([member.email], `🔒 Tu contraseña ha sido cambiada — aGuaSaaS`, pcHtml, building.id, 'password_changed');
+      return NextResponse.json({ success: res.success });
+    }
+
     return NextResponse.json({ error: 'Tipo no soportado' }, { status: 400 });
 
   } catch (error: any) {

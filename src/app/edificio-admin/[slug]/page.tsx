@@ -742,6 +742,11 @@ export default function EdificioAdminPage() {
           setAuthed(true);
           setAuthError('');
           logClientAudit('LOGIN', 'user_access', member.email, { name: member.name, role: member.role });
+          
+          // OBLIGAR a cambiar clave si es la temporal "123456" aunque ya esté guardada en BD
+          if (inputPassword === TEMP_PASSWORD) {
+            setShowPasswordChange(true);
+          }
           return;
         }
 
@@ -836,6 +841,21 @@ export default function EdificioAdminPage() {
       
       // Update current user
       setCurrentUser({ ...currentUser, password: newPassword });
+
+      // Enviar email de confirmación de cambio de clave
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'password_changed', 
+            building: building, 
+            member: { email: currentUser.email } 
+          })
+        });
+      } catch (e) {
+        console.error('Error enviando email de confirmación de clave:', e);
+      }
     } catch (err: any) {
       setPasswordChangeMsg('Error de conexión: ' + err.message);
     }
@@ -1415,19 +1435,51 @@ export default function EdificioAdminPage() {
             )}
             <div className="space-y-4">
               <div>
-                <label className="text-slate-400 text-xs mb-1 block">Nueva contraseña</label>
-                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500" />
+                <label className="block text-slate-400 text-xs mb-1 uppercase font-bold tracking-wider">Contraseña Actual</label>
+                <input 
+                  type="password" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/50"
+                  placeholder="Ingresa tu clave actual"
+                />
               </div>
-              <div>
-                <label className="text-slate-400 text-xs mb-1 block">Confirmar contraseña</label>
-                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1 uppercase font-bold tracking-wider">Nueva Contraseña</label>
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="Min. 4 caracteres"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1 uppercase font-bold tracking-wider">Confirmar</label>
+                  <input 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="Repite la nueva clave"
+                  />
+                </div>
               </div>
-              <button onClick={handlePasswordChange}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-colors">
-                Guardar nueva contraseña
-              </button>
+              <div className="flex gap-2 pt-2">
+                <button 
+                  onClick={handlePasswordChange}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95"
+                >
+                  Guardar Nueva Contraseña
+                </button>
+                <button 
+                  onClick={() => setShowPasswordChange(false)}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-3 rounded-xl font-bold transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2811,6 +2863,32 @@ export default function EdificioAdminPage() {
             </div>
             )}
 
+            {/* SEGURIDAD - Cambiar mi clave */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-5 py-4 border-b border-slate-700 bg-red-500/5">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-red-400" />
+                  Seguridad de mi cuenta
+                </h3>
+                <p className="text-slate-400 text-xs mt-1">Cambia tu contraseña de acceso personal al portal.</p>
+              </div>
+              <div className="p-5">
+                <button 
+                  onClick={() => {
+                    setPassword('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    setPasswordChangeMsg('');
+                    setShowPasswordChange(true);
+                  }}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 border border-slate-600"
+                >
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  Cambiar Mi Clave de Acceso
+                </button>
+              </div>
+            </div>
+
             {/* Configuración de WhatsApp */}
             {isUserAdmin && (
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
@@ -3055,13 +3133,15 @@ export default function EdificioAdminPage() {
                           <Settings className="w-5 h-5 text-blue-400" />
                           Configuración
                         </h3>
-                        <button 
-                          onClick={handleTestIA}
-                          disabled={testingAi}
-                          className="text-[10px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded-lg font-black uppercase transition-all"
-                        >
-                          {testingAi ? 'Probando...' : 'Test IA'}
-                        </button>
+                        {isUserAdmin && (
+                          <button 
+                            onClick={handleTestIA}
+                            disabled={testingAi}
+                            className="text-[10px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded-lg font-black uppercase transition-all"
+                          >
+                            {testingAi ? 'Probando...' : 'Test IA'}
+                          </button>
+                        )}
                       </div>
                       
                       {iaTestResult && (
@@ -3111,20 +3191,22 @@ export default function EdificioAdminPage() {
                         </select>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider flex justify-between">
-                          <span>API KEY Personalizada (Opcional)</span>
-                          <span className="text-blue-500 lowercase font-normal italic">Si falla la global</span>
-                        </label>
-                        <input 
-                          type="password"
-                          value={iaSettings.ia_api_key || ''}
-                          onChange={e => setIaSettings({...iaSettings, ia_api_key: e.target.value})}
-                          disabled={!iaSettings.is_enabled}
-                          placeholder="Pega tu llave de Google AI Studio"
-                          className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/50"
-                        />
-                      </div>
+                      {isUserAdmin && (
+                        <div className="space-y-2">
+                          <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider flex justify-between">
+                            <span>API KEY Personalizada (Opcional)</span>
+                            <span className="text-blue-500 lowercase font-normal italic">Si falla la global</span>
+                          </label>
+                          <input 
+                            type="password"
+                            value={iaSettings.ia_api_key || ''}
+                            onChange={e => setIaSettings({...iaSettings, ia_api_key: e.target.value})}
+                            disabled={!iaSettings.is_enabled}
+                            placeholder="Pega tu llave de Google AI Studio"
+                            className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/50"
+                          />
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">Enviar a Emails (Separados por coma)</label>
@@ -3143,19 +3225,21 @@ export default function EdificioAdminPage() {
                           id="sendToJuntaIa"
                           checked={iaSettings.send_to_junta}
                           onChange={e => setIaSettings({...iaSettings, send_to_junta: e.target.checked})}
-                          disabled={!iaSettings.is_enabled}
+                          disabled={!iaSettings.is_enabled || !isUserAdmin}
                           className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600"
                         />
                         <label htmlFor="sendToJuntaIa" className="text-xs text-slate-300 cursor-pointer">Enviar también a toda la Junta</label>
                       </div>
 
-                      <button 
-                        onClick={saveIaSettings}
-                        disabled={iaLoading || !iaSettings.is_enabled}
-                        className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2"
-                      >
-                        <Save className="w-4 h-4" /> Guardar Configuración
-                      </button>
+                      {isUserAdmin && (
+                        <button 
+                          onClick={saveIaSettings}
+                          disabled={iaLoading || !iaSettings.is_enabled}
+                          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                        >
+                          <Save className="w-4 h-4" /> Guardar Configuración
+                        </button>
+                      )}
                       
                       {iaMsg && <p className="text-center text-xs font-medium animate-pulse">{iaMsg}</p>}
                     </div>
