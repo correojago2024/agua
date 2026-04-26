@@ -82,7 +82,6 @@ export default function HomePage() {
   const router = useRouter();
   const [view, setView] = useState<'home' | 'login' | 'register' | 'forgot'>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [plans, setPlans] = useState<any[]>([]);
 
@@ -1722,38 +1721,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      {/* Zapier Chatbot Widget (Iframe Version) */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-4">
-        {showChat && (
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="bg-blue-600 p-3 flex justify-between items-center text-white">
-              <span className="font-bold flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" /> Chat Soporte
-              </span>
-              <button onClick={() => setShowChat(false)} className="hover:bg-blue-700 p-1 rounded transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <iframe 
-              src='https://interfaces.zapier.com/embed/chatbot/cmoby1wx90033arnq1e04imh7' 
-              height='500px' 
-              width='350px' 
-              allow='clipboard-write *' 
-              style={{ border: 'none' }}
-              title="Zapier Chatbot"
-            ></iframe>
-          </div>
-        )}
-        
-        <button
-          onClick={() => setShowChat(!showChat)}
-          className="bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 border-2 border-white/20"
-          title="Abrir Chat"
-        >
-          {showChat ? <X className="w-7 h-7" /> : <MessageSquare className="w-7 h-7" />}
-        </button>
-      </div>
 
     </div>
   );

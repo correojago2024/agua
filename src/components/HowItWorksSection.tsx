@@ -176,6 +176,62 @@ const HowItWorksSection = () => {
             </div>
           </div>
         </div>
+
+        {/* Nueva Sección: Visualización de Resultados */}
+        <div className="mt-32">
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Información que recibirás en tu mano
+            </h3>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Visualiza estadísticas claras, proyecciones de consumo y reportes detallados diseñados para una toma de decisiones inteligente.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="space-y-4 group">
+              <div className="bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-all shadow-xl">
+                <img 
+                  src="https://raw.githubusercontent.com/correojago2024/agua/main/grafico1.jpg" 
+                  alt="Estadísticas de Consumo" 
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              <div className="px-2">
+                <h4 className="text-white font-bold mb-2">Panel de Control Histórico</h4>
+                <p className="text-slate-400 text-sm">Análisis detallado de tendencias y variaciones de consumo a lo largo del tiempo.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 group">
+              <div className="bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-all shadow-xl">
+                <img 
+                  src="https://raw.githubusercontent.com/correojago2024/agua/main/grafico2.jpg" 
+                  alt="Dashboard de Gestión" 
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              <div className="px-2">
+                <h4 className="text-white font-bold mb-2">Dashboard de Inteligencia</h4>
+                <p className="text-slate-400 text-sm">Indicadores clave de rendimiento (KPIs) para una gestión eficiente del recurso hídrico.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 group">
+              <div className="bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-all shadow-xl">
+                <img 
+                  src="https://raw.githubusercontent.com/correojago2024/agua/main/grafico3email.jpg" 
+                  alt="Reporte por Email" 
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              <div className="px-2">
+                <h4 className="text-white font-bold mb-2">Reportes Automatizados</h4>
+                <p className="text-slate-400 text-sm">Recibe notificaciones e informes gráficos directamente en tu bandeja de entrada.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
