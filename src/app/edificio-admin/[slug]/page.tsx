@@ -213,13 +213,21 @@ export default function EdificioAdminPage() {
   const logClientAudit = async (operation: string, entity_type: string, entity_id: string, data?: any) => {
     if (!building) return;
     try {
+      const userEmail = currentUser?.email || loginEmail || 'ADMIN';
+      const userName = currentUser?.name || (currentUser ? 'Junta' : 'Administrador');
+      const userRole = currentUser?.role || (currentUser ? 'Junta' : 'Admin Principal');
+
       await supabase.from('audit_logs').insert({
         building_id: building.id,
-        user_email: currentUser?.email || loginEmail || 'ADMIN',
+        user_email: userEmail,
         operation,
         entity_type,
         entity_id,
-        data_after: data,
+        data_after: {
+          ...data,
+          user_name: userName,
+          role: userRole
+        },
       });
       loadAuditLogs();
     } catch (e) {
@@ -411,15 +419,29 @@ export default function EdificioAdminPage() {
             .from('building_members')
             .select('*')
             .eq('building_id', data.id);
-          
+
           if (members) {
             const member = members.find((m: any) => m.email.toLowerCase() === urlEmail.toLowerCase());
             if (member) {
               setCurrentUser(member);
+              // Registrar el acceso por redirect
+              const userEmail = member.email || urlEmail;
+              const userName = member.name || 'Miembro Junta';
+
+              // No bloqueamos por el await para que la carga sea fluida
+              supabase.from('audit_logs').insert({
+                building_id: data.id,
+                user_email: userEmail,
+                operation: 'LOGIN',
+                entity_type: 'auth_redirect',
+                entity_id: userEmail,
+                data_after: { name: userName, role: member.role, method: 'url_params' }
+              }).then(() => loadAuditLogs());
             }
           }
         }
       }
+
       setLoading(false);
     })();
   }, [slug, searchParams]);
@@ -547,10 +569,10 @@ export default function EdificioAdminPage() {
           setCurrentUser(member);
           setAuthed(true);
           setAuthError('');
-          logClientAudit('LOGIN', 'user', member.email);
+          logClientAudit('LOGIN', 'user_access', member.email, { name: member.name, role: member.role });
           return;
         }
-        
+
         // Case 2: No individual password set - accept temp password or building password
         if (!memberPassword) {
           // Accept the temporary default password "123456"
@@ -558,6 +580,7 @@ export default function EdificioAdminPage() {
             setCurrentUser(member);
             setAuthed(true);
             setAuthError('');
+            logClientAudit('LOGIN', 'user_access_temp', member.email, { name: member.name, role: member.role, note: 'Usó clave temporal' });
             // Prompt to change password after first login
             setShowPasswordChange(true);
             return;
@@ -567,27 +590,30 @@ export default function EdificioAdminPage() {
             setCurrentUser(member);
             setAuthed(true);
             setAuthError('');
+            logClientAudit('LOGIN', 'user_access_fallback', member.email, { name: member.name, role: member.role, note: 'Usó clave del edificio' });
             setShowPasswordChange(true);
             return;
           }
         }
-        
+
         setAuthError('Contraseña incorrecta para este usuario.');
         return;
-      }
-      
-      // Email provided but not found as junta member
-      setAuthError('Este email no está registrado como miembro de la junta.');
-      return;
-    }
+        }
 
-    // Fallback: building password login (for original admin who registered the building)
-    if (!inputEmail && buildingPassword) {
-      if (password === buildingPassword) {
+        // Email provided but not found as junta member
+        setAuthError('Este email no está registrado como miembro de la junta.');
+        return;
+        }
+
+        // Fallback: building password login (for original admin who registered the building)
+        if (!inputEmail && buildingPassword) {
+        if (password === buildingPassword) {
         setCurrentUser(null); // Building-level admin
         setAuthed(true);
         setAuthError('');
-      } else {
+        logClientAudit('LOGIN', 'admin_access', building.admin_email, { name: 'Admin Principal', role: 'Administrador' });
+        } else {
+
         setAuthError('Contraseña incorrecta. Si olvidaste tu clave, puedes recuperarla desde la página principal.');
       }
       return;
