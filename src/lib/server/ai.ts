@@ -71,9 +71,9 @@ export async function generateWaterAnalysis(prompt: string) {
     }
   }
 
-  // Si fallan todos los modelos, retornamos un error claro o un mensaje de respaldo
-  console.error('[AI] ❌ Todos los modelos de Gemini fallaron. Último error:', ultimoError);
-  throw new Error(`Los servidores de IA están ocupados o excedieron su límite de cuota. Por favor intente generar el informe más tarde. Detalle: ${ultimoError}`);
+  // Si fallan todos los modelos, retornamos un error claro
+  console.error('[AI] ❌ Todos los modelos de Gemini fallaron.');
+  throw new Error(`Los servidores de IA (Gemini) han agotado su cuota o no están disponibles. Intentamos con: ${MODELOS_RESPALDO.join(', ')}. Último error: ${ultimoError}`);
 }
 
 /**
