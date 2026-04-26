@@ -486,6 +486,33 @@ export default function EdificioAdminPage() {
     setTestingAi(false);
   };
 
+  const deleteAiReport = async (reportId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este informe de forma permanente?')) return;
+    setIaLoading(true);
+    try {
+      const res = await fetch('/api/ai-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building_id: building.id,
+          action: 'delete_report',
+          report_id: reportId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIaMsg('✅ Informe eliminado');
+        if (selectedAiReport?.id === reportId) setSelectedAiReport(null);
+        loadIaData();
+      } else {
+        setIaMsg('❌ Error al eliminar: ' + data.error);
+      }
+    } catch (err: any) {
+      setIaMsg('❌ Error técnico: ' + err.message);
+    }
+    setIaLoading(false);
+  };
+
   const sendAiReportByEmail = async (reportId: string, recipients: string) => {
     if (!building || !recipients) return;
     if (observerBlock()) return;
@@ -3284,15 +3311,28 @@ export default function EdificioAdminPage() {
                                   )}
                                 </td>
                                 <td className="px-4 py-4 text-right">
-                                  <button 
-                                    className="p-2 bg-slate-700 hover:bg-slate-600 text-blue-400 rounded-lg transition-all"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedAiReport(report);
-                                    }}
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
+                                  <div className="flex justify-end gap-2">
+                                    <button 
+                                      className="p-2 bg-slate-700 hover:bg-slate-600 text-blue-400 rounded-lg transition-all"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedAiReport(report);
+                                      }}
+                                      title="Ver Informe"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-all border border-red-500/30"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteAiReport(report.id);
+                                      }}
+                                      title="Eliminar Informe"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}

@@ -77,6 +77,18 @@ export async function POST(request: Request) {
       }
     }
 
+    // Acción: ELIMINAR reporte
+    if (action === 'delete_report') {
+      const { report_id } = body;
+      const { error } = await supabase
+        .from('ia_analysis_reports')
+        .delete()
+        .eq('id', report_id);
+      
+      if (error) throw error;
+      return NextResponse.json({ success: true });
+    }
+
     // Acción 2: Generar nuevo análisis
     if (action === 'generate') {
       const { data: building } = await supabase
