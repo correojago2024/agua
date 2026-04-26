@@ -2346,8 +2346,13 @@ export default function EdificioAdminPage() {
                 </div>
               </div>
               {isUserAdmin && (
-                <div className="px-5 py-3 bg-slate-900/30 border-t border-slate-700 text-right">
-                  <button onClick={saveWhatsAppSettings} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 ml-auto shadow-lg">
+                <div className="px-5 py-3 bg-slate-900/30 border-t border-slate-700 flex items-center justify-end gap-4">
+                  {waMsg && (
+                    <span className={`text-xs font-bold animate-in fade-in slide-in-from-right-2 ${waMsg.includes('❌') ? 'text-red-400' : 'text-amber-400'}`}>
+                      {waMsg}
+                    </span>
+                  )}
+                  <button onClick={saveWhatsAppSettings} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg transition-all active:scale-95">
                     <Save className="w-3.5 h-3.5" /> Guardar Horario
                   </button>
                 </div>
