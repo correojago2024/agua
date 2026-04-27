@@ -163,6 +163,64 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: res.success });
     }
 
+    if (type === 'plan_change_request') {
+      const { currentPlan, requestedPlan, reason, metadata } = body.data;
+      const ip = request.headers.get('x-forwarded-for') || 'Desconocida';
+      const userAgent = request.headers.get('user-agent') || 'Desconocido';
+      const localTime = metadata?.localTime || new Date().toLocaleString();
+
+      const adminHtml = `
+        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; padding:30px; color:#1e293b;">
+          <h2 style="color:#2563eb;">🚀 Nueva Solicitud de Cambio de Plan</h2>
+          <p>El edificio <strong>${building.name}</strong> ha solicitado un cambio de plan.</p>
+          
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin:20px 0;">
+            <h3 style="margin-top:0; font-size:14px; color:#64748b; text-transform:uppercase;">Detalles del Edificio:</h3>
+            <p><strong>Edificio:</strong> ${building.name} (${building.slug})</p>
+            <p><strong>Solicitante:</strong> ${member?.name || 'Administrador'} (${member?.email || building.admin_email})</p>
+            <hr style="border:0; border-top:1px solid #e2e8f0; margin:15px 0;">
+            <p><strong>Plan Actual:</strong> <span style="text-transform:uppercase;">${currentPlan}</span></p>
+            <p><strong>Plan Solicitado:</strong> <span style="text-transform:uppercase; color:#2563eb; font-weight:bold;">${requestedPlan}</span></p>
+            <p><strong>Motivo:</strong> ${reason || 'No especificado'}</p>
+          </div>
+
+          <div style="background:#f1f5f9; padding:15px; border-radius:8px; font-size:11px; color:#64748b;">
+            <p style="margin:0 0 5px 0; font-weight:bold; text-transform:uppercase;">Metadatos de la solicitud:</p>
+            <p style="margin:2px 0;"><strong>IP:</strong> ${ip}</p>
+            <p style="margin:2px 0;"><strong>Hora Local:</strong> ${localTime}</p>
+            <p style="margin:2px 0;"><strong>Navegador:</strong> ${userAgent}</p>
+          </div>
+        </div>
+      `.trim();
+
+      const userHtml = `
+        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; padding:30px; color:#1e293b;">
+          <h2 style="color:#2563eb;">✅ Solicitud Recibida</h2>
+          <p>Hola <strong>${member?.name || 'Administrador'}</strong>,</p>
+          <p>Hemos recibido exitosamente tu solicitud para cambiar el plan del edificio <strong>${building.name}</strong> al plan <strong><span style="text-transform:uppercase;">${requestedPlan}</span></strong>.</p>
+          <p>Nuestro equipo revisará la solicitud y se pondrá en contacto contigo a la brevedad posible para finalizar el proceso.</p>
+          
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin:20px 0;">
+            <p style="margin:0;"><strong>Resumen de tu solicitud:</strong></p>
+            <ul style="margin:10px 0 0; padding-left:20px; font-size:14px; color:#475569;">
+              <li>Plan solicitado: ${requestedPlan.toUpperCase()}</li>
+              <li>Fecha de solicitud: ${localTime}</li>
+            </ul>
+          </div>
+
+          <p style="font-size:13px; color:#64748b; margin-top:30px; text-align:center;">Gracias por confiar en <strong>aGuaSaaS</strong>.</p>
+        </div>
+      `.trim();
+
+      // Enviar a correojago
+      await sendEmailViaGmail(['correojago@gmail.com'], `🚀 Solicitud de Cambio de Plan — ${building.name}`, adminHtml, building.id, 'plan_change_admin');
+      
+      // Enviar confirmación al usuario
+      const res = await sendEmailViaGmail([member?.email || building.admin_email], `✅ Solicitud de Cambio de Plan Recibida — ${building.name}`, userHtml, building.id, 'plan_change_user');
+      
+      return NextResponse.json({ success: res.success });
+    }
+
     return NextResponse.json({ error: 'Tipo no soportado' }, { status: 400 });
 
   } catch (error: any) {

@@ -164,6 +164,13 @@ export default function EdificioAdminPage() {
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerMsg, setBannerMsg]   = useState('');
 
+  // Plan change request
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [requestedPlan, setRequestedPlan] = useState('');
+  const [planChangeReason, setPlanChangeReason] = useState('');
+  const [planRequestLoading, setPlanRequestLoading] = useState(false);
+  const [planRequestMsg, setPlanRequestMsg] = useState('');
+
   // WhatsApp settings
   const [waEnabled, setWaEnabled] = useState(false);
   const [waService, setWaService] = useState<'GREENAPI' | 'WHAPI' | 'BUSINESS'>('GREENAPI');
@@ -385,6 +392,48 @@ export default function EdificioAdminPage() {
     }
     setSendingManual(false);
     loadAuditLogs();
+  };
+
+  const handleRequestPlanChange = async () => {
+    if (!building || !requestedPlan) return;
+    setPlanRequestLoading(true);
+    setPlanRequestMsg('');
+
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'plan_change_request',
+          building: building,
+          member: currentUser || { email: building.admin_email, name: 'Administrador' },
+          data: {
+            currentPlan: plan,
+            requestedPlan,
+            reason: planChangeReason,
+            metadata: {
+              localTime: new Date().toLocaleString(),
+            }
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setPlanRequestMsg('✅ Solicitud enviada con éxito. Te hemos enviado un email de confirmación.');
+        logClientAudit('REQUEST', 'plan_change', building.id, { from: plan, to: requestedPlan });
+        setTimeout(() => {
+          setShowPlanModal(false);
+          setPlanRequestMsg('');
+          setPlanChangeReason('');
+        }, 4000);
+      } else {
+        setPlanRequestMsg('❌ Error: ' + (data.error || 'No se pudo enviar la solicitud'));
+      }
+    } catch (err: any) {
+      setPlanRequestMsg('❌ Error técnico: ' + err.message);
+    }
+    setPlanRequestLoading(false);
   };
 
   // ── IA Analysis Logic ──────────────────────────────────────────────────
@@ -1429,6 +1478,80 @@ export default function EdificioAdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-900">
+      {/* Plan Change Request Modal */}
+      {showPlanModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 w-full max-w-lg shadow-2xl animate-in zoom-in duration-200">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <CreditCard className="w-6 h-6 text-blue-400" />
+                  Solicitar Cambio de Plan
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">Tu plan actual: <span className="uppercase font-bold text-slate-200">{plan}</span></p>
+              </div>
+              <button onClick={() => setShowPlanModal(false)} className="text-slate-500 hover:text-white transition-all">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-wider">Selecciona el nuevo plan</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {['Esencial', 'Profesional', 'Premium', 'IA'].map(pName => (
+                    <button 
+                      key={pName}
+                      onClick={() => setRequestedPlan(pName.toLowerCase())}
+                      className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
+                        requestedPlan === pName.toLowerCase() 
+                        ? 'border-blue-500 bg-blue-500/10 text-white' 
+                        : 'border-slate-700 bg-slate-900/50 text-slate-500 hover:border-slate-600'
+                      }`}
+                    >
+                      Plan {pName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-wider">¿Por qué deseas cambiarte? (Opcional)</label>
+                <textarea 
+                  value={planChangeReason}
+                  onChange={e => setPlanChangeReason(e.target.value)}
+                  placeholder="Cuéntanos un poco sobre tus necesidades..."
+                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[100px]"
+                />
+              </div>
+
+              {planRequestMsg && (
+                <div className={`p-4 rounded-xl text-xs font-bold ${planRequestMsg.includes('✅') ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                  {planRequestMsg}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={handleRequestPlanChange}
+                  disabled={planRequestLoading || !requestedPlan}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white py-4 rounded-2xl font-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {planRequestLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+                  ENVIAR SOLICITUD
+                </button>
+                <button 
+                  onClick={() => setShowPlanModal(false)}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 px-6 py-4 rounded-2xl font-bold transition-all"
+                >
+                  Cerrar
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 text-center italic">Al enviar esta solicitud, capturamos metadatos básicos de seguridad (IP, Hora, Navegador) para procesar el cambio.</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Password Change Modal */}
       {showPasswordChange && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -2776,8 +2899,22 @@ export default function EdificioAdminPage() {
                       { label: 'Slug / Identificador', value: building.slug },
                       { label: 'Capacidad del tanque', value: `${(building.tank_capacity_liters || 169000).toLocaleString()} L` },
                       { label: 'Email administrador',  value: isDemo ? maskEmail(building.admin_email || '') : building.admin_email },
-                      { label: 'Estado',             value: building.status || 'Prueba' },
-                      { label: 'Banner',             value: building.banner_url ? '✅ Configurado' : '—' },
+                      { 
+                        label: 'Plan Actual', 
+                        value: (
+                          <button 
+                            onClick={() => setShowPlanModal(true)}
+                            className="flex items-center gap-2 group"
+                          >
+                            <span className="uppercase font-black text-blue-400 group-hover:text-blue-300 underline underline-offset-4 decoration-dotted">
+                              {building.subscription_status || 'Prueba'}
+                            </span>
+                            <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                            <span className="text-[10px] text-slate-500 font-normal group-hover:text-slate-400 transition-colors">(Cambiar plan)</span>
+                          </button>
+                        )
+                      },
+                      { label: 'Estado del Edificio', value: building.status || 'Activo' },
                     ].map(({ label, value }) => (
                       <div key={label} className="bg-slate-700/30 rounded-lg p-3">
                         <p className="text-slate-500 text-xs mb-0.5">{label}</p>

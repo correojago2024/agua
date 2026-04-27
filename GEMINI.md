@@ -15,6 +15,11 @@ El sistema de monitoreo de agua aGuaSaaS está plenamente operativo con integrac
   - Se agregaron controles en el panel de administración para habilitar/deshabilitar alertas de anomalía.
   - Se permite configurar el umbral de variación porcentual personalizado por edificio.
   - Estas funciones están restringidas a edificios con plan **Profesional** o superior.
+- **Gestión de Planes:**
+  - Se añadió la visualización clara del plan actual en la pestaña de configuración.
+  - Se implementó un sistema de solicitud de cambio de plan mediante un formulario modal.
+  - El sistema captura metadatos de seguridad (IP, navegador, hora local) en la solicitud.
+  - Envío automático de email de confirmación al usuario y email de solicitud detallada al administrador (correojago@gmail.com).
 - **Email Report:**
   - Se eliminó el gráfico Gauge para optimizar la visualización de los 16 gráficos de inteligencia hídrica restantes.
   - Se estandarizó el formato de fecha y hora en todas las tablas y reportes a `dd/mm/aaaa hh:mm AM/PM`.
