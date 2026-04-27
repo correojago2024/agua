@@ -5,7 +5,16 @@
 ### Resumen de Integración
 El sistema de monitoreo de agua aGuaSaaS está plenamente operativo con integraciones de Email (Gmail API) y WhatsApp (Green API/Whapi/Meta).
 
-### Últimas Mejoras Realizadas
+### Últimas Mejoras Realizadas (27 de abril, 2026)
+- **Email de Anomalías:**
+  - Se rediseñó y mejoró el email de alerta por anomalías (variaciones bruscas).
+  - Ahora incluye explicación detallada: dato anterior, dato registrado, variación absoluta y porcentual, y el criterio (umbral) utilizado para disparar la alerta.
+  - El diseño es más visual y profesional, facilitando la detección de fugas o errores de registro.
+  - Consolidación del template en `lib/server/email-templates.ts` para facilitar el mantenimiento.
+- **Configuración de Anomalías:**
+  - Se agregaron controles en el panel de administración para habilitar/deshabilitar alertas de anomalía.
+  - Se permite configurar el umbral de variación porcentual personalizado por edificio.
+  - Estas funciones están restringidas a edificios con plan **Profesional** o superior.
 - **Email Report:**
   - Se eliminó el gráfico Gauge para optimizar la visualización de los 16 gráficos de inteligencia hídrica restantes.
   - Se estandarizó el formato de fecha y hora en todas las tablas y reportes a `dd/mm/aaaa hh:mm AM/PM`.

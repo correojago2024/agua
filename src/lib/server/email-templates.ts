@@ -386,3 +386,78 @@ export function buildAiAnalysisEmailHtml(building: any, report: any, chartUrls?:
 </html>
   `;
 }
+
+export function buildAnomalyEmailHtml(
+  building: any, 
+  newLiters: number, 
+  newPercentage: number, 
+  prevLiters: number, 
+  prevPercentage: number, 
+  variationPct: number, 
+  recordedAt: string, 
+  reportedBy: string,
+  threshold: number = 30
+): string {
+  const variationLtrs = newLiters - prevLiters;
+  const isIncrease = variationLtrs > 0;
+  
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b; background-color: #f8fafc;">
+  <div style="background: #dc2626; color: white; padding: 20px; border-radius: 16px 16px 0 0; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚠️ Anomalía detectada</h1>
+    <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Edificio: ${building.name}</p>
+  </div>
+  
+  <div style="background: white; border: 1px solid #e2e8f0; border-top: none; padding: 30px; border-radius: 0 0 16px 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+    <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 12px; padding: 20px; margin-bottom: 25px; text-align: center;">
+      <p style="margin: 0; font-size: 14px; color: #991b1b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Variación Detectada</p>
+      <p style="margin: 10px 0 0; font-size: 36px; font-weight: 900; color: #dc2626;">${variationPct.toFixed(1)}%</p>
+      <p style="margin: 5px 0 0; font-size: 14px; color: #b91c1c;">${isIncrease ? 'Aumento' : 'Disminución'} brusca de nivel</p>
+    </div>
+
+    <h3 style="color: #0f172a; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-top: 0;">Detalles de la medición</h3>
+    <table style="width: 100%; font-size: 14px; margin-bottom: 25px;">
+      <tr>
+        <td style="padding: 8px 0; color: #64748b;">Dato registrado:</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #64748b;">Dato anterior:</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${Math.round(prevLiters).toLocaleString()} L (${Number(prevPercentage).toFixed(1)}%)</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #64748b;">Variación absoluta:</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: bold; color: ${isIncrease ? '#16a34a' : '#dc2626'}">${isIncrease ? '+' : ''}${Math.round(variationLtrs).toLocaleString()} L</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #64748b;">Reportado por:</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${reportedBy}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #64748b;">Fecha/Hora:</td>
+        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${new Date(recordedAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}</td>
+      </tr>
+    </table>
+
+    <div style="background: #f8fafc; border-radius: 12px; padding: 20px; font-size: 13px; line-height: 1.6;">
+      <h4 style="margin: 0 0 10px; color: #334155; font-size: 14px;">¿Por qué se considera una anomalía?</h4>
+      <p style="margin: 0;">El sistema ha detectado que el nivel del tanque cambió un <strong>${variationPct.toFixed(1)}%</strong> entre dos mediciones consecutivas. Este valor supera el límite de seguridad configurado para este edificio (<strong>${threshold}%</strong>).</p>
+      <p style="margin: 10px 0 0; color: #475569;">Esto podría indicar una fuga importante, un uso inusual del agua o un error en el registro manual.</p>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+      <a href="https://aguasaas.vercel.app/edificio-admin/${building.slug || building.id}" style="background: #1e293b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; display: inline-block;">Ver Panel de Control</a>
+    </div>
+
+    <p style="font-size: 11px; color: #94a3b8; margin-top: 30px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+      Este es un aviso automático de seguridad del Sistema aGuaSaaS.
+    </p>
+  </div>
+</body>
+</html>`.trim();
+}

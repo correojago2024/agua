@@ -15,14 +15,7 @@ import { getAllImprovedCharts } from '@/lib/charts';
 import { sendEmailViaGmail } from '@/lib/server/email';
 import { logAudit } from '@/lib/audit';
 import { checkWaterLevelThresholds } from '@/lib/server/whatsapp';
-import { buildReportEmailHtml } from '@/lib/server/email-templates';
-
-// ════════════════════════════════════════════════════════════════════════════
-// HTML Alerta de Anomalía
-// ════════════════════════════════════════════════════════════════════════════
-function buildAnomalyEmailHtml(building: any, newLiters: number, newPercentage: number, prevLiters: number, prevPercentage: number, variationPct: number, recordedAt: string, reportedBy: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;color:#1e293b;"><div style="background:#dc2626;color:white;padding:15px;border-radius:8px 8px 0 0;text-align:center;"><h2 style="margin:0;font-size:18px;">⚠️ Anomalía detectada — ${building.name}</h2></div><div style="border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 8px 8px;"><p style="font-size:14px;">Se detectó una variación de <strong>${variationPct.toFixed(1)}%</strong>.</p><ul style="font-size:13px;line-height:1.8;"><li><strong>Fecha:</strong> ${new Date(recordedAt).toLocaleString('es-ES')}</li><li><strong>Nivel:</strong> ${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</li><li><strong>Reportado por:</strong> ${reportedBy}</li></ul><p style="font-size:11px;color:#94a3b8;margin-top:20px;">Sistema aGuaSaaS.</p></div></body></html>`.trim();
-}
+import { buildReportEmailHtml, buildAnomalyEmailHtml } from '@/lib/server/email-templates';
 
 // ════════════════════════════════════════════════════════════════════════════
 // POST — Registrar medición y enviar reporte
@@ -98,10 +91,11 @@ export async function POST(request: Request) {
     if (lastM && lastM.liters > 0) {
       variationPercentage = Math.abs((liters - lastM.liters) / lastM.liters * 100);
       const { data: set } = await supabase.from('building_settings').select('alert_threshold_percentage, enable_anomaly_alerts').eq('building_id', building_id).single();
-      if (variationPercentage > (set?.alert_threshold_percentage ?? 30)) {
+      const threshold = set?.alert_threshold_percentage ?? 30;
+      if (variationPercentage > threshold) {
         isAnomaly = true;
         if (set?.enable_anomaly_alerts && building.admin_email) {
-          const aHtml = buildAnomalyEmailHtml(building, liters, percentage, lastM.liters, lastM.percentage, variationPercentage, recorded_at, collaborator_name || email || 'Anónimo');
+          const aHtml = buildAnomalyEmailHtml(building, liters, percentage, lastM.liters, lastM.percentage, variationPercentage, recorded_at, collaborator_name || email || 'Anónimo', threshold);
           await sendEmailViaGmail([building.admin_email], `⚠️ Anomalía — ${building.name}`, aHtml, building_id, 'anomaly_alert');
         }
       }

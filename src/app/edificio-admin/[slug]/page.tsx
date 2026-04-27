@@ -158,6 +158,7 @@ export default function EdificioAdminPage() {
   const [cfgSilenceStart, setCfgSilenceStart] = useState('22:00');
   const [cfgSilenceEnd, setCfgSilenceEnd] = useState('06:00');
   const [cfgEnableResidentNotifications, setCfgEnableResidentNotifications] = useState(true);
+  const [cfgEnableAnomalyAlerts, setCfgEnableAnomalyAlerts] = useState(true);
   const [cfgDailyReportEnabled, setCfgDailyReportEnabled] = useState(false);
   const [cfgMsg, setCfgMsg]         = useState('');
   const [bannerUploading, setBannerUploading] = useState(false);
@@ -573,6 +574,7 @@ export default function EdificioAdminPage() {
           setCfgSilenceStart(set.silence_start_time || '22:00');
           setCfgSilenceEnd(set.silence_end_time || '06:00');
           setCfgEnableResidentNotifications(set.enable_resident_notifications !== false);
+          setCfgEnableAnomalyAlerts(set.enable_anomaly_alerts !== false);
         } else if (!isAdvanced) {
           // Si no hay settings y es plan básico, asegurar defaults
           setCfgEmailsOnSubscription(5);
@@ -1235,6 +1237,7 @@ export default function EdificioAdminPage() {
       silence_start_time: cfgSilenceStart,
       silence_end_time: cfgSilenceEnd,
       enable_resident_notifications: cfgEnableResidentNotifications,
+      enable_anomaly_alerts: cfgEnableAnomalyAlerts,
       updated_at: new Date().toISOString()
     });
 
@@ -2854,6 +2857,53 @@ export default function EdificioAdminPage() {
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">%</div>
                     </div>
                     <p className="text-[9px] text-slate-500 mt-1">Nivel en el que el sistema marca el estado como "CRÍTICO".</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 text-[10px] mb-1 font-bold uppercase tracking-wider">Umbral de Anomalía (%)</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        value={cfgThreshold} 
+                        onChange={e => setCfgThreshold(e.target.value)}
+                        disabled={!canEditAdvanced || isObserver}
+                        className={`w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 ${!canEditAdvanced && 'opacity-50 cursor-not-allowed'}`} 
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">%</div>
+                    </div>
+                    <p className="text-[9px] text-slate-500 mt-1">Variación brusca entre mediciones para disparar alerta.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={`flex items-center gap-3 bg-slate-700/50 p-3 rounded-xl border border-slate-600 ${!canEditAdvanced && 'opacity-50'}`}>
+                    <input 
+                      type="checkbox" 
+                      id="cfgEnableAnomalyAlerts"
+                      checked={cfgEnableAnomalyAlerts}
+                      onChange={e => setCfgEnableAnomalyAlerts(e.target.checked)}
+                      disabled={!canEditAdvanced || isObserver}
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-600 text-red-600 focus:ring-red-500"
+                    />
+                    <label htmlFor="cfgEnableAnomalyAlerts" className="text-slate-200 text-xs font-medium cursor-pointer">
+                      <strong>Activar Alertas de Anomalía</strong><br/>
+                      <span className="text-[10px] text-slate-400">Envía email urgente al administrador si hay variaciones bruscas.</span>
+                    </label>
+                  </div>
+
+                  <div className={`flex items-center gap-3 bg-slate-700/50 p-3 rounded-xl border border-slate-600 ${!canEditAdvanced && 'opacity-50'}`}>
+                    <input 
+                      type="checkbox" 
+                      id="cfgEnableResidentNotifications"
+                      checked={cfgEnableResidentNotifications}
+                      onChange={e => setCfgEnableResidentNotifications(e.target.checked)}
+                      disabled={!canEditAdvanced || isObserver}
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="cfgEnableResidentNotifications" className="text-slate-200 text-xs font-medium cursor-pointer">
+                      <strong>Notificar a Residentes</strong><br/>
+                      <span className="text-[10px] text-slate-400">Permite que los vecinos se suscriban a los reportes.</span>
+                    </label>
                   </div>
                 </div>
 
