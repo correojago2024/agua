@@ -104,23 +104,23 @@ export function buildReportEmailHtml(
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
-    }).replace(',', '').toUpperCase();
+      hour12: false
+    }).replace(',', '');
   };
 
   const tableRows = last10.map(m => {
     const varLts = m.variation_lts || 0;
     const flow = m.flow_lpm || 0;
-    const tLlenado = (flow > 0.01) ? (Math.abs((building.tank_capacity_liters - m.liters) / flow) / 1440).toFixed(2) + ' d' : '—';
-    const tVaciado = (flow < -0.01) ? (Math.abs(m.liters / flow) / 1440).toFixed(2) + ' d' : '—';
+    const tLlenado = (flow > 0.01) ? (Math.abs((building.tank_capacity_liters - m.liters) / flow) / 1440).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' d' : '—';
+    const tVaciado = (flow < -0.01) ? (Math.abs(m.liters / flow) / 1440).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' d' : '—';
     
     return `
       <tr style="border-bottom:1px solid #e2e8f0;">
         <td style="padding:8px;text-align:left;">${formatDate(m.recorded_at)}</td>
-        <td style="padding:8px;">${Math.round(m.liters).toLocaleString()}</td>
+        <td style="padding:8px;">${Math.round(m.liters).toLocaleString('es-ES')}</td>
         <td style="padding:8px;font-weight:bold;">${Math.round(m.percentage)}%</td>
-        <td style="padding:8px;color:${varLts >= 0 ? '#16a34a' : '#dc2626'}">${varLts > 0 ? '+' : ''}${Math.round(varLts).toLocaleString()}</td>
-        <td style="padding:8px;">${Number(flow).toFixed(2)}</td>
+        <td style="padding:8px;color:${varLts >= 0 ? '#16a34a' : '#dc2626'}">${varLts > 0 ? '+' : ''}${Math.round(varLts).toLocaleString('es-ES')}</td>
+        <td style="padding:8px;">${Number(flow).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
         <td style="padding:8px;">${tLlenado}</td>
         <td style="padding:8px;">${tVaciado}</td>
         <td style="padding:8px;">${m.collaborator_name || 'Vecino'}</td>
@@ -185,7 +185,7 @@ export function buildReportEmailHtml(
         ${percentageInt > prevThr ? '✅ ÓPTIMO' : percentageInt > ratThr ? '⚠️ REGULAR' : '🚨 CRÍTICO'}
       </p>
       <p style="margin:0; font-size:24px; font-weight:bold;">${percentageInt}% de capacidad</p>
-      <p style="margin:5px 0 0; font-size:16px; color:#64748b;">Aproximadamente ${Math.round(currentLiters).toLocaleString()} Litros</p>
+      <p style="margin:5px 0 0; font-size:16px; color:#64748b;">Aproximadamente ${Math.round(currentLiters).toLocaleString('es-ES')} Litros</p>
     </div>
 
     <div style="margin-bottom:35px; font-size:15px; color:#334155;">
@@ -198,14 +198,14 @@ export function buildReportEmailHtml(
       <p style="margin:0 0 15px; font-size:12px; color:#64748b;">Reporte generado: ${indicators.reportDate} — Último registro: ${formatDate(lastRecord.recorded_at)} — Nivel: ${Math.round(lastRecord.percentage)}%</p>
       
       <table style="width:100%; font-size:13px; border-collapse:collapse;">
-        <tr><td style="padding:6px 0;">1️⃣ <b>Balance últimas 24 horas:</b></td><td style="padding:6px 0;">Se consumieron ${Math.round(indicators.balance24h.consumed).toLocaleString()} L y se llenaron ${Math.round(indicators.balance24h.filled).toLocaleString()} L. Balance neto: ${Math.round(indicators.balance24h.net).toLocaleString()} L.</td></tr>
-        <tr><td style="padding:6px 0;">2️⃣ <b>Caudal promedio últimas 24h:</b></td><td style="padding:6px 0;">${indicators.avgFlow24h.toFixed(1)} L/h (${indicators.balance24h.net >= 0 ? 'llenado neto' : 'consumo neto'})</td></tr>
-        <tr><td style="padding:6px 0;">3️⃣ <b>Última medición — Caudal:</b></td><td style="padding:6px 0;">${flowDirIcon} ${flowLph.toFixed(1)} L/h (${flowTypeText}) — ${(flowLph/60).toFixed(2)} L/min</td></tr>
-        <tr><td style="padding:6px 0;">4️⃣ <b>Nivel actual del tanque:</b></td><td style="padding:6px 0;">${percentageInt}% — ${Math.round(currentLiters).toLocaleString()} L de ${building.tank_capacity_liters.toLocaleString()} L de capacidad total</td></tr>
-        <tr><td style="padding:6px 0;">5️⃣ <b>Proyección nivel a las 11:00 PM:</b></td><td style="padding:6px 0;">Nivel estimado: ${indicators.projection11pm.toFixed(1)}% (${Math.round(indicators.projectedLiters11pm).toLocaleString()} L)</td></tr>
+        <tr><td style="padding:6px 0;">1️⃣ <b>Balance últimas 24 horas:</b></td><td style="padding:6px 0;">Se consumieron ${Math.round(indicators.balance24h.consumed).toLocaleString('es-ES')} L y se llenaron ${Math.round(indicators.balance24h.filled).toLocaleString('es-ES')} L. Balance neto: ${Math.round(indicators.balance24h.net).toLocaleString('es-ES')} L.</td></tr>
+        <tr><td style="padding:6px 0;">2️⃣ <b>Caudal promedio últimas 24h:</b></td><td style="padding:6px 0;">${indicators.avgFlow24h.toLocaleString('es-ES', {minimumFractionDigits: 1, maximumFractionDigits: 1})} L/h (${indicators.balance24h.net >= 0 ? 'llenado neto' : 'consumo neto'})</td></tr>
+        <tr><td style="padding:6px 0;">3️⃣ <b>Última medición — Caudal:</b></td><td style="padding:6px 0;">${flowDirIcon} ${flowLph.toLocaleString('es-ES', {minimumFractionDigits: 1, maximumFractionDigits: 1})} L/h (${flowTypeText}) — ${(flowLph/60).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})} L/min</td></tr>
+        <tr><td style="padding:6px 0;">4️⃣ <b>Nivel actual del tanque:</b></td><td style="padding:6px 0;">${percentageInt}% — ${Math.round(currentLiters).toLocaleString('es-ES')} L de ${building.tank_capacity_liters.toLocaleString('es-ES')} L de capacidad total</td></tr>
+        <tr><td style="padding:6px 0;">5️⃣ <b>Proyección nivel a las 11:00 PM:</b></td><td style="padding:6px 0;">Nivel estimado: ${indicators.projection11pm.toLocaleString('es-ES', {minimumFractionDigits: 1, maximumFractionDigits: 1})}% (${Math.round(indicators.projectedLiters11pm).toLocaleString('es-ES')} L)</td></tr>
         <tr><td style="padding:6px 0;">6️⃣ <b>Tiempo estimado hasta ${flowLpm >= 0 ? 'completado' : 'vaciado'}:</b></td><td style="padding:6px 0;">${indicators.timeEstimate} — Fecha estimada: ${indicators.estimateDate}</td></tr>
-        <tr><td style="padding:6px 0;">7️⃣ <b>Llenado registrado hoy:</b></td><td style="padding:6px 0;">${indicators.filledToday.toLocaleString()} L</td></tr>
-        <tr><td style="padding:6px 0;">8️⃣ <b>Variación última medición:</b></td><td style="padding:6px 0;">${(lastRecord.variation_lts || 0) > 0 ? '+' : ''}${Math.round(lastRecord.variation_lts || 0).toLocaleString()} L (${(lastRecord.variation_lts || 0) > 0 ? 'entrada de agua' : 'consumo / salida de agua'})</td></tr>
+        <tr><td style="padding:6px 0;">7️⃣ <b>Llenado registrado hoy:</b></td><td style="padding:6px 0;">${indicators.filledToday.toLocaleString('es-ES')} L</td></tr>
+        <tr><td style="padding:6px 0;">8️⃣ <b>Variación última medición:</b></td><td style="padding:6px 0;">${(lastRecord.variation_lts || 0) > 0 ? '+' : ''}${Math.round(lastRecord.variation_lts || 0).toLocaleString('es-ES')} L (${(lastRecord.variation_lts || 0) > 0 ? 'entrada de agua' : 'consumo / salida de agua'})</td></tr>
       </table>
     </div>
 
@@ -251,10 +251,10 @@ export function buildReportEmailHtml(
       <tbody>
         <tr>
           <td style="padding:10px;">${formatDate(lastRecord.recorded_at)}</td>
-          <td style="padding:10px;">${Math.round(lastRecord.liters).toLocaleString()}</td>
+          <td style="padding:10px;">${Math.round(lastRecord.liters).toLocaleString('es-ES')}</td>
           <td style="padding:10px; font-weight:bold;">${Math.round(lastRecord.percentage)}%</td>
-          <td style="padding:10px;">${(lastRecord.variation_lts || 0) > 0 ? '+' : ''}${Math.round(lastRecord.variation_lts || 0).toLocaleString()}</td>
-          <td style="padding:10px;">${Number(lastRecord.flow_lpm || 0).toFixed(2)}</td>
+          <td style="padding:10px;">${(lastRecord.variation_lts || 0) > 0 ? '+' : ''}${Math.round(lastRecord.variation_lts || 0).toLocaleString('es-ES')}</td>
+          <td style="padding:10px;">${Number(lastRecord.flow_lpm || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
           <td style="padding:10px;">${indicators.timeEstimate}</td>
           <td style="padding:10px;">${lastRecord.collaborator_name || 'Vecino'}</td>
         </tr>
@@ -266,7 +266,7 @@ export function buildReportEmailHtml(
       <p style="margin-bottom:10px;">1. <b>Caudal de Llenado y Consumo:</b> Muestra la tasa de cambio en litros por minuto. Barras verdes indican llenado (entrada de agua), barras rojas indican consumo (salida de agua).</p>
       <p style="margin-bottom:10px;">2. <b>Evolución del Nivel del Tanque (%):</b> Línea azul con área sombreada mostrando el porcentaje del nivel a lo largo del tiempo. Los puntos se colorean en verde (>${prevThr}%), naranja (${ratThr}-${prevThr}%) y rojo (<${ratThr}%) según el umbral de alerta.</p>
       <p style="margin-bottom:10px;">3. <b>Variación entre Mediciones:</b> Diferencia de litros entre reportes consecutivos. Barras verdes = llenado, barras rojas = consumo.</p>
-      <p style="margin-bottom:10px;">4. <b>Nivel del Tanque con Umbrales:</b> Visualiza el nivel histórico con líneas de alerta: Alerta ${Math.round(building.tank_capacity_liters * (prevThr/100)).toLocaleString()} L (${prevThr}%), Racionamiento ${Math.round(building.tank_capacity_liters * (ratThr/100)).toLocaleString()} L (${ratThr}%), Crítico ${Math.round(building.tank_capacity_liters * 0.2).toLocaleString()} L (20%).</p>
+      <p style="margin-bottom:10px;">4. <b>Nivel del Tanque con Umbrales:</b> Visualiza el nivel histórico con líneas de alerta: Alerta ${Math.round(building.tank_capacity_liters * (prevThr/100)).toLocaleString('es-ES')} L (${prevThr}%), Racionamiento ${Math.round(building.tank_capacity_liters * (ratThr/100)).toLocaleString('es-ES')} L (${ratThr}%), Crítico ${Math.round(building.tank_capacity_liters * 0.2).toLocaleString('es-ES')} L (20%).</p>
       <p style="margin-bottom:10px;">5. <b>Consumo Promedio por Día de Semana (barras):</b> Promedio histórico de litros consumidos por cada día. Solo considera variaciones negativas (consumo real).</p>
       <p style="margin-bottom:10px;">6. <b>Nivel % por Día — Últimas 5 Semanas:</b> Cada línea representa una semana. El eje X muestra los días Lun–Dom. Permite comparar patrones entre semanas.</p>
       <p style="margin-bottom:10px;">7. <b>Consumo Nocturno Estimado:</b> Litros consumidos entre mediciones consecutivas. Representa el consumo en los períodos registrados.</p>
@@ -286,7 +286,7 @@ export function buildReportEmailHtml(
       <p style="font-size:13px; margin-bottom:10px;">El caudal neto (L/min) representa la tasa de cambio en el volumen de agua, calculada dividiendo la diferencia de litros entre dos mediciones consecutivas sobre el tiempo transcurrido (en minutos).</p>
       <p style="font-size:13px; margin-bottom:10px;">Un valor <b style="color:#16a34a;">positivo</b> indica que el tanque se está llenando: la entrada de agua supera al consumo.</p>
       <p style="font-size:13px; margin-bottom:10px;">Un valor <b style="color:#dc2626;">negativo</b> señala una disminución en el nivel: el consumo en el edificio supera la entrada de agua, o hay ausencia de suministro desde la red pública.</p>
-      <p style="font-size:13px; margin-bottom:10px;">El tiempo estimado de <b>llenado</b> se basa en los caudales positivos, proyectando el tiempo necesario para alcanzar la capacidad máxima (${building.tank_capacity_liters.toLocaleString()} L).</p>
+      <p style="font-size:13px; margin-bottom:10px;">El tiempo estimado de <b>llenado</b> se basa en los caudales positivos, proyectando el tiempo necesario para alcanzar la capacidad máxima (${building.tank_capacity_liters.toLocaleString('es-ES')} L).</p>
       <p style="font-size:13px;">El tiempo estimado de <b>vaciado</b> se calcula con los caudales negativos, estimando cuánto tardaría el tanque en vaciarse si el consumo se mantiene en ese ritmo.</p>
     </div>
 

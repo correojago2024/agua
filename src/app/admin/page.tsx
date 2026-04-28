@@ -1459,9 +1459,8 @@ export default function AdminPage() {
                   {auditLogs.map(log => (
                     <tr key={log.id} className="hover:bg-slate-700/20 transition-colors">
                       <td className="px-4 py-3 text-slate-300 text-xs whitespace-nowrap">
-                        {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss')}
-                      </td>
-                      <td className="px-4 py-3 text-white font-medium">{log.buildings?.name || 'Sistema'}</td>
+                        {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm')}
+                      </td>                      <td className="px-4 py-3 text-white font-medium">{log.buildings?.name || 'Sistema'}</td>
                       <td className="px-4 py-3 text-slate-400 text-xs">{log.user_email}</td>
                       <td className="px-4 py-3 text-xs">
                         <span className={`px-2 py-0.5 rounded-full font-bold ${

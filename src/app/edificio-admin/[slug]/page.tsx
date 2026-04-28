@@ -1785,22 +1785,22 @@ export default function EdificioAdminPage() {
                     <div className={`h-full ${pctBg} rounded-full transition-all`}
                       style={{ width: `${Math.min(100, kpis.currentPct)}%` }} />
                   </div>
-                  <p className="text-slate-500 text-xs mt-1">{Math.round(kpis.currentLts).toLocaleString()} L</p>
+                  <p className="text-slate-500 text-xs mt-1">{Math.round(kpis.currentLts).toLocaleString('es-ES')} L</p>
                 </div>
 
                 <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
                   <p className="text-gray-400 text-xs mb-1">Tendencia</p>
                   {kpis.trend >= 0
-                    ? <p className="text-green-400 font-bold text-xl flex items-center gap-1"><TrendingUp className="w-5 h-5" />+{Math.round(kpis.trend).toLocaleString()} L</p>
-                    : <p className="text-red-400 font-bold text-xl flex items-center gap-1"><TrendingDown className="w-5 h-5" />{Math.round(kpis.trend).toLocaleString()} L</p>
+                    ? <p className="text-green-400 font-bold text-xl flex items-center gap-1"><TrendingUp className="w-5 h-5" />+{Math.round(kpis.trend).toLocaleString('es-ES')} L</p>
+                    : <p className="text-red-400 font-bold text-xl flex items-center gap-1"><TrendingDown className="w-5 h-5" />{Math.round(kpis.trend).toLocaleString('es-ES')} L</p>
                   }
                   <p className="text-slate-500 text-xs mt-1">vs medición anterior</p>
                 </div>
 
                 <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
                   <p className="text-gray-400 text-xs mb-1">Consumo 24h</p>
-                  <p className="text-orange-400 font-bold text-xl">▼ {Math.round(kpis.consumed24h).toLocaleString()} L</p>
-                  <p className="text-green-400 font-bold text-base">▲ {Math.round(kpis.filled24h).toLocaleString()} L</p>
+                  <p className="text-orange-400 font-bold text-xl">▼ {Math.round(kpis.consumed24h).toLocaleString('es-ES')} L</p>
+                  <p className="text-green-400 font-bold text-base">▲ {Math.round(kpis.filled24h).toLocaleString('es-ES')} L</p>
                   <p className="text-slate-500 text-xs mt-1">consumido / llenado</p>
                 </div>
 
@@ -1907,17 +1907,17 @@ export default function EdificioAdminPage() {
                       return (
                         <tr key={m.id} className="hover:bg-slate-700/20">
                           <td className="px-4 py-3 text-slate-300 text-xs whitespace-nowrap">
-                            {format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa')}
+                            {format(new Date(m.recorded_at), 'dd/MM/yyyy HH:mm')}
                           </td>
-                          <td className="px-4 py-3 text-white font-medium">{Math.round(m.liters).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-white font-medium">{Math.round(m.liters).toLocaleString('es-ES')}</td>
                           <td className="px-4 py-3">
                             <span className={`font-bold ${m.percentage > cfgPreventionThreshold ? 'text-green-400' : m.percentage > cfgRationingThreshold ? 'text-amber-400' : 'text-red-400'}`}>
-                              {Math.round(m.percentage)}%
+                              {Math.round(m.percentage).toLocaleString('es-ES')}%
                             </span>                          </td>
                           <td className="px-4 py-3">
                             {v !== 0 && (
                               <span className={v > 0 ? 'text-green-400' : 'text-red-400'}>
-                                {v > 0 ? '+' : ''}{Math.round(v).toLocaleString()} L
+                                {v > 0 ? '+' : ''}{Math.round(v).toLocaleString('es-ES')} L
                               </span>
                             )}
                             {v === 0 && <span className="text-slate-600">—</span>}
@@ -1939,13 +1939,13 @@ export default function EdificioAdminPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
                     <p className="text-slate-400 text-xs mb-2">📉 Mínimo histórico</p>
-                    <p className="text-red-400 font-bold text-2xl">{Math.round(min.percentage)}%</p>
-                    <p className="text-slate-500 text-xs">{format(new Date(min.recorded_at), 'dd/MM/yyyy hh:mm aa')}</p>
+                    <p className="text-red-400 font-bold text-2xl">{Math.round(min.percentage).toLocaleString('es-ES')}%</p>
+                    <p className="text-slate-500 text-xs">{format(new Date(min.recorded_at), 'dd/MM/yyyy HH:mm')}</p>
                   </div>
                   <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
                     <p className="text-slate-400 text-xs mb-2">📈 Máximo histórico</p>
-                    <p className="text-green-400 font-bold text-2xl">{Math.round(max.percentage)}%</p>
-                    <p className="text-slate-500 text-xs">{format(new Date(max.recorded_at), 'dd/MM/yyyy hh:mm aa')}</p>
+                    <p className="text-green-400 font-bold text-2xl">{Math.round(max.percentage).toLocaleString('es-ES')}%</p>
+                    <p className="text-slate-500 text-xs">{format(new Date(max.recorded_at), 'dd/MM/yyyy HH:mm')}</p>
                   </div>
                 </div>
               );
@@ -2387,9 +2387,8 @@ export default function EdificioAdminPage() {
                       <tbody className="divide-y divide-slate-800">
                         {filteredMeasurements.map(m => (
                           <tr key={m.id} className="hover:bg-slate-700/30 transition-colors">
-                            <td className="px-4 py-2.5 text-slate-300">{format(new Date(m.recorded_at), 'dd/MM/yyyy HH:mm:ss')}</td>
-                            <td className="px-4 py-2.5 text-white font-mono text-right">{Math.round(m.liters).toLocaleString()} L</td>
-                            <td className="px-4 py-2.5 text-blue-400 font-bold text-right">{Math.round(m.percentage)}%</td>
+                           <td className="px-4 py-2.5 text-slate-300">{format(new Date(m.recorded_at), 'dd/MM/yyyy HH:mm')}</td>
+                           <td className="px-4 py-2.5 text-white font-mono text-right">{Math.round(m.liters).toLocaleString('es-ES')} L</td>                            <td className="px-4 py-2.5 text-blue-400 font-bold text-right">{Math.round(m.percentage)}%</td>
                             <td className={`px-4 py-2.5 text-right font-mono ${ (m.variation_lts ?? m.variacion_lts ?? 0) >= 0 ? 'text-green-400' : 'text-red-400' }`}>
                               { (m.variation_lts ?? m.variacion_lts ?? 0) > 0 ? '+' : '' }{ Math.round(m.variation_lts ?? m.variacion_lts ?? 0) }
                             </td>
@@ -2460,13 +2459,12 @@ export default function EdificioAdminPage() {
                     </div>
                     <div>
                       <p className="text-slate-400 text-xs">▼ Total consumido</p>
-                      <p className="text-orange-400 font-bold text-xl">{Math.round(totalConsumed).toLocaleString()} L</p>
+                      <p className="text-orange-400 font-bold text-xl">{Math.round(totalConsumed).toLocaleString('es-ES')} L</p>
                     </div>
                     <div>
                       <p className="text-slate-400 text-xs">▲ Total llenado</p>
-                      <p className="text-green-400 font-bold text-xl">{Math.round(totalFilled).toLocaleString()} L</p>
-                    </div>
-                    <div>
+                      <p className="text-green-400 font-bold text-xl">{Math.round(totalFilled).toLocaleString('es-ES')} L</p>
+                    </div>                    <div>
                       <p className="text-slate-400 text-xs">Registros en período</p>
                       <p className="text-slate-300 font-bold text-xl">{filteredMeasurements.length}</p>
                     </div>
@@ -2494,19 +2492,18 @@ export default function EdificioAdminPage() {
                       const v = getVariation(m);
                       return (
                         <tr key={m.id} className="hover:bg-slate-700/20">
-                          <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{format(new Date(m.recorded_at), 'dd/MM/yyyy hh:mm aa')}</td>
-                          <td className="px-4 py-2 text-white">{Math.round(m.liters).toLocaleString()}</td>
+                          <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{format(new Date(m.recorded_at), 'dd/MM/yyyy HH:mm')}</td>
+                          <td className="px-4 py-2 text-white">{Math.round(m.liters).toLocaleString('es-ES')}</td>
                           <td className="px-4 py-2">
                             <span className={m.percentage > cfgPreventionThreshold ? 'text-green-400' : m.percentage > cfgRationingThreshold ? 'text-amber-400' : 'text-red-400'}>
-                              {Math.round(m.percentage)}%
+                              {Math.round(m.percentage).toLocaleString('es-ES')}%
                             </span>                          </td>
                           <td className="px-4 py-2">
                             {v !== 0
-                              ? <span className={v > 0 ? 'text-green-400' : 'text-red-400'}>{v > 0 ? '+' : ''}{Math.round(v).toLocaleString()}</span>
+                              ? <span className={v > 0 ? 'text-green-400' : 'text-red-400'}>{v > 0 ? '+' : ''}{Math.round(v).toLocaleString('es-ES')}</span>
                               : <span className="text-slate-600">—</span>
                             }
-                          </td>
-                          <td className="px-4 py-2 text-slate-400">{m.collaborator_name || '—'}</td>
+                          </td>                          <td className="px-4 py-2 text-slate-400">{m.collaborator_name || '—'}</td>
                         </tr>
                       );
                     })}
@@ -3570,11 +3567,10 @@ export default function EdificioAdminPage() {
                                   {format(new Date(report.generated_at), 'dd/MM/yyyy HH:mm')}
                                 </td>
                                 <td className="px-4 py-4 text-slate-400">
-                                  {report.date_range_start ? format(new Date(report.date_range_start), 'dd/MM') : 'Inicio'} 
-                                  {' → '} 
-                                  {report.date_range_end ? format(new Date(report.date_range_end), 'dd/MM') : 'Hoy'}
-                                </td>
-                                <td className="px-4 py-4 text-slate-500 italic">
+                                  {report.date_range_start ? format(new Date(report.date_range_start), 'dd/MM/yyyy') : 'Inicio'}
+                                  {' → '}
+                                  {report.date_range_end ? format(new Date(report.date_range_end), 'dd/MM/yyyy') : 'Hoy'}
+                                </td>                                <td className="px-4 py-4 text-slate-500 italic">
                                   {report.created_by || 'Sistema'}
                                 </td>
                                 <td className="px-4 py-4">
