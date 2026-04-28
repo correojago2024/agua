@@ -26,7 +26,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw } from 'lucide-react';
+import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Calendar } from 'lucide-react';
+import { formatNumber, formatDateTime } from '@/lib/formatters';
 
 export default function ResidentForm() {
   const { slug } = useParams();
@@ -282,18 +283,29 @@ export default function ResidentForm() {
               <div className="md:col-span-2">
                 <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1.5 flex justify-between">
                   <span>Indique la Fecha y hora de la medición</span>
-                  <span className="text-blue-600 font-normal">Formato: DD/MM/YYYY</span>
                 </label>
-                <input
-                  type="datetime-local"
-                  required
-                  className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all text-black font-medium text-sm md:text-base appearance-none"
-                  style={{ colorScheme: 'light' }}
-                  value={formData.recorded_at}
-                  onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
-                />
+                
+                {/* Contenedor relativo para forzar el formato visual */}
+                <div className="relative group">
+                  <input
+                    type="datetime-local"
+                    required
+                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all text-transparent font-medium text-sm md:text-base appearance-none cursor-pointer z-10 relative"
+                    style={{ colorScheme: 'light' }}
+                    value={formData.recorded_at}
+                    onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
+                  />
+                  {/* Overlay que muestra la fecha formateada */}
+                  <div className="absolute inset-0 flex items-center px-3 md:px-4 pointer-events-none z-0">
+                    <span className="text-black font-medium text-sm md:text-base">
+                      {formatDateTime(formData.recorded_at)}
+                    </span>
+                    <Calendar className="ml-auto w-4 h-4 text-blue-500 opacity-60" />
+                  </div>
+                </div>
+
                 <p className="text-[10px] text-slate-500 mt-1 italic">
-                  * Si el selector de su navegador muestra Mes/Día/Año, por favor asegúrese de ingresar los datos correctamente según el calendario.
+                  * Seleccione la fecha y hora usando el calendario del sistema. El formato SIEMPRE se mostrará como Día/Mes/Año.
                 </p>
               </div>
 
@@ -310,7 +322,7 @@ export default function ResidentForm() {
                   onChange={e => setFormData({ ...formData, liters: e.target.value })}
                 />
                 <p className="text-[9px] md:text-[10px] text-slate-500 mt-1 uppercase font-bold">
-                  Máx: {building?.tank_capacity_liters?.toLocaleString()} LTS
+                  Máx: {formatNumber(building?.tank_capacity_liters, 0)} LTS
                 </p>
               </div>
 
