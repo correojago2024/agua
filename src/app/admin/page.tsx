@@ -941,7 +941,7 @@ export default function AdminPage() {
                                     className="w-full bg-slate-600 text-blue-400 px-2 py-1 rounded text-xs">
                                     <option value="basico">Básico ($9)</option>
                                     <option value="profesional">Profesional ($25)</option>
-                                    <option value="empresarial">Empresarial ($49)</option>
+                                    <option value="premium">Premium ($49)</option>
                                     <option value="ia">IA Intelligence ($79)</option>
                                   </select>
                                 </div>
@@ -1341,7 +1341,7 @@ export default function AdminPage() {
             <div className="mt-6 p-4 bg-slate-700/30 rounded-lg">
               <h3 className="text-white font-medium mb-3">Edificios por Plan</h3>
               <div className="grid md:grid-cols-4 gap-3">
-                {['basico', 'profesional', 'empresarial', 'ia'].map((planId) => {
+                {['basico', 'profesional', 'premium', 'ia'].map((planId) => {
                   const count = buildings.filter(b => (b.subscription_plan || 'basico') === planId).length;
                   const plan = plans.find(p => p.plan_id === planId);
                   return (

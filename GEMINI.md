@@ -5,19 +5,29 @@
 ### Resumen de Integración
 El sistema de monitoreo de agua aGuaSaaS está plenamente operativo con integraciones de Email (Gmail API) y WhatsApp (Green API/Whapi/Meta).
 
-### Últimas Mejoras Realizadas (28 de abril, 2026)
-- **Email de Anomalías (Mejora Crítica):**
-  - Se optimizó la explicación técnica en el email de anomalías para resolver confusiones del usuario.
-  - El email ahora desglosa explícitamente:
-    - **Dato Anterior:** Volumen en litros y porcentaje previo.
-    - **Dato Registrado:** Volumen en litros y porcentaje nuevo.
-    - **Variación Absoluta:** Diferencia neta en litros (+/-).
-    - **Variación Porcentual Relativa:** El % exacto de cambio respecto al dato anterior que disparó la alerta.
-    - **Criterio de Seguridad:** Explicación clara del umbral (threshold) configurado para el edificio.
-  - Se añadieron posibles causas (fugas, llenado, errores manuales) para orientar al administrador.
-  - Diseño visualmente jerarquizado para lectura rápida en móviles.
+### Últimas Mejoras Realizadas (28 de abril, 2026 - II)
+- **Gestión de Planes y Nomenclatura:**
+  - Se renombró el plan **"Empresarial"** a **"Premium"** en todo el sistema (Frontend, Backend, Admin Panel).
+  - Se corrigió la inconsistencia en la visualización del plan actual en el portal del edificio, priorizando el campo `subscription_plan` sobre `subscription_status`.
+- **Límites de Almacenamiento por Tiempo (Historial):**
+  - Se migró el sistema de almacenamiento de un límite basado en cantidad de registros a un límite basado en **tiempo (días/meses)**.
+  - **Plan Básico/Esencial:** Historial de 90 días (3 meses).
+  - **Plan Profesional:** Historial de 120 días.
+  - **Plan Premium:** Historial de 365 días (12 meses).
+  - **Plan IA:** Historial de 730 días (24 meses).
+- **Sistema de Alertas de Almacenamiento:**
+  - Implementación de notificaciones automáticas al alcanzar el **90%** del tiempo límite del plan.
+  - Notificación final al alcanzar el **100%** del límite, informando sobre el inicio de la política FIFO.
+  - Estas notificaciones se envían una sola vez por ciclo para evitar spam al administrador.
+- **Política FIFO de Autolimpieza:**
+  - El sistema ahora elimina automáticamente los registros que exceden el plazo contratado según el plan del edificio al recibir una nueva medición.
+- **Base de Datos:**
+  - Se actualizó `supabase-storage-fix.sql` para incluir explícitamente `notified_90_storage` y evitar errores de ejecución.
+  - Se renombró el archivo de respaldo `src/app/admin/page.tsx.bak` para evitar interferencias en el despliegue.
+- **Visualización:**
+  - Se forzó la visualización de "PREMIUM" incluso si en la base de datos aún existe el valor "empresarial" por compatibilidad.
 
-### Últimas Mejoras Realizadas (27 de abril, 2026)
+### Últimas Mejoras Realizadas (28 de abril, 2026 - I)
 - **Email de Anomalías:**
   - Se rediseñó y mejoró el email de alerta por anomalías (variaciones bruscas).
   - Ahora incluye explicación detallada: dato anterior, dato registrado, variación absoluta y porcentual, y el criterio (umbral) utilizado para disparar la alerta.

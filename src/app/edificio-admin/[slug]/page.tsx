@@ -613,7 +613,7 @@ export default function EdificioAdminPage() {
         const { data: set } = await supabase.from('building_settings').select('*').eq('building_id', data.id).single();
         
         const currentPlan = data.subscription_status?.toLowerCase() || 'prueba';
-        const isAdvanced = ['profesional', 'premium', 'ia', 'activo', 'empresarial'].includes(currentPlan);
+        const isAdvanced = ['profesional', 'premium', 'ia', 'activo'].includes(currentPlan);
 
         if (set) {
           setCfgThreshold(set.alert_threshold_percentage?.toString() || '30');
@@ -687,11 +687,11 @@ export default function EdificioAdminPage() {
     }
 
     // Determinar límite según el plan del edificio
-    const plan = building.subscription_status?.toLowerCase() || 'prueba';
+    const plan = (building?.subscription_plan || building?.subscription_status || 'prueba').toLowerCase();
     let measLimit = 200; // Default Esencial / Prueba
     if (plan === 'profesional') measLimit = 1000;
     if (plan === 'premium') measLimit = 5000;
-    if (plan === 'ia' || plan === 'activo') measLimit = 50000; // Prácticamente ilimitado para IA
+    if (plan === 'ia' || plan === 'activo') measLimit = 50000;
 
     const [{ data: ms }, { data: members }, { count: emailCount }] = await Promise.all([
       supabase.from('measurements').select('*').eq('building_id', measurementsQueryBuildingId)
@@ -921,9 +921,8 @@ export default function EdificioAdminPage() {
   const isUserAdmin = !currentUser || currentUser.is_admin === true;
   const isObserver = currentUser?.role === 'Observador';
   
-  const plan = building?.subscription_status?.toLowerCase() || 'prueba';
-  const canEditAdvanced = ['profesional', 'premium', 'ia', 'activo', 'empresarial'].includes(plan);
-
+  const plan = (building?.subscription_plan || building?.subscription_status || 'prueba').toLowerCase();
+  const canEditAdvanced = ['profesional', 'premium', 'ia', 'activo'].includes(plan);
   // Helper para enmascarar email - Ahora siempre enmascara si NO es admin, o si es la pestaña Junta
   const getDisplayEmail = (email: string, forceMask = false) => {
     if (isUserAdmin && !isDemo && !forceMask) return email;
@@ -1488,7 +1487,9 @@ export default function EdificioAdminPage() {
                   <CreditCard className="w-6 h-6 text-blue-400" />
                   Solicitar Cambio de Plan
                 </h2>
-                <p className="text-slate-400 text-sm mt-1">Tu plan actual: <span className="uppercase font-bold text-slate-200">{plan}</span></p>
+                <p className="text-slate-400 text-sm mt-1">Tu plan actual: <span className="uppercase font-bold text-slate-200">
+                  {plan === 'empresarial' ? 'premium' : plan}
+                </span></p>
               </div>
               <button onClick={() => setShowPlanModal(false)} className="text-slate-500 hover:text-white transition-all">
                 <X className="w-6 h-6" />

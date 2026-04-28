@@ -52,7 +52,7 @@ export default function PricingSection() {
           { icon: <Rocket size={16} />, text: 'Reportes PDF para cartelera' },
         ];
       case 'ia':
-      case 'empresarial':
+      case 'premium':
         return [
           { icon: <Users size={16} />, text: 'Vecinos ilimitados' },
           { icon: <Clock size={16} />, text: 'Historial de por vida' },
@@ -102,7 +102,7 @@ export default function PricingSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
           {plans.map((plan) => {
             const isPro = plan.plan_id === 'profesional';
-            const isIA = plan.plan_id === 'ia' || plan.plan_id === 'empresarial';
+            const isIA = plan.plan_id === 'ia' || plan.plan_id === 'premium';
             const price = billingCycle === 'yearly' ? plan.precio * 0.8 : plan.precio;
             const features = getExtendedFeatures(plan.plan_id);
 

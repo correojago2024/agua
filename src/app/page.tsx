@@ -94,12 +94,12 @@ export default function HomePage() {
   }, []);
 
   const getPrice = (planId: string) => {
-    // Buscar por ID exacto o variaciones comunes (premium/empresarial)
+    // Buscar por ID exacto o variaciones comunes (premium)
     let plan = plans.find(p => p.plan_id.toLowerCase() === planId.toLowerCase());
     
-    // Si buscamos 'premium' y no existe, intentamos con 'empresarial' que es el equivalente en BD antigua
+    // Si buscamos 'premium' y no existe, intentamos con 'premium' (normalizado)
     if (!plan && planId.toLowerCase() === 'premium') {
-      plan = plans.find(p => p.plan_id.toLowerCase() === 'empresarial');
+      plan = plans.find(p => p.plan_id.toLowerCase() === 'premium');
     }
 
     if (!plan) {
@@ -107,7 +107,7 @@ export default function HomePage() {
       let basePrice = 0;
       if (planId.toLowerCase() === 'basico' || planId.toLowerCase() === 'esencial') basePrice = 0;
       else if (planId.toLowerCase() === 'profesional') basePrice = 25;
-      else if (planId.toLowerCase() === 'premium' || planId.toLowerCase() === 'empresarial') basePrice = 60;
+      else if (planId.toLowerCase() === 'premium') basePrice = 60;
       else if (planId.toLowerCase() === 'ia') basePrice = 99;
       
       return billingCycle === 'yearly' ? Math.round(basePrice * 0.8) : basePrice;

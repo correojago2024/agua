@@ -43,43 +43,95 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Edificio no encontrado' }, { status: 404 });
     }
 
-    // 2. Validar límites de almacenamiento según plan
-    const plan = building.subscription_status?.toLowerCase() || 'prueba';
-    const maxStorage = building.max_storage_records || (plan === 'profesional' ? 1000 : plan === 'premium' ? 5000 : (plan === 'ia' || plan === 'activo') ? 50000 : 200);
+    // 2. Validar límites de almacenamiento según plan (Basado en TIEMPO)
+    const plan = (building.subscription_plan || building.subscription_status || 'prueba').toLowerCase();
+    
+    // Definir días máximos según plan
+    let maxDays = 90; // Default Básico / Prueba (3 meses)
+    if (plan === 'profesional') maxDays = 120;
+    if (plan === 'premium') maxDays = 365; // 12 meses
+    if (plan === 'ia' || plan === 'activo') maxDays = 730; // 24 meses
 
-    const { count: currentCount } = await supabase
+    // Obtener la fecha de la medición más antigua
+    const { data: oldestRecord } = await supabase
       .from('measurements')
-      .select('*', { count: 'exact', head: true })
-      .eq('building_id', building_id);
+      .select('recorded_at')
+      .eq('building_id', building_id)
+      .order('recorded_at', { ascending: true })
+      .limit(1)
+      .single();
 
-    const storageUsagePct = ((currentCount || 0) / maxStorage) * 100;
+    const now = new Date(recorded_at || new Date());
+    const oldestDate = oldestRecord ? new Date(oldestRecord.recorded_at) : now;
+    const diffTime = Math.abs(now.getTime() - oldestDate.getTime());
+    const currentSpanDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    // --- LÓGICA DE ALERTA 90% ALMACENAMIENTO ---
-    if (storageUsagePct >= 90 && !building.notified_90_storage) {
+    const storageUsagePct = (currentSpanDays / maxDays) * 100;
+
+    // --- LÓGICA DE ALERTA ALMACENAMIENTO ---
+    // Alerta 90% (ej: mes 11 de 12)
+    if (storageUsagePct >= 90 && storageUsagePct < 100 && !building.notified_90_storage) {
       const adminAndDev = [building.admin_email, 'correojago@gmail.com'].filter(Boolean);
       const storageAlertHtml = `
-        <h3>⚠️ Alerta de Almacenamiento: 90% alcanzado</h3>
-        <p>El edificio <b>${building.name}</b> ha alcanzado el 90% de su límite de almacenamiento (${currentCount} de ${maxStorage}).</p>
-        <p>Si desea más capacidad, puede aumentar su plan. Si continúa en el mismo, los registros más antiguos se sobreescribirán (FIFO).</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b;">
+          <h2 style="color: #f59e0b;">⚠️ Alerta de Almacenamiento: 90% alcanzado</h2>
+          <p>El edificio <b>${building.name}</b> ha alcanzado el 90% de su límite de tiempo de almacenamiento (${currentSpanDays} de ${maxDays} días).</p>
+          <p>Este es un aviso preventivo cuando le falta aproximadamente un 10% para llegar al tope de su plan.</p>
+          <p>Si desea más capacidad, puede aumentar su plan. Si continúa en el mismo, al llegar al límite los registros más antiguos se sobreescribirán (FIFO) para dar espacio a los nuevos.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+          <p style="font-size: 12px; color: #64748b;">Sistema aGuaSaaS — Monitoreo Inteligente</p>
+        </div>
       `;
-      await sendEmailViaGmail(adminAndDev, `⚠️ Alerta 90% Almacenamiento — ${building.name}`, storageAlertHtml, building_id, 'limit_90_storage');
-      await supabase.from('buildings').update({ notified_90_storage: true }).eq('id', building_id);
+      await sendEmailViaGmail(adminAndDev, `⚠️ Alerta 90% Tiempo Almacenamiento — ${building.name}`, storageAlertHtml, building_id, 'limit_90_storage');
+      try {
+        await supabase.from('buildings').update({ notified_90_storage: true }).eq('id', building_id);
+      } catch (err) {
+        console.error('Error actualizando notified_90_storage:', err);
+      }
     }
 
-    // --- LÓGICA FIFO (Sobre-escritura) ---
-    if ((currentCount || 0) >= maxStorage) {
-      // Buscar el registro más antiguo
-      const { data: oldest } = await supabase
+    // Alerta 100% (Límite alcanzado)
+    if (storageUsagePct >= 100 && !building.notified_100_storage) {
+      const adminAndDev = [building.admin_email, 'correojago@gmail.com'].filter(Boolean);
+      const storageAlertHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b;">
+          <h2 style="color: #dc2626;">🚨 Límite de Almacenamiento Alcanzado</h2>
+          <p>El edificio <b>${building.name}</b> ha alcanzado el 100% de su límite de tiempo de almacenamiento (${maxDays} días).</p>
+          <p>A partir de este momento, el sistema continuará funcionando normalmente pero aplicará una política <b>FIFO (First In, First Out)</b>: cada nueva medición registrada eliminará la medición más antigua de su base de datos para mantenerse dentro del plazo de ${maxDays} días contratados.</p>
+          <p>Usted no recibirá más avisos por email sobre el límite de almacenamiento para este ciclo.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+          <p style="font-size: 12px; color: #64748b;">Sistema aGuaSaaS — Monitoreo Inteligente</p>
+        </div>
+      `;
+      await sendEmailViaGmail(adminAndDev, `🚨 Límite Almacenamiento Alcanzado — ${building.name}`, storageAlertHtml, building_id, 'limit_100_storage');
+      try {
+        await supabase.from('buildings').update({ notified_100_storage: true }).eq('id', building_id);
+      } catch (err) {
+        console.error('Error actualizando notified_100_storage:', err);
+      }
+    }
+
+    // --- LÓGICA FIFO (Sobre-escritura basada en TIEMPO) ---
+    if (currentSpanDays >= maxDays) {
+      // Eliminar registros que excedan los maxDays
+      const limitDate = new Date(now.getTime() - (maxDays * 24 * 60 * 60 * 1000));
+      const { data: toDelete } = await supabase
         .from('measurements')
         .select('id')
         .eq('building_id', building_id)
-        .order('recorded_at', { ascending: true })
-        .limit(1)
-        .single();
+        .lt('recorded_at', limitDate.toISOString());
       
-      if (oldest) {
-        await supabase.from('measurements').delete().eq('id', oldest.id);
-        await logAudit({ req: request, building_id, user_email: 'SYSTEM', operation: 'DELETE', entity_type: 'measurement', entity_id: oldest.id, data_after: { message: 'FIFO: Registro antiguo eliminado para liberar espacio' } });
+      if (toDelete && toDelete.length > 0) {
+        const idsToDelete = toDelete.map(d => d.id);
+        await supabase.from('measurements').delete().in('id', idsToDelete);
+        await logAudit({ 
+          req: request, 
+          building_id, 
+          user_email: 'SYSTEM', 
+          operation: 'DELETE', 
+          entity_type: 'measurement', 
+          data_after: { message: `FIFO: ${toDelete.length} registros antiguos eliminados por exceder ${maxDays} días` } 
+        });
       }
     }
 
