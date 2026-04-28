@@ -400,6 +400,7 @@ export function buildAnomalyEmailHtml(
 ): string {
   const variationLtrs = newLiters - prevLiters;
   const isIncrease = variationLtrs > 0;
+  const absVariationPct = variationPct; // ya viene como valor absoluto desde la ruta
   
   return `<!DOCTYPE html>
 <html>
@@ -407,56 +408,83 @@ export function buildAnomalyEmailHtml(
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b; background-color: #f8fafc;">
-  <div style="background: #dc2626; color: white; padding: 20px; border-radius: 16px 16px 0 0; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-    <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚠️ Anomalía detectada</h1>
-    <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Edificio: ${building.name}</p>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b; background-color: #f8fafc;">
+  <div style="background: #dc2626; color: white; padding: 25px; border-radius: 20px 20px 0 0; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">⚠️ Anomalía Detectada</h1>
+    <p style="margin: 8px 0 0; opacity: 0.9; font-size: 16px; font-weight: 500;">Edificio: ${building.name}</p>
   </div>
   
-  <div style="background: white; border: 1px solid #e2e8f0; border-top: none; padding: 30px; border-radius: 0 0 16px 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-    <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 12px; padding: 20px; margin-bottom: 25px; text-align: center;">
-      <p style="margin: 0; font-size: 14px; color: #991b1b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Variación Detectada</p>
-      <p style="margin: 10px 0 0; font-size: 36px; font-weight: 900; color: #dc2626;">${variationPct.toFixed(1)}%</p>
-      <p style="margin: 5px 0 0; font-size: 14px; color: #b91c1c;">${isIncrease ? 'Aumento' : 'Disminución'} brusca de nivel</p>
+  <div style="background: white; border: 1px solid #e2e8f0; border-top: none; padding: 30px; border-radius: 0 0 20px 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+    
+    <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 16px; padding: 25px; margin-bottom: 30px; text-align: center;">
+      <p style="margin: 0; font-size: 14px; color: #991b1b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Variación Registrada</p>
+      <p style="margin: 12px 0 0; font-size: 48px; font-weight: 900; color: #dc2626; line-height: 1;">${absVariationPct.toFixed(1)}%</p>
+      <p style="margin: 10px 0 0; font-size: 16px; color: #b91c1c; font-weight: 600;">${isIncrease ? '📈 Aumento' : '📉 Disminución'} brusca de nivel</p>
     </div>
 
-    <h3 style="color: #0f172a; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-top: 0;">Detalles de la medición</h3>
-    <table style="width: 100%; font-size: 14px; margin-bottom: 25px;">
-      <tr>
-        <td style="padding: 8px 0; color: #64748b;">Dato registrado:</td>
-        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${Math.round(newLiters).toLocaleString()} L (${Number(newPercentage).toFixed(1)}%)</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 0; color: #64748b;">Dato anterior:</td>
-        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${Math.round(prevLiters).toLocaleString()} L (${Number(prevPercentage).toFixed(1)}%)</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 0; color: #64748b;">Variación absoluta:</td>
-        <td style="padding: 8px 0; text-align: right; font-weight: bold; color: ${isIncrease ? '#16a34a' : '#dc2626'}">${isIncrease ? '+' : ''}${Math.round(variationLtrs).toLocaleString()} L</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 0; color: #64748b;">Reportado por:</td>
-        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${reportedBy}</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 0; color: #64748b;">Fecha/Hora:</td>
-        <td style="padding: 8px 0; text-align: right; font-weight: bold;">${new Date(recordedAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}</td>
-      </tr>
-    </table>
-
-    <div style="background: #f8fafc; border-radius: 12px; padding: 20px; font-size: 13px; line-height: 1.6;">
-      <h4 style="margin: 0 0 10px; color: #334155; font-size: 14px;">¿Por qué se considera una anomalía?</h4>
-      <p style="margin: 0;">El sistema ha detectado que el nivel del tanque cambió un <strong>${variationPct.toFixed(1)}%</strong> entre dos mediciones consecutivas. Este valor supera el límite de seguridad configurado para este edificio (<strong>${threshold}%</strong>).</p>
-      <p style="margin: 10px 0 0; color: #475569;">Esto podría indicar una fuga importante, un uso inusual del agua o un error en el registro manual.</p>
+    <div style="margin-bottom: 30px;">
+      <h3 style="color: #0f172a; font-size: 18px; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-top: 0; margin-bottom: 15px;">📊 Análisis de la Medición</h3>
+      
+      <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+        <tr style="border-bottom: 1px solid #f8fafc;">
+          <td style="padding: 12px 0; color: #64748b; font-weight: 500;">Dato Anterior:</td>
+          <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #334155;">${Math.round(prevLiters).toLocaleString()} L <span style="color: #94a3b8; font-weight: 400; font-size: 13px;">(${Number(prevPercentage).toFixed(1)}%)</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f8fafc;">
+          <td style="padding: 12px 0; color: #64748b; font-weight: 500;">Dato Registrado:</td>
+          <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #0f172a;">${Math.round(newLiters).toLocaleString()} L <span style="color: #94a3b8; font-weight: 400; font-size: 13px;">(${Number(newPercentage).toFixed(1)}%)</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f8fafc;">
+          <td style="padding: 12px 0; color: #64748b; font-weight: 500;">Variación Absoluta:</td>
+          <td style="padding: 12px 0; text-align: right; font-weight: 700; color: ${isIncrease ? '#16a34a' : '#dc2626'}">
+            ${isIncrease ? '+' : ''}${Math.round(variationLtrs).toLocaleString()} L
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; color: #64748b; font-weight: 500;">Variación Porcentual:</td>
+          <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #dc2626;">${absVariationPct.toFixed(1)}% <span style="color: #94a3b8; font-weight: 400; font-size: 12px;">(relativa)</span></td>
+        </tr>
+      </table>
     </div>
 
-    <div style="margin-top: 30px; text-align: center;">
-      <a href="https://aguasaas.vercel.app/edificio-admin/${building.slug || building.id}" style="background: #1e293b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; display: inline-block;">Ver Panel de Control</a>
+    <div style="background: #f8fafc; border-left: 4px solid #dc2626; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+      <h4 style="margin: 0 0 10px; color: #0f172a; font-size: 16px; font-weight: 700;">🧐 ¿Por qué es una anomalía?</h4>
+      <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #475569;">
+        El sistema detectó que el volumen de agua cambió un <strong>${absVariationPct.toFixed(1)}%</strong> en comparación con el registro anterior. 
+        Este cambio supera el <strong>límite de seguridad del ${threshold}%</strong> configurado para <b>${building.name}</b>.
+      </p>
+      <p style="margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: #475569;">
+        <strong>Posibles causas:</strong> Fugas masivas, llenado rápido por cisterna, uso inusual simultáneo o un error en la digitación del registro manual.
+      </p>
     </div>
 
-    <p style="font-size: 11px; color: #94a3b8; margin-top: 30px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
-      Este es un aviso automático de seguridad del Sistema aGuaSaaS.
-    </p>
+    <div style="background: #f1f5f9; border-radius: 12px; padding: 15px; margin-bottom: 30px;">
+      <table style="width: 100%; font-size: 13px;">
+        <tr>
+          <td style="color: #64748b;">Reportado por:</td>
+          <td style="text-align: right; font-weight: 600; color: #334155;">${reportedBy}</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">Fecha y Hora:</td>
+          <td style="text-align: right; font-weight: 600; color: #334155;">${new Date(recordedAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="https://aguasaas.vercel.app/edificio-admin/${building.slug || building.id}" style="background: #0f172a; color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 15px; display: inline-block; transition: all 0.2s;">
+        Revisar en el Panel de Control
+      </a>
+    </div>
+
+    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #f1f5f9; text-align: center;">
+      <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+        Aviso automático de seguridad — <strong>Sistema aGuaSaaS</strong>
+      </p>
+      <p style="font-size: 10px; color: #cbd5e1; margin: 5px 0 0;">
+        Si cree que esta alerta es un error, puede ajustar el umbral de sensibilidad en la configuración del edificio.
+      </p>
+    </div>
   </div>
 </body>
 </html>`.trim();
