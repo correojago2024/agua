@@ -285,18 +285,20 @@ export default function ResidentForm() {
                   <span>Indique la Fecha y hora de la medición</span>
                 </label>
                 
-                {/* Contenedor relativo para forzar el formato visual */}
-                <div className="relative group">
+                {/* Contenedor relativo para forzar el formato visual sin romper funcionalidad */}
+                <div className="relative group h-[54px] md:h-[62px]">
+                  {/* Input nativo invisible que atrapa el clic y el foco */}
                   <input
                     type="datetime-local"
                     required
-                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all text-transparent font-medium text-sm md:text-base appearance-none cursor-pointer z-10 relative"
+                    className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                     style={{ colorScheme: 'light' }}
                     value={formData.recorded_at}
                     onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
                   />
-                  {/* Overlay que muestra la fecha formateada */}
-                  <div className="absolute inset-0 flex items-center px-3 md:px-4 pointer-events-none z-0">
+                  
+                  {/* Overlay visual que muestra la fecha formateada (Z-10) */}
+                  <div className="absolute inset-0 w-full h-full flex items-center px-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl peer-focus:ring-4 peer-focus:ring-blue-100 peer-focus:border-blue-400 group-hover:border-slate-400 transition-all z-10">
                     <span className="text-black font-medium text-sm md:text-base">
                       {formatDateTime(formData.recorded_at)}
                     </span>
@@ -305,7 +307,7 @@ export default function ResidentForm() {
                 </div>
 
                 <p className="text-[10px] text-slate-500 mt-1 italic">
-                  * Seleccione la fecha y hora usando el calendario del sistema. El formato SIEMPRE se mostrará como Día/Mes/Año.
+                  * Toque la casilla para abrir el calendario. El formato SIEMPRE se mostrará como Día/Mes/Año.
                 </p>
               </div>
 
