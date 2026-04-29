@@ -147,6 +147,20 @@ export async function POST(request: Request) {
 
     let isAnomaly = false;
     let variationPercentage = 0;
+    // 3. REGISTRAR MEDICIÓN
+    const var_lts = lastM ? liters - lastM.liters : null;
+    const dbEmail = email || 'anonimo@aguasaas.com';
+
+    // Aseguramos que recorded_at sea un ISO string válido o null
+    let finalRecordedAt = recorded_at;
+    if (recorded_at && !recorded_at.includes('T')) {
+      // Si viene de datetime-local (YYYY-MM-DDTHH:mm), lo convertimos a un Date local y luego a ISO
+      // pero el servidor puede estar en UTC. Para mantener la hora LOCAL enviada por el usuario:
+      finalRecordedAt = new Date(recorded_at).toISOString();
+    } else if (!recorded_at) {
+      finalRecordedAt = new Date().toISOString();
+    }
+
     if (lastM && lastM.liters > 0) {
       variationPercentage = Math.abs((liters - lastM.liters) / lastM.liters * 100);
       const { data: set } = await supabase.from('building_settings').select('alert_threshold_percentage, enable_anomaly_alerts').eq('building_id', building_id).single();
@@ -154,16 +168,11 @@ export async function POST(request: Request) {
       if (variationPercentage > threshold) {
         isAnomaly = true;
         if (set?.enable_anomaly_alerts && building.admin_email) {
-          const aHtml = buildAnomalyEmailHtml(building, liters, percentage, lastM.liters, lastM.percentage, variationPercentage, recorded_at, collaborator_name || email || 'Anónimo', threshold);
+          const aHtml = buildAnomalyEmailHtml(building, liters, percentage, lastM.liters, lastM.percentage, variationPercentage, finalRecordedAt, collaborator_name || email || 'Anónimo', threshold);
           await sendEmailViaGmail([building.admin_email], `⚠️ Anomalía — ${building.name}`, aHtml, building_id, 'anomaly_alert');
         }
       }
     }
-
-    const var_lts = lastM ? liters - lastM.liters : null;
-    
-    // CORRECCIÓN: Asegurar que email no sea null porque la tabla tiene restricción NOT NULL
-    const dbEmail = email || 'anonimo@aguasaas.com';
 
     const { data: meas, error: insErr } = await supabase.from('measurements').insert([{
       building_id, 
@@ -171,7 +180,7 @@ export async function POST(request: Request) {
       percentage, 
       email: dbEmail,
       collaborator_name: collaborator_name || 'Anónimo',
-      recorded_at, 
+      recorded_at: finalRecordedAt, 
       is_anomaly: isAnomaly, 
       anomaly_checked: true,
       variation_lts: var_lts,

@@ -37,7 +37,12 @@ export default function ResidentForm() {
   const [error, setError]         = useState('');
 
   const [formData, setFormData] = useState({
-    recorded_at: new Date().toISOString().slice(0, 16),
+    recorded_at: (() => {
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(now.getTime() - offset).toISOString().slice(0, 16);
+      return localISOTime;
+    })(),
     liters:            '',
     percentage:        '',
     email:             '',
@@ -108,7 +113,7 @@ export default function ResidentForm() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           building_id:       building.id,
-          recorded_at:       new Date(formData.recorded_at).toISOString(),
+          recorded_at:       formData.recorded_at, // Send local string directly
           liters:            finalLiters,
           percentage:        finalPercentage,
           email:             formData.email             || null,

@@ -2,6 +2,10 @@
 
 ## Estado del Proyecto (29 de abril, 2026 - Actualización 5)
 ### Resumen de Actualizaciones Recientes
+- **Corrección de Formato y Zona Horaria (Fecha/Hora):**
+  - Se corrigió el formato de entrada en el formulario del edificio para respetar el estándar local del navegador (evitando forzar esquemas que alteren el orden dd/mm/aaaa).
+  - Se implementó una gestión robusta de la zona horaria: el formulario ahora captura el offset local del usuario para asegurar que la hora registrada sea exactamente la que el usuario ve, evitando desviaciones a UTC en los emails.
+  - Se actualizó el API route (`/api/measurements`) para procesar correctamente los strings de fecha locales y preservar la hora exacta en los reportes por email y alertas de anomalías.
 - **Corrección de Formulario de Registro (Fecha/Hora):**
   - Se restauró la funcionalidad del campo de fecha y hora en el formulario público del edificio (`src/app/edificio/[slug]/page.tsx`).
   - Se eliminó el icono superpuesto y la clase `cursor-pointer` que interferían con la activación del selector nativo en varios navegadores.
