@@ -44,6 +44,29 @@ export function formatDate(date: Date | string | null | undefined): string {
  */
 export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return '—';
+  
+  // Si es un string "naive" (sin zona horaria, ej: 2026-04-29T12:00), lo formateamos literal
+  // para preservar la "hora de pared" que el usuario ingresó, sin importar la zona horaria del servidor.
+  if (typeof date === 'string' && date.includes('T') && !date.includes('Z') && !date.includes('+')) {
+    const parts = date.split('T');
+    const dPart = parts[0]; // YYYY-MM-DD
+    const tPart = parts[1]; // HH:mm...
+    
+    const [y, m, d] = dPart.split('-');
+    const timeParts = tPart.split(':');
+    const hh = timeParts[0];
+    const mm = timeParts[1];
+    
+    // Convertir a formato 12h para consistencia
+    let hInt = parseInt(hh);
+    const ampm = hInt >= 12 ? 'PM' : 'AM';
+    hInt = hInt % 12;
+    hInt = hInt ? hInt : 12;
+    const hStr = String(hInt).padStart(2, '0');
+    
+    return `${d}/${m}/${y} ${hStr}:${mm} ${ampm}`;
+  }
+
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '—';
 

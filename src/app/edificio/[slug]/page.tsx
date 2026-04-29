@@ -37,17 +37,23 @@ export default function ResidentForm() {
   const [error, setError]         = useState('');
 
   const [formData, setFormData] = useState({
-    recorded_at: (() => {
-      const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000;
-      const localISOTime = new Date(now.getTime() - offset).toISOString().slice(0, 16);
-      return localISOTime;
-    })(),
+    recorded_at_date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+    recorded_at_time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), // HH:mm
     liters:            '',
     percentage:        '',
     email:             '',
     collaborator_name: ''
   });
+
+  // ... (inside the component, before return)
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, recorded_at_date: e.target.value });
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, recorded_at_time: e.target.value });
+  };
+
 
   // ── Cargar datos del edificio ──────────────────────────────────────────
   useEffect(() => {
@@ -108,12 +114,14 @@ export default function ResidentForm() {
       }
 
       // CORRECCIÓN: llamar al route del servidor en lugar de insertar directo en Supabase
+      const localDateTime = `${formData.recorded_at_date}T${formData.recorded_at_time}`;
+      
       const response = await fetch('/api/measurements', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           building_id:       building.id,
-          recorded_at:       formData.recorded_at, // Send local string directly
+          recorded_at:       localDateTime, // Send local string YYYY-MM-DDTHH:mm
           liters:            finalLiters,
           percentage:        finalPercentage,
           email:             formData.email             || null,
@@ -285,16 +293,27 @@ export default function ResidentForm() {
                   <span>Indique la Fecha y hora de la medición</span>
                 </label>
                 
-                <input
-                  type="datetime-local"
-                  required
-                  className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base"
-                  value={formData.recorded_at}
-                  onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="date"
+                    required
+                    lang="es-ES"
+                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base"
+                    value={formData.recorded_at_date}
+                    onChange={handleDateChange}
+                  />
+                  <input
+                    type="time"
+                    required
+                    lang="es-ES"
+                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base"
+                    value={formData.recorded_at_time}
+                    onChange={handleTimeChange}
+                  />
+                </div>
 
                 <p className="text-[10px] text-slate-500 mt-1 italic">
-                  * Toque la casilla para seleccionar la fecha y hora.
+                  * Seleccione la fecha (dd/mm/aaaa) y la hora de la medición.
                 </p>
               </div>
 

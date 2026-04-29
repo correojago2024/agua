@@ -239,7 +239,7 @@ export async function POST(request: Request) {
       lastFlow: 0, balance24h: { consumed: 0, filled: 0, net: 0 }, avgFlow24h: 0,
       projection11pm: percentage, projectedLiters11pm: liters, timeEstimate: 'Pendiente', estimateDate: 'N/A',
       filledToday: 0, filledLastWeek: 0, slotMax: { range: 'N/A', avg: 0 }, trends: { current: 0, previous: 0 },
-      lastUpdate: new Date().toLocaleString('es-ES'), reportDate: new Date().toLocaleString('es-ES'),
+      lastUpdate: formatDateTime(new Date()), reportDate: formatDateTime(new Date()),
     };
 
     const { data: bSettings } = await supabase.from('building_settings').select('*').eq('building_id', building_id).single();
