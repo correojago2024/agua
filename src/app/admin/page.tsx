@@ -197,7 +197,13 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success && data.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        // Forzar descarga usando un enlace temporal
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else {
         setActionMsg('❌ Error: ' + (data.error || 'No se pudo generar el enlace'));
         setTimeout(() => setActionMsg(''), 3000);

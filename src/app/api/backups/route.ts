@@ -148,7 +148,9 @@ export async function POST(request: Request) {
       if (!fileName) return NextResponse.json({ error: 'fileName es requerido' }, { status: 400 });
       const { data, error } = await supabaseAdmin.storage
         .from('backups')
-        .createSignedUrl(`${building_id}/${fileName}`, 60);
+        .createSignedUrl(`${building_id}/${fileName}`, 60, {
+          download: true
+        });
 
       if (error) throw error;
       return NextResponse.json({ success: true, signedUrl: data.signedUrl });

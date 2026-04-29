@@ -524,6 +524,32 @@ export default function EdificioAdminPage() {
     }
   };
 
+  const downloadBackup = async (fileName: string) => {
+    if (!building) return;
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building_id: building.id, fileName, action: 'get_url' })
+      });
+      const data = await res.json();
+      if (data.success && data.signedUrl) {
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        setBackupMsg('❌ Error: ' + (data.error || 'No se pudo generar el enlace'));
+        setTimeout(() => setBackupMsg(''), 3000);
+      }
+    } catch (e: any) {
+      setBackupMsg('❌ Error: ' + e.message);
+      setTimeout(() => setBackupMsg(''), 3000);
+    }
+  };
+
   const saveIaSettings = async () => {
     if (!building) return;
     if (observerBlock()) return;
@@ -3839,6 +3865,13 @@ export default function EdificioAdminPage() {
                                  </td>
                                  <td className="px-6 py-4 text-right">
                                    <div className="flex justify-end gap-2">
+                                     <button 
+                                       onClick={() => downloadBackup(b.name)}
+                                       className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                                       title="Descargar Respaldo"
+                                     >
+                                       <Download className="w-4 h-4" />
+                                     </button>
                                      <button 
                                        onClick={() => deleteBackup(b.name)}
                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"

@@ -1,16 +1,15 @@
 # Contexto del Proyecto: aGuaSaaS
 
-## Estado del Proyecto (29 de abril, 2026 - Actualización 3)
+## Estado del Proyecto (29 de abril, 2026 - Actualización 4)
 
 ### Resumen de Actualizaciones Recientes
-- **Implementación de Respaldo Manual:** Se completó la funcionalidad de respaldo manual en el Panel Admin (`/admin`). Ahora, al expandir un edificio, se muestra una sección de **Respaldos de Base de Datos** que permite:
-  - Generar un nuevo respaldo JSON en tiempo real (almacenado en el bucket `backups` de Supabase Storage).
-  - Listar todos los respaldos históricos del edificio.
-  - Descargar respaldos directamente al equipo local.
-  - Eliminar respaldos antiguos.
-  - Registro automático en la bitácora de auditoría para cada operación de backup.
-- **Corrección UI Admin:** Se tradujeron etiquetas que estaban en chino ("基本信息" → "Información Básica") y se mejoró la visualización de la tabla de edificios con ajustes de `colSpan` y espaciado.
-- **Integración de Auditoría:** Se vinculó el sistema de backups con `logAudit` para asegurar que cada descarga o generación sea rastreable.
+- **Corrección de Descarga de Respaldos:** 
+  - Se corrigió el error donde al intentar descargar un respaldo JSON se abría el contenido en una nueva ventana del navegador en lugar de descargarse.
+  - **Cambio Técnico:** Se agregó la opción `{ download: true }` a la función `createSignedUrl` en `/api/backups` para forzar el encabezado `Content-Disposition: attachment`.
+  - **Mejora UI:** Se actualizó la función `downloadBackup` en el Panel Admin (`/admin`) y se implementó en el Panel de Edificio (`/edificio-admin/[slug]`) utilizando un enlace oculto dinámico para asegurar la descarga del archivo.
+  - **Consistencia:** Se añadió el botón de descarga en la tabla de historial de respaldos dentro de `/edificio-admin/[slug]`, que anteriormente solo permitía la eliminación.
+- **Implementación de Respaldo Manual:** (Anteriormente implementado) ...
+
 
 ### Estrategia de Respaldos Supabase (Implementada)
 1. **Respaldo Manual:** Botón "CREAR RESPALDO MANUAL AHORA" en el Panel Admin que invoca `/api/backups` (POST action: 'generate').
