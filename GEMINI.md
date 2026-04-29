@@ -1,7 +1,10 @@
 # Contexto del Proyecto: aGuaSaaS
 
-## Estado del Proyecto (29 de abril, 2026 - Actualización 4)
+## Estado del Proyecto (29 de abril, 2026 - Actualización 5)
 ### Resumen de Actualizaciones Recientes
+- **Corrección de Error de Compilación (TypeScript):**
+  - Se corrigió un error de tipo en `src/app/edificio-admin/[slug]/page.tsx` donde se intentaba asignar un array que podía contener valores `undefined` (ids de mediciones) a un estado que solo acepta `string[]`.
+  - Se implementó un filtrado preventivo en las funciones `selectAllAnomalies` y en el checkbox de selección masiva para asegurar que solo se procesen IDs válidos.
 - **Gestión de Anomalías (Mejorada):**
   - Se corrigió el error donde el cambio de estado de anomalía no se reflejaba inmediatamente en la UI mediante actualizaciones optimistas del estado local.
   - Se implementó la **selección múltiple de mediciones** para permitir el procesamiento por lotes.

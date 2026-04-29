@@ -1382,7 +1382,9 @@ export default function EdificioAdminPage() {
   };
 
   const selectAllAnomalies = () => {
-    const anomalies = measurements.filter(m => m.is_anomaly).map(m => m.id);
+    const anomalies = measurements
+      .filter(m => m.is_anomaly && m.id)
+      .map(m => m.id as string);
     setSelectedMeasurements(anomalies);
   };
 
@@ -2733,8 +2735,11 @@ export default function EdificioAdminPage() {
                             type="checkbox" 
                             checked={displayMs.length > 0 && selectedMeasurements.length === displayMs.length}
                             onChange={(e) => {
-                              if (e.target.checked) setSelectedMeasurements(displayMs.map(m => m.id));
-                              else setSelectedMeasurements([]);
+                              if (e.target.checked) {
+                                setSelectedMeasurements(displayMs.map(m => m.id).filter((id): id is string => !!id));
+                              } else {
+                                setSelectedMeasurements([]);
+                              }
                             }}
                             className="rounded bg-slate-700 border-slate-600 text-blue-500"
                           />
