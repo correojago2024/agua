@@ -1,12 +1,7 @@
 /**
  * ARCHIVO: src/app/edificio/[slug]/page.tsx
- * VERSIÓN: 1.7
+ * VERSIÓN: 1.8
  * FECHA: 2026-04-29
- *
- * CAMBIOS v1.7:
- * - Se restaura COMPLETAMENTE el texto de éxito post-envío solicitado por el usuario.
- * - Se mantiene el campo único datetime-local.
- * - Se intenta forzar el formato dd/mm/aaaa mediante atributos lang y configuración regional.
  */
 
 'use client';
@@ -15,10 +10,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Mail, Bell, RotateCcw } from 'lucide-react';
-import { formatNumber } from '@/lib/formatters';
 
 export default function ResidentForm() {
-  const { slug } = useParams();
+  const params = useParams();
+  const slug = params?.slug as string;
+  
   const [building, setBuilding]   = useState<any>(null);
   const [loading, setLoading]     = useState(true);
   const [submitted, setSubmitted] = useState(false);
@@ -38,21 +34,32 @@ export default function ResidentForm() {
 
   // ── Cargar datos del edificio ──────────────────────────────────────────
   useEffect(() => {
+    if (!slug) return;
+
     async function fetchBuilding() {
-      const slugParam = slug as string;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugParam) || slugParam.length > 20;
+      try {
+        setLoading(true);
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug) || slug.length > 20;
 
-      const { data, error: fetchError } = isUUID
-        ? await supabase.from('buildings').select('*').eq('id',   slugParam).single()
-        : await supabase.from('buildings').select('*').eq('slug', slugParam).single();
+        const { data, error: fetchError } = isUUID
+          ? await supabase.from('buildings').select('*').eq('id',   slug).single()
+          : await supabase.from('buildings').select('*').eq('slug', slug).single();
 
-      if (fetchError || !data) setError('Edificio no encontrado');
-      else if (data.status === 'Inactivo') setError('INACTIVO: Este edificio está desactivado y no acepta nuevas mediciones. Contacte al administrador del sistema.');
-      else if (data.status === 'Suspendido') setError('SUSPENDIDO: La cuenta de este edificio está suspendida. No se pueden registrar nuevas mediciones. Por favor contacte al administrador del sistema para reactivar su cuenta.');
-      else {
-        setBuilding(data);
+        if (fetchError || !data) {
+          console.error('Fetch error:', fetchError);
+          setError('Edificio no encontrado');
+        } else if (data.status === 'Inactivo') {
+          setError('INACTIVO: Este edificio está desactivado y no acepta nuevas mediciones. Contacte al administrador del sistema.');
+        } else if (data.status === 'Suspendido') {
+          setError('SUSPENDIDO: La cuenta de este edificio está suspendida. No se pueden registrar nuevas mediciones. Por favor contacte al administrador del sistema para reactivar su cuenta.');
+        } else {
+          setBuilding(data);
+        }
+      } catch (err) {
+        setError('Error de conexión');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchBuilding();
   }, [slug]);
@@ -114,7 +121,7 @@ export default function ResidentForm() {
   };
 
   if (loading && !building) return <div className="p-8 text-center text-blue-600 font-bold">Cargando formulario...</div>;
-  if (error && !building) return <div className="p-8 text-center text-red-500 flex flex-col items-center gap-2"><AlertTriangle /> {error}</div>;
+  if (error && !building) return <div className="p-8 text-center text-red-500 flex flex-col items-center gap-2 min-h-screen justify-center"><AlertTriangle size={48} /> <p className="text-xl font-bold">{error}</p></div>;
 
   return (
     <main className="min-h-screen bg-slate-100 p-2 md:p-8 flex flex-col items-center justify-start md:justify-center">
@@ -162,9 +169,9 @@ export default function ResidentForm() {
               <p>
                 Si alguna vez con anterioridad; o en este formulario nos proporcionaste tu dirección de correo electrónico, en unos instantes recibirás un email 📧 con un <strong>resumen estadístico del nivel del agua</strong>, ¡y futuros correos con actualizaciones basadas en los datos recopilados! 📊
               </p>
-
+              
               <p>Si no lo recibes por favor revisa tu carpeta de Spam.</p>
-
+              
               <p className="text-lg font-bold text-center py-2">
                 👉 ¡Tu colaboración es esencial y muy apreciada por toda la comunidad! 💧🏠
               </p>
@@ -172,12 +179,12 @@ export default function ResidentForm() {
               <div className="pt-4 border-t border-slate-200">
                 <p className="font-black text-base mb-1">LEA ESTA NOTA IMPORTANTE:</p>
                 <p className="font-mono text-slate-400 mb-4">===========================</p>
-
+                
                 <div className="space-y-4">
                   <p className="font-bold underline">Manténgase Informado: Así Funciona Nuestro Sistema de Resúmenes por Correo</p>
-
+                  
                   <p>Para que siempre esté al tanto del nivel del agua de nuestro tanque, hemos diseñado un sistema de notificación muy sencillo:</p>
-
+                  
                   <div className="space-y-4 pl-2">
                     <p>
                       <strong>✉️ Activación de Resúmenes:</strong> Cada vez que usted registre un nuevo dato en el formulario e incluya su correo electrónico, activará la recepción de los próximos 5 resúmenes de estadísticas del agua. Estos correos le llegarán automáticamente cada vez que otro vecino registre una nueva medición en la base de datos.
