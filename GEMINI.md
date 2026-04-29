@@ -2,12 +2,12 @@
 
 ## Estado del Proyecto (29 de abril, 2026 - Actualización 5)
 ### Resumen de Actualizaciones Recientes
+- **Corrección Definitiva de Formato y Zona Horaria (Fecha/Hora):**
+  - Se unificó nuevamente el campo de fecha y hora en un solo input nativo (`datetime-local`) respondiendo a la solicitud del usuario de no tener campos separados.
+  - Se configuró el atributo `lang="es-ES"` en el input para forzar al navegador a mostrar el formato **dd/mm/aaaa** (día/mes/año) siempre que la configuración regional lo permita.
+  - Se refinó la utilidad `formatDateTime` y la lógica del servidor para tratar los strings de fecha como "literales", garantizando que la hora mostrada en los correos electrónicos sea idéntica a la ingresada por el usuario, eliminando cualquier desviación por la zona horaria UTC del servidor.
 - **Corrección de Error de Compilación (API Route):**
   - Se corrigió la falta de importación de `formatDateTime` en `/api/measurements/route.ts` que causaba el fallo del build en Vercel.
-- **Corrección de Formato y Zona Horaria (Fecha/Hora):**
-  - Se implementaron campos de entrada separados para **Fecha (type="date")** y **Hora (type="time")** en el formulario del edificio. Esto garantiza que la fecha se solicite y muestre en formato **dd/mm/aaaa** según la configuración regional del navegador, evitando el formato ambiguo mm/dd.
-  - Se modificó la utilidad `formatDateTime` y el procesamiento en el servidor para manejar "strings de fecha ingenuos" (naive strings). Esto asegura que la hora de la medición mostrada en los correos electrónicos coincida exactamente con la ingresada por el usuario, sin desviaciones causadas por la zona horaria del servidor (UTC).
-  - Se estandarizó el uso de `formatDateTime` en todo el sistema para mantener la coherencia en el formato de los reportes.
 - **Corrección de Formulario de Registro (Fecha/Hora):**
   - Se restauró la funcionalidad del campo de fecha y hora en el formulario público del edificio (`src/app/edificio/[slug]/page.tsx`).
   - Se eliminó el icono superpuesto y la clase `cursor-pointer` que interferían con la activación del selector nativo en varios navegadores.
