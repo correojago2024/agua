@@ -2,6 +2,8 @@
 
 ## Estado del Proyecto (29 de abril, 2026 - Actualización 5)
 ### Resumen de Actualizaciones Recientes
+- **Corrección de Error de Compilación (API Route):**
+  - Se corrigió la falta de importación de `formatDateTime` en `/api/measurements/route.ts` que causaba el fallo del build en Vercel.
 - **Corrección de Formato y Zona Horaria (Fecha/Hora):**
   - Se implementaron campos de entrada separados para **Fecha (type="date")** y **Hora (type="time")** en el formulario del edificio. Esto garantiza que la fecha se solicite y muestre en formato **dd/mm/aaaa** según la configuración regional del navegador, evitando el formato ambiguo mm/dd.
   - Se modificó la utilidad `formatDateTime` y el procesamiento en el servidor para manejar "strings de fecha ingenuos" (naive strings). Esto asegura que la hora de la medición mostrada en los correos electrónicos coincida exactamente con la ingresada por el usuario, sin desviaciones causadas por la zona horaria del servidor (UTC).

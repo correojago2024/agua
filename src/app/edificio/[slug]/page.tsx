@@ -45,7 +45,6 @@ export default function ResidentForm() {
     collaborator_name: ''
   });
 
-  // ... (inside the component, before return)
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, recorded_at_date: e.target.value });
   };

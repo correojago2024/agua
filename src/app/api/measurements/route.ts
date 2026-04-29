@@ -16,6 +16,7 @@ import { sendEmailViaGmail } from '@/lib/server/email';
 import { logAudit } from '@/lib/audit';
 import { checkWaterLevelThresholds } from '@/lib/server/whatsapp';
 import { buildReportEmailHtml, buildAnomalyEmailHtml } from '@/lib/server/email-templates';
+import { formatDateTime } from '@/lib/formatters';
 
 // ════════════════════════════════════════════════════════════════════════════
 // POST — Registrar medición y enviar reporte
