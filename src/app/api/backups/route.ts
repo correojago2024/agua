@@ -7,12 +7,15 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 
 export async function POST(request: Request) {
   try {
-    const { building_id, building_name, action, created_by } = await request.json();
+    // 1. Extraer los datos del body de una vez para evitar errores de "Body already read"
+    const body = await request.json();
+    const { building_id, building_name, action, created_by, fileName } = body;
 
-    if (!building_id && action !== 'list') return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
+    if (!building_id && action !== 'list') {
+      return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
+    }
 
     // Usar el cliente administrativo para todas las operaciones de backup/restore
-    // Esto es CRUCIAL para saltarse las políticas RLS y permitir la escritura en Storage
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -57,10 +60,10 @@ export async function POST(request: Request) {
       };
 
       // 2. Guardar en Storage
-      const fileName = `${building_id}/${new Date().getTime()}_backup.json`;
+      const newFileName = `${building_id}/${new Date().getTime()}_backup.json`;
       const { error: uploadError } = await supabaseAdmin.storage
         .from('backups')
-        .upload(fileName, JSON.stringify(backupData), {
+        .upload(newFileName, JSON.stringify(backupData), {
           contentType: 'application/json',
           upsert: true
         });
@@ -74,15 +77,15 @@ export async function POST(request: Request) {
         operation: 'BACKUP',
         entity_type: 'system',
         entity_id: building_id,
-        data_after: { file: fileName },
+        data_after: { file: newFileName },
         status: 'SUCCESS'
       });
 
-      return NextResponse.json({ success: true, fileName });
+      return NextResponse.json({ success: true, fileName: newFileName });
     }
 
     if (action === 'restore') {
-      const { fileName } = await request.json();
+      if (!fileName) return NextResponse.json({ error: 'fileName es requerido' }, { status: 400 });
 
       // 1. Descargar el archivo
       const { data: fileData, error: downloadError } = await supabaseAdmin.storage
@@ -142,7 +145,7 @@ export async function POST(request: Request) {
     }
 
     if (action === 'get_url') {
-      const { fileName } = await request.json();
+      if (!fileName) return NextResponse.json({ error: 'fileName es requerido' }, { status: 400 });
       const { data, error } = await supabaseAdmin.storage
         .from('backups')
         .createSignedUrl(`${building_id}/${fileName}`, 60);
@@ -152,7 +155,7 @@ export async function POST(request: Request) {
     }
 
     if (action === 'delete') {
-      const { fileName } = await request.json();
+      if (!fileName) return NextResponse.json({ error: 'fileName es requerido' }, { status: 400 });
       const { error } = await supabaseAdmin.storage.from('backups').remove([`${building_id}/${fileName}`]);
       if (error) throw error;
       return NextResponse.json({ success: true });
