@@ -21,7 +21,7 @@ import {
   Droplets, Users, BarChart3, Download, Plus, Trash2, Edit2, Save,
   X, RefreshCw, AlertTriangle, CheckCircle2, Mail, Calendar,
   TrendingDown, TrendingUp, Activity, FileText, Settings, LogOut,
-  ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare, ClipboardList, CreditCard, Eye, Info, Menu, Sparkles, Brain, Clock, Zap, Lock, KeyRound, ShieldCheck
+  ChevronDown, ChevronUp, Image, Wrench, Upload, MessageSquare, ClipboardList, CreditCard, Eye, Info, Menu, Sparkles, Brain, Clock, Zap, Lock, KeyRound, ShieldCheck, HardDrive
   } from 'lucide-react';
 
 
