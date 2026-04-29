@@ -11,7 +11,14 @@ export async function POST(request: Request) {
 
     if (!building_id && action !== 'list') return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Usar el cliente administrativo para todas las operaciones de backup/restore
+    // Esto es CRUCIAL para saltarse las políticas RLS y permitir la escritura en Storage
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     if (action === 'generate') {
       // 1. Obtener todos los datos relevantes del edificio
@@ -23,12 +30,12 @@ export async function POST(request: Request) {
         { data: whatsapp_settings },
         { data: junta }
       ] = await Promise.all([
-        supabase.from('buildings').select('*').eq('id', building_id).single(),
-        supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true }),
-        supabase.from('building_settings').select('*').eq('building_id', building_id).single(),
-        supabase.from('building_ia_settings').select('*').eq('building_id', building_id).single(),
-        supabase.from('building_whatsapp_settings').select('*').eq('building_id', building_id).single(),
-        supabase.from('resident_subscriptions').select('*').eq('building_id', building_id)
+        supabaseAdmin.from('buildings').select('*').eq('id', building_id).single(),
+        supabaseAdmin.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true }),
+        supabaseAdmin.from('building_settings').select('*').eq('building_id', building_id).single(),
+        supabaseAdmin.from('building_ia_settings').select('*').eq('building_id', building_id).single(),
+        supabaseAdmin.from('building_whatsapp_settings').select('*').eq('building_id', building_id).single(),
+        supabaseAdmin.from('resident_subscriptions').select('*').eq('building_id', building_id)
       ]);
 
       const backupData = {
@@ -51,7 +58,7 @@ export async function POST(request: Request) {
 
       // 2. Guardar en Storage
       const fileName = `${building_id}/${new Date().getTime()}_backup.json`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabaseAdmin.storage
         .from('backups')
         .upload(fileName, JSON.stringify(backupData), {
           contentType: 'application/json',
@@ -61,13 +68,14 @@ export async function POST(request: Request) {
       if (uploadError) throw uploadError;
 
       // 3. Registrar en bitácora
-      await supabase.from('audit_logs').insert({
+      await supabaseAdmin.from('audit_logs').insert({
         building_id,
         user_email: created_by || 'SYSTEM',
         operation: 'BACKUP',
         entity_type: 'system',
         entity_id: building_id,
-        data_after: { file: fileName }
+        data_after: { file: fileName },
+        status: 'SUCCESS'
       });
 
       return NextResponse.json({ success: true, fileName });
@@ -77,7 +85,7 @@ export async function POST(request: Request) {
       const { fileName } = await request.json();
 
       // 1. Descargar el archivo
-      const { data: fileData, error: downloadError } = await supabase.storage
+      const { data: fileData, error: downloadError } = await supabaseAdmin.storage
         .from('backups')
         .download(`${building_id}/${fileName}`);
 
@@ -92,12 +100,12 @@ export async function POST(request: Request) {
 
       // 2. Ejecutar Upserts (Restauración)
       const results = await Promise.allSettled([
-        building ? supabase.from('buildings').upsert(building) : Promise.resolve(),
-        settings ? supabase.from('building_settings').upsert(settings) : Promise.resolve(),
-        ia_settings ? supabase.from('building_ia_settings').upsert(ia_settings) : Promise.resolve(),
-        whatsapp_settings ? supabase.from('building_whatsapp_settings').upsert(whatsapp_settings) : Promise.resolve(),
-        junta && junta.length > 0 ? supabase.from('resident_subscriptions').upsert(junta) : Promise.resolve(),
-        measurements && measurements.length > 0 ? supabase.from('measurements').upsert(measurements) : Promise.resolve(),
+        building ? supabaseAdmin.from('buildings').upsert(building) : Promise.resolve(),
+        settings ? supabaseAdmin.from('building_settings').upsert(settings) : Promise.resolve(),
+        ia_settings ? supabaseAdmin.from('building_ia_settings').upsert(ia_settings) : Promise.resolve(),
+        whatsapp_settings ? supabaseAdmin.from('building_whatsapp_settings').upsert(whatsapp_settings) : Promise.resolve(),
+        junta && junta.length > 0 ? supabaseAdmin.from('resident_subscriptions').upsert(junta) : Promise.resolve(),
+        measurements && measurements.length > 0 ? supabaseAdmin.from('measurements').upsert(measurements) : Promise.resolve(),
       ]);
 
       const errors = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as any)?.error));
@@ -107,20 +115,21 @@ export async function POST(request: Request) {
       }
 
       // 3. Registrar en bitácora
-      await supabase.from('audit_logs').insert({
+      await supabaseAdmin.from('audit_logs').insert({
         building_id,
         user_email: created_by || 'ADMIN',
         operation: 'RESTORE',
         entity_type: 'system',
         entity_id: building_id,
-        data_after: { file: fileName }
+        data_after: { file: fileName },
+        status: 'SUCCESS'
       });
 
       return NextResponse.json({ success: true });
     }
 
     if (action === 'list') {
-      const { data, error } = await supabase.storage
+      const { data, error } = await supabaseAdmin.storage
         .from('backups')
         .list(building_id, {
           limit: 100,
@@ -134,7 +143,7 @@ export async function POST(request: Request) {
 
     if (action === 'get_url') {
       const { fileName } = await request.json();
-      const { data, error } = await supabase.storage
+      const { data, error } = await supabaseAdmin.storage
         .from('backups')
         .createSignedUrl(`${building_id}/${fileName}`, 60);
 
@@ -144,7 +153,7 @@ export async function POST(request: Request) {
 
     if (action === 'delete') {
       const { fileName } = await request.json();
-      const { error } = await supabase.storage.from('backups').remove([`${building_id}/${fileName}`]);
+      const { error } = await supabaseAdmin.storage.from('backups').remove([`${building_id}/${fileName}`]);
       if (error) throw error;
       return NextResponse.json({ success: true });
     }
