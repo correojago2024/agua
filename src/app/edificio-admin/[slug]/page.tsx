@@ -131,6 +131,7 @@ export default function EdificioAdminPage() {
 
   // Data
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [selectedMeasurements, setSelectedMeasurements] = useState<string[]>([]);
   const [juntaMembers, setJuntaMembers] = useState<JuntaMember[]>([]);
   const [allSubscribers, setAllSubscribers] = useState<JuntaMember[]>([]);
   const [chartUrls, setChartUrls] = useState<any>(null);
@@ -1352,22 +1353,64 @@ export default function EdificioAdminPage() {
     if (observerBlock()) return;
     if (demoBlock()) return;
     const newStatus = !currentStatus;
-    await supabase.from('measurements').update({ 
-      is_anomaly: newStatus,
-      anomaly_checked: true 
-    }).eq('id', id);
-    setMeasMsg(`✅ Medicion marcada como ${newStatus ? 'anomalía' : 'normal'}`);
-    setTimeout(() => setMeasMsg(''), 3000);
-    loadData();
+    
+    try {
+      const { error } = await supabase.from('measurements').update({ 
+        is_anomaly: newStatus,
+        anomaly_checked: true 
+      }).eq('id', id);
+
+      if (error) throw error;
+
+      // Actualización optimista del estado local
+      setMeasurements(prev => prev.map(m => 
+        m.id === id ? { ...m, is_anomaly: newStatus, anomaly_checked: true } : m
+      ));
+
+      setMeasMsg(`✅ Medicion marcada como ${newStatus ? 'anomalía' : 'normal'}`);
+      setTimeout(() => setMeasMsg(''), 3000);
+      // loadData(); // No es estrictamente necesario si actualizamos el estado local
+    } catch (err: any) {
+      setMeasMsg('❌ Error: ' + err.message);
+    }
   };
 
-  const markAnomalyReviewed = async (id: string) => {
+  const toggleSelectMeasurement = (id: string) => {
+    setSelectedMeasurements(prev => 
+      prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllAnomalies = () => {
+    const anomalies = measurements.filter(m => m.is_anomaly).map(m => m.id);
+    setSelectedMeasurements(anomalies);
+  };
+
+  const bulkMarkNormal = async () => {
+    if (selectedMeasurements.length === 0) return;
     if (observerBlock()) return;
     if (demoBlock()) return;
-    await supabase.from('measurements').update({ anomaly_checked: true, is_anomaly: false }).eq('id', id);
-    setMeasMsg('✅ Marcada como normal');
-    setTimeout(() => setMeasMsg(''), 3000);
-    loadData();
+
+    try {
+      const { error } = await supabase
+        .from('measurements')
+        .update({ is_anomaly: false, anomaly_checked: true })
+        .in('id', selectedMeasurements);
+
+      if (error) throw error;
+
+      // Actualización optimista
+      setMeasurements(prev => prev.map(m => 
+        selectedMeasurements.includes(m.id) ? { ...m, is_anomaly: false, anomaly_checked: true } : m
+      ));
+
+      setMeasMsg(`✅ ${selectedMeasurements.length} mediciones marcadas como normales`);
+      setSelectedMeasurements([]);
+      setTimeout(() => setMeasMsg(''), 3000);
+      // loadData();
+    } catch (err: any) {
+      setMeasMsg('❌ Error: ' + err.message);
+    }
   };
 
   // ── Configuración del edificio ─────────────────────────────────────────────
@@ -2644,11 +2687,34 @@ export default function EdificioAdminPage() {
                     <Activity className="w-4 h-4 text-blue-400" />
                     Gestión de Mediciones ({displayMs.length} registros)
                   </h3>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    {selectedMeasurements.length > 0 && (
+                      <>
+                        <button 
+                          onClick={bulkMarkNormal}
+                          className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-lg"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Marcar {selectedMeasurements.length} como Normales
+                        </button>
+                        <button 
+                          onClick={() => setSelectedMeasurements([])}
+                          className="text-slate-400 hover:text-red-400 text-xs transition-colors"
+                        >
+                          Limpiar
+                        </button>
+                      </>
+                    )}
+                    <button 
+                      onClick={selectAllAnomalies}
+                      className="text-slate-400 hover:text-white text-xs border border-slate-700 px-2 py-1 rounded transition-colors"
+                    >
+                      Sel. Anomalías
+                    </button>
                     <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
                       <input type="checkbox" checked={showAnomaliesOnly}
                         onChange={e => setShowAnomaliesOnly(e.target.checked)}
-                        className="rounded" />
+                        className="rounded bg-slate-700 border-slate-600 text-blue-500" />
                       Solo anomalías
                     </label>
                     {showAnomaliesOnly && (
@@ -2662,6 +2728,17 @@ export default function EdificioAdminPage() {
                   <table className="w-full text-xs">
                     <thead className="bg-slate-700/50 sticky top-0">
                       <tr>
+                        <th className="px-3 py-2 text-left">
+                          <input 
+                            type="checkbox" 
+                            checked={displayMs.length > 0 && selectedMeasurements.length === displayMs.length}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedMeasurements(displayMs.map(m => m.id));
+                              else setSelectedMeasurements([]);
+                            }}
+                            className="rounded bg-slate-700 border-slate-600 text-blue-500"
+                          />
+                        </th>
                         {['Fecha/Hora','Litros','%','Variación','Caudal','Reportado por','Estado','Acciones'].map(h => (
                           <th key={h} className="px-3 py-2 text-left text-slate-400 uppercase font-medium whitespace-nowrap">{h}</th>
                         ))}
@@ -2673,7 +2750,15 @@ export default function EdificioAdminPage() {
                         const c = m.caudal_lts_min ?? m.flow_lpm ?? 0;
                         const isEditing = editingMeasurement?.id === m.id;
                         return (
-                          <tr key={m.id} className={`hover:bg-slate-700/20 ${m.is_anomaly ? 'bg-red-500/5 border-l-2 border-red-500/50' : ''}`}>
+                          <tr key={m.id} className={`hover:bg-slate-700/20 ${m.is_anomaly ? 'bg-red-500/5 border-l-2 border-red-500/50' : ''} ${selectedMeasurements.includes(m.id) ? 'bg-blue-500/10' : ''}`}>
+                            <td className="px-3 py-2">
+                              <input 
+                                type="checkbox" 
+                                checked={selectedMeasurements.includes(m.id)}
+                                onChange={() => toggleSelectMeasurement(m.id)}
+                                className="rounded bg-slate-700 border-slate-600 text-blue-500"
+                              />
+                            </td>
                             <td className="px-3 py-2 text-slate-300 whitespace-nowrap">
                               {formatDateTime(m.recorded_at)}
                               {m.is_anomaly && (
