@@ -39,7 +39,7 @@ export default function ResidentForm() {
     async function fetchBuilding() {
       try {
         setLoading(true);
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug) || slug.length > 20;
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
         const { data, error: fetchError } = isUUID
           ? await supabase.from('buildings').select('*').eq('id',   slug).single()
