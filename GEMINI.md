@@ -2,6 +2,10 @@
 
 ## Estado del Proyecto (29 de abril, 2026 - Actualización 5)
 ### Resumen de Actualizaciones Recientes
+- **Corrección de Formulario de Registro (Fecha/Hora):**
+  - Se restauró la funcionalidad del campo de fecha y hora en el formulario público del edificio (`src/app/edificio/[slug]/page.tsx`).
+  - Se eliminó el icono superpuesto y la clase `cursor-pointer` que interferían con la activación del selector nativo en varios navegadores.
+  - Se simplificó la inicialización del campo para asegurar compatibilidad total.
 - **Corrección de Error de Compilación (TypeScript):**
   - Se corrigió un error de tipo en `src/app/edificio-admin/[slug]/page.tsx` donde se intentaba asignar un array que podía contener valores `undefined` (ids de mediciones) a un estado que solo acepta `string[]`.
   - Se implementó un filtrado preventivo y verificaciones de existencia de IDs (`m.id && ...`) en las funciones de selección masiva y visualización de la tabla para asegurar la compatibilidad de tipos y evitar errores en tiempo de ejecución.

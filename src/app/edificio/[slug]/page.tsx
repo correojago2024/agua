@@ -37,14 +37,7 @@ export default function ResidentForm() {
   const [error, setError]         = useState('');
 
   const [formData, setFormData] = useState({
-    recorded_at: (() => {
-      const now = new Date();
-      // Obtener el offset de la zona horaria en minutos y convertirlo a milisegundos
-      const tzOffset = now.getTimezoneOffset() * 60000;
-      // Ajustar la fecha 'now' restando el offset para obtener la representación 'local' en ISO
-      const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
-      return localISOTime;
-    })(),
+    recorded_at: new Date().toISOString().slice(0, 16),
     liters:            '',
     percentage:        '',
     email:             '',
@@ -287,20 +280,16 @@ export default function ResidentForm() {
                   <span>Indique la Fecha y hora de la medición</span>
                 </label>
                 
-                <div className="relative group">
-                  <input
-                    type="datetime-local"
-                    required
-                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 peer-focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base cursor-pointer"
-                    style={{ colorScheme: 'light' }}
-                    value={formData.recorded_at}
-                    onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
-                  />
-                  <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 pointer-events-none opacity-60" />
-                </div>
+                <input
+                  type="datetime-local"
+                  required
+                  className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base"
+                  value={formData.recorded_at}
+                  onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
+                />
 
                 <p className="text-[10px] text-slate-500 mt-1 italic">
-                  * Toque la casilla para abrir el calendario y seleccionar la fecha/hora.
+                  * Toque la casilla para seleccionar la fecha y hora.
                 </p>
               </div>
 
