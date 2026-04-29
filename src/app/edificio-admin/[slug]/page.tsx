@@ -1403,7 +1403,7 @@ export default function EdificioAdminPage() {
 
       // Actualización optimista
       setMeasurements(prev => prev.map(m => 
-        selectedMeasurements.includes(m.id) ? { ...m, is_anomaly: false, anomaly_checked: true } : m
+        (m.id && selectedMeasurements.includes(m.id)) ? { ...m, is_anomaly: false, anomaly_checked: true } : m
       ));
 
       setMeasMsg(`✅ ${selectedMeasurements.length} mediciones marcadas como normales`);
@@ -2755,11 +2755,11 @@ export default function EdificioAdminPage() {
                         const c = m.caudal_lts_min ?? m.flow_lpm ?? 0;
                         const isEditing = editingMeasurement?.id === m.id;
                         return (
-                          <tr key={m.id} className={`hover:bg-slate-700/20 ${m.is_anomaly ? 'bg-red-500/5 border-l-2 border-red-500/50' : ''} ${selectedMeasurements.includes(m.id) ? 'bg-blue-500/10' : ''}`}>
+                          <tr key={m.id} className={`hover:bg-slate-700/20 ${m.is_anomaly ? 'bg-red-500/5 border-l-2 border-red-500/50' : ''} ${(m.id && selectedMeasurements.includes(m.id)) ? 'bg-blue-500/10' : ''}`}>
                             <td className="px-3 py-2">
                               <input 
                                 type="checkbox" 
-                                checked={selectedMeasurements.includes(m.id)}
+                                checked={(m.id && selectedMeasurements.includes(m.id))}
                                 onChange={() => toggleSelectMeasurement(m.id)}
                                 className="rounded bg-slate-700 border-slate-600 text-blue-500"
                               />

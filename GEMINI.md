@@ -4,7 +4,8 @@
 ### Resumen de Actualizaciones Recientes
 - **Corrección de Error de Compilación (TypeScript):**
   - Se corrigió un error de tipo en `src/app/edificio-admin/[slug]/page.tsx` donde se intentaba asignar un array que podía contener valores `undefined` (ids de mediciones) a un estado que solo acepta `string[]`.
-  - Se implementó un filtrado preventivo en las funciones `selectAllAnomalies` y en el checkbox de selección masiva para asegurar que solo se procesen IDs válidos.
+  - Se implementó un filtrado preventivo y verificaciones de existencia de IDs (`m.id && ...`) en las funciones de selección masiva y visualización de la tabla para asegurar la compatibilidad de tipos y evitar errores en tiempo de ejecución.
+  - Se aseguró que `selectedMeasurements.includes(m.id)` solo se llame cuando `m.id` está definido.
 - **Gestión de Anomalías (Mejorada):**
   - Se corrigió el error donde el cambio de estado de anomalía no se reflejaba inmediatamente en la UI mediante actualizaciones optimistas del estado local.
   - Se implementó la **selección múltiple de mediciones** para permitir el procesamiento por lotes.
