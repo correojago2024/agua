@@ -91,6 +91,7 @@ export async function POST(request: Request) {
 
     // Acción 2: Generar nuevo análisis
     if (action === 'generate') {
+      const { building_id, date_range, created_by, custom_instructions } = body;
       const { data: building } = await supabase
         .from('buildings')
         .select('*')
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
 
       const prompt = `
 Actúa como un ingeniero hidráulico experto senior de nivel mundial.
-Tu misión es redactar un INFORME TÉCNICO DE ALTA GERENCIA impecable.
+Tu misión es redactar un INFORME TÉCNICO DE INTELIGENCIA HÍDRICA impecable.
 
 📊 ESTADÍSTICAS REALES (Usa estos números exactos, prohibido inventar o dejar en cero):
 - Edificio: ${building.name}
@@ -152,23 +153,51 @@ Tu misión es redactar un INFORME TÉCNICO DE ALTA GERENCIA impecable.
 - Para este edificio de ${building.apartments_count || 43} aptos (est. 150 personas), el consumo ideal sería: ${((building.apartments_count || 43) * 3.5 * 200).toLocaleString()} L/día.
 - Si el consumo real (${Math.round(consDiarioProm).toLocaleString()} L/día) es menor al ideal, felicita a la comunidad por su ahorro o menciona posible sub-registro.
 
+${custom_instructions ? `📝 INSTRUCCIONES ADICIONALES DEL USUARIO (Síguelas estrictamente):\n${custom_instructions}\n` : ''}
+
 🚫 REGLAS DE ORO:
 - PROHIBIDO usar símbolos como "$0", "0" o guiones para datos faltantes. Si no tienes un dato, usa "Dato no disponible" o "Pendiente de medición".
-- PROHIBIDO usar placeholders como "[Tu Nombre]". Firma siempre como "Departamento de Ingeniería aGuaSaaS".
+- PROHIBIDO usar placeholders como "[Tu Nombre]".
 - OBLIGATORIO: Usa tablas Markdown para los KPIs y el Balance Hídrico.
 - TONO: Técnico, preciso, ejecutivo y propositivo.
 
-🎯 ESTRUCTURA DEL INFORME:
-# INFORME DE INTELIGENCIA HÍDRICA PROFESIONAL
+🎯 ESTRUCTURA OBLIGATORIA DEL INFORME:
+# INFORME DE INTELIGENCIA HÍDRICA
+**PARA:** Junta de Condominio Residencias ${building.name}
+**DE:** IA aGuaSaaS
+**ASUNTO:** Diagnóstico de Eficiencia hídrica y Gestión de Reservas
+
 1. RESUMEN EJECUTIVO (Con tabla de KPIs principales)
 2. ANÁLISIS DE EFICIENCIA (Compara el consumo real vs el estándar internacional calculado arriba)
 3. BALANCE HÍDRICO (Tabla de Consumo vs Llenado y diagnóstico de sostenibilidad)
 4. HALLAZGOS Y ANOMALÍAS (Basado en la data adjunta)
 5. RECOMENDACIONES TÉCNICAS (Mínimo 5 acciones numeradas y priorizadas)
+
+Atentamente,
+
+Sistema aGuaSaaS
+*Inteligencia para la Gestión de fluidos*
 `;
 
       const aiText = await generateWaterAnalysis(prompt, currentSettings?.ia_api_key);
-      const htmlReport = formatAiReportToHtml(aiText);
+      let htmlReport = formatAiReportToHtml(aiText);
+
+      // Añadir AVISO Y EXENCIÓN DE RESPONSABILIDAD
+      const disclaimer = `
+        <div style="margin-top: 40px; padding: 20px; border: 1px solid #fcd34d; background-color: #fffbeb; border-radius: 12px; font-size: 12px; color: #92400e; line-height: 1.5;">
+          <strong>⚠️ AVISO Y EXENCIÓN DE RESPONSABILIDAD:</strong><br>
+          Este reporte es informativo. El análisis se basa en datos históricos y no garantiza resultados. 
+          La información obtenida por la IA es el resultado de un sistema de inteligencia artificial, 
+          por lo que aGuaSaaS no se hace responsable de las opiniones e información emitida en la toma de decisiones del usuario. 
+          La IA puede cometer errores. Revise y chequee la información suministrada. 
+          El usuario es responsable de sus decisiones.
+        </div>
+      `;
+      
+      const lastDivIndex = htmlReport.lastIndexOf('</div>');
+      if (lastDivIndex !== -1) {
+        htmlReport = htmlReport.substring(0, lastDivIndex) + disclaimer + htmlReport.substring(lastDivIndex);
+      }
 
       // Guardar el reporte
       const { data: newReport, error: repError } = await supabase

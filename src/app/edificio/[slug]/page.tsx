@@ -39,9 +39,11 @@ export default function ResidentForm() {
   const [formData, setFormData] = useState({
     recorded_at: (() => {
       const now = new Date();
-      // Ajuste para Venezuela (UTC-4)
-      const vzlaTime = new Date(now.getTime() - (4 * 60 * 60 * 1000));
-      return vzlaTime.toISOString().slice(0, 16);
+      // Obtener el offset de la zona horaria en minutos y convertirlo a milisegundos
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      // Ajustar la fecha 'now' restando el offset para obtener la representación 'local' en ISO
+      const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+      return localISOTime;
     })(),
     liters:            '',
     percentage:        '',
@@ -285,29 +287,20 @@ export default function ResidentForm() {
                   <span>Indique la Fecha y hora de la medición</span>
                 </label>
                 
-                {/* Contenedor relativo para forzar el formato visual sin romper funcionalidad */}
-                <div className="relative group h-[54px] md:h-[62px]">
-                  {/* Input nativo invisible que atrapa el clic y el foco */}
+                <div className="relative group">
                   <input
                     type="datetime-local"
                     required
-                    className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 peer-focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base cursor-pointer"
                     style={{ colorScheme: 'light' }}
                     value={formData.recorded_at}
                     onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
                   />
-                  
-                  {/* Overlay visual que muestra la fecha formateada (Z-10) */}
-                  <div className="absolute inset-0 w-full h-full flex items-center px-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl peer-focus:ring-4 peer-focus:ring-blue-100 peer-focus:border-blue-400 group-hover:border-slate-400 transition-all z-10">
-                    <span className="text-black font-medium text-sm md:text-base">
-                      {formatDateTime(formData.recorded_at)}
-                    </span>
-                    <Calendar className="ml-auto w-4 h-4 text-blue-500 opacity-60" />
-                  </div>
+                  <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 pointer-events-none opacity-60" />
                 </div>
 
                 <p className="text-[10px] text-slate-500 mt-1 italic">
-                  * Toque la casilla para abrir el calendario. El formato SIEMPRE se mostrará como Día/Mes/Año.
+                  * Toque la casilla para abrir el calendario y seleccionar la fecha/hora.
                 </p>
               </div>
 

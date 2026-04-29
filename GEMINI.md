@@ -1,12 +1,17 @@
 # Contexto del Proyecto: aGuaSaaS
 
-## Estado del Proyecto (29 de abril, 2026)
+## Estado del Proyecto (29 de abril, 2026 - Actualización 2)
 
 ### Resumen de Actualizaciones Recientes
+- **Corrección Formulario Residente:** Se restauró la edición de fecha y hora en el formulario de reporte. Se eliminó el overlay que bloqueaba la interacción y se corrigió el manejo de zonas horarias para usar la hora local del navegador en lugar de forzar UTC-4.
+- **Mejoras en Análisis IA:**
+  - Se agregó una casilla de **Instrucciones Adicionales** para que el usuario pueda guiar el análisis de la IA.
+  - Se actualizaron los encabezados y pies de página del informe para usar "Sistema aGuaSaaS" y nombres dinámicos de edificios.
+  - Se implementó un **Aviso y Exención de Responsabilidad** obligatorio en todos los reportes generados.
+  - Se corrigió el problema de valores "$0" mediante limpieza en el servidor y mejores instrucciones en el prompt.
+  - Se estandarizó el formato visual de las fechas en los selectores de rango a `dd/mm/aaaa`.
 - **Restauración de Gráficos en Emails:** Se corrigió un error en `src/lib/server/email-templates.ts` donde la galería de 16 gráficos se generaba pero no se incluía en el HTML final. Ahora aparecen correctamente antes de las tablas de datos.
-- **Corrección Definitiva de Historial:** Se optimizó la consulta a Supabase en `src/app/api/measurements/route.ts` para obtener los últimos 2000 registros en orden descendente. Esto resuelve el problema de la tabla de "Últimas 10 mediciones" que mostraba datos antiguos (ej: marzo) debido al límite de filas de Supabase cuando se usaba orden ascendente.
-- **Sincronización de Datos para Gráficos:** Al asegurar que se obtienen los datos más recientes en la API, los gráficos de QuickChart ahora cuentan con la serie histórica necesaria, evitando que aparezcan vacíos o solo con los ejes.
-- **Estandarización Global de Formatos (28 de abr):** Se implementó `src/lib/formatters.ts` para asegurar que en TODA la plataforma los números usen punto para miles y coma para decimales (ej: 1.234,56) y las fechas usen el formato `dd/mm/aaaa`.
+- **Corrección Definitiva de Historial:** Se optimizó la consulta a Supabase en `src/app/api/measurements/route.ts` para obtener los últimos 2000 registros en orden descendente. Esto resuelve el problema de la tabla de "Últimas 10 mediciones" que mostraba datos antiguos.
 
 ### Estrategia de Respaldos Supabase (Propuesta)
 1. **Respaldo Manual:** Implementar un botón en el Panel Admin que dispare un Edge Function de Supabase para generar un dump SQL y guardarlo en Storage.

@@ -95,8 +95,9 @@ export function formatAiReportToHtml(text: string): string {
   let formatted = text
     .replace(/Gemini/gi, 'aGuaSaaS IA')
     .replace(/Google/gi, 'aGuaSaaS')
-    .replace(/\$0/g, '') // Eliminar cualquier placeholder de cero que la IA intente poner
-    .replace(/\[Tu Nombre\/Firma\]/g, 'Departamento Técnico aGuaSaaS');
+    .replace(/\$0/g, 'Dato no disponible') // Cambiar $0 por algo más profesional
+    .replace(/\[Tu Nombre\/Firma\]/g, 'Sistema aGuaSaaS')
+    .replace(/Departamento de Ingeniería aGuaSaaS/g, 'Sistema aGuaSaaS');
 
   // --- PROCESAMIENTO DE TABLAS MARKDOWN PROFESIONAL ---
   const tableRegex = /((?:\|.*\|(?:\n|\r))+)/g;

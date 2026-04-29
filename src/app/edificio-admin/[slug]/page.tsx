@@ -121,6 +121,7 @@ export default function EdificioAdminPage() {
   const [selectedAiReport, setSelectedAiReport] = useState<any>(null);
   const [iaDateStart, setIaDateStart] = useState('');
   const [iaDateEnd, setIaDateEnd] = useState('');
+  const [iaCustomInstructions, setIaCustomInstructions] = useState('');
 
   // Data
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -492,6 +493,7 @@ export default function EdificioAdminPage() {
           building_id: building.id,
           action: 'generate',
           date_range: { start: iaDateStart, end: iaDateEnd },
+          custom_instructions: iaCustomInstructions,
           created_by: currentUser?.email || loginEmail || 'ADMIN'
         })
       });
@@ -3442,17 +3444,39 @@ export default function EdificioAdminPage() {
                         Genera un informe instantáneo basado en un rango de fechas personalizado. Los informes manuales se guardan en el historial.
                       </p>
                       
-                      <div className="grid grid-cols-1 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Desde</label>
-                          <input type="date" value={iaDateStart} onChange={e => setIaDateStart(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs" style={{colorScheme:'dark'}}/>
+                          <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Desde (dd/mm/aaaa)</label>
+                          <input 
+                            type="date" 
+                            value={iaDateStart} 
+                            onChange={e => setIaDateStart(e.target.value)}
+                            lang="es-ES"
+                            className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-amber-500/50" 
+                            style={{colorScheme:'dark'}}
+                          />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Hasta</label>
-                          <input type="date" value={iaDateEnd} onChange={e => setIaDateEnd(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs" style={{colorScheme:'dark'}}/>
+                          <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1">Hasta (dd/mm/aaaa)</label>
+                          <input 
+                            type="date" 
+                            value={iaDateEnd} 
+                            onChange={e => setIaDateEnd(e.target.value)}
+                            lang="es-ES"
+                            className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-amber-500/50" 
+                            style={{colorScheme:'dark'}}
+                          />
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">Instrucciones Adicionales para la IA (Opcional)</label>
+                        <textarea 
+                          value={iaCustomInstructions}
+                          onChange={e => setIaCustomInstructions(e.target.value)}
+                          placeholder="Ej: Enfócate en el ahorro del fin de semana o menciona la reparación de la bomba..."
+                          className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-amber-500/50 min-h-[100px]"
+                        />
                       </div>
 
                       <button 
@@ -3463,6 +3487,16 @@ export default function EdificioAdminPage() {
                         {generatingAi ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
                         {generatingAi ? 'Analizando...' : 'Generar Análisis Ahora'}
                       </button>
+
+                      <div className="p-4 bg-slate-900/50 border border-slate-700/50 rounded-xl">
+                        <p className="text-[10px] text-amber-500/80 font-bold uppercase mb-1 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" /> AVISO Y EXENCIÓN DE RESPONSABILIDAD:
+                        </p>
+                        <p className="text-[9px] text-slate-500 leading-tight">
+                          Este reporte es informativo. El análisis se basa en datos históricos y no garantiza resultados. El usuario es responsable de sus decisiones. 
+                          La IA puede cometer errores. Revise y chequee la información suministrada.
+                        </p>
+                      </div>
                     </div>
                   </div>
 
