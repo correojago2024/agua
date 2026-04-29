@@ -3730,6 +3730,140 @@ export default function EdificioAdminPage() {
               </div>
             )}
 
+            {/* ── SEGURIDAD TAB ───────────────────────────────────────────── */}
+            {tab === 'seguridad' && (
+              <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      <ShieldCheck className="w-6 h-6 text-orange-400" />
+                      Seguridad y Respaldos
+                    </h2>
+                    <p className="text-slate-400 text-sm">Protección de datos y gestión de copias de seguridad</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                   {/* Control de Respaldos */}
+                   <div className="lg:col-span-1">
+                     <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
+                       <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+                         <h3 className="text-orange-400 font-bold flex items-center gap-2 mb-2">
+                           <HardDrive className="w-5 h-5" />
+                           Respaldo Manual
+                         </h3>
+                         <p className="text-[11px] text-slate-400 leading-relaxed mb-4">
+                           Esta acción genera una copia completa de la base de datos de este edificio (mediciones, configuración, miembros y parámetros IA) y la guarda en un contenedor seguro.
+                         </p>
+                         <button 
+                           onClick={generateBackup}
+                           disabled={generatingBackup}
+                           className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95"
+                         >
+                           {generatingBackup ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                           {generatingBackup ? 'Procesando...' : 'Generar Nuevo Respaldo'}
+                         </button>
+                         {backupMsg && <p className="text-center text-xs mt-3 font-medium animate-pulse">{backupMsg}</p>}
+                       </div>
+
+                       <div className="space-y-4">
+                         <h4 className="text-white text-xs font-bold uppercase tracking-wider">Información de Seguridad</h4>
+                         <div className="space-y-3">
+                           <div className="flex gap-3 text-xs">
+                             <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                             <p className="text-slate-400">Los respaldos se almacenan de forma aislada por edificio.</p>
+                           </div>
+                           <div className="flex gap-3 text-xs">
+                             <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                             <p className="text-slate-400">Formato JSON de alta disponibilidad para restauraciones rápidas.</p>
+                           </div>
+                           <div className="flex gap-3 text-xs text-amber-400/80">
+                             <Info className="w-4 h-4 shrink-0" />
+                             <p>Próximamente: Restauración automática y respaldos en la nube externa.</p>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Historial de Respaldos */}
+                   <div className="lg:col-span-2">
+                     <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+                       <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                         <h3 className="text-white font-bold flex items-center gap-2">
+                           <Clock className="w-5 h-5 text-blue-400" />
+                           Historial de Copias de Seguridad
+                         </h3>
+                         <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-[10px] font-bold uppercase">
+                           {backups.length} archivos
+                         </span>
+                       </div>
+                       
+                       <div className="overflow-x-auto">
+                         <table className="w-full text-sm">
+                           <thead className="bg-slate-900/50">
+                             <tr>
+                               <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Fecha de Creación</th>
+                               <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Tamaño</th>
+                               <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase">Acciones</th>
+                             </tr>
+                           </thead>
+                           <tbody className="divide-y divide-slate-700/50">
+                             {loadingBackups ? (
+                               <tr>
+                                 <td colSpan={3} className="px-6 py-12 text-center">
+                                   <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2 opacity-20" />
+                                   <p className="text-slate-500 text-xs">Cargando historial...</p>
+                                 </td>
+                               </tr>
+                             ) : backups.length === 0 ? (
+                               <tr>
+                                 <td colSpan={3} className="px-6 py-12 text-center">
+                                   <HardDrive className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-20" />
+                                   <p className="text-slate-500 text-xs">No hay respaldos generados para este edificio</p>
+                                 </td>
+                               </tr>
+                             ) : backups.map((b: any) => (
+                               <tr key={b.name} className="hover:bg-slate-700/20 transition-colors">
+                                 <td className="px-6 py-4 text-white">
+                                   <div className="flex items-center gap-3">
+                                     <FileText className="w-4 h-4 text-orange-400/60" />
+                                     <div>
+                                       <p className="font-bold text-xs">{formatDateTime(b.created_at)}</p>
+                                       <p className="text-[10px] text-slate-500 font-mono">{b.name}</p>
+                                     </div>
+                                   </div>
+                                 </td>
+                                 <td className="px-6 py-4 text-slate-400 text-xs">
+                                   {(b.metadata?.size / 1024).toFixed(1)} KB
+                                 </td>
+                                 <td className="px-6 py-4 text-right">
+                                   <div className="flex justify-end gap-2">
+                                     <button 
+                                       onClick={() => deleteBackup(b.name)}
+                                       className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                                       title="Eliminar Respaldo"
+                                     >
+                                       <Trash2 className="w-4 h-4" />
+                                     </button>
+                                   </div>
+                                 </td>
+                               </tr>
+                             ))}
+                           </tbody>
+                         </table>
+                       </div>
+                       <div className="p-4 bg-slate-900/30 border-t border-slate-700/50">
+                          <p className="text-[10px] text-slate-500 italic text-center">
+                            Nota: Los respaldos manuales se conservan hasta que sean eliminados manualmente.
+                          </p>
+                       </div>
+                     </div>
+                   </div>
+                </div>
+              </div>
+            )}
+
             {/* ── ALARMAS/LOGS TAB ─────────────────────────────────────────────── */}
             {tab === 'alarmas_logs' && (
             <div className="space-y-6">
