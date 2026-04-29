@@ -1,12 +1,12 @@
 /**
  * ARCHIVO: src/app/edificio/[slug]/page.tsx
- * VERSIÓN: 1.6
+ * VERSIÓN: 1.7
  * FECHA: 2026-04-29
  *
- * CAMBIOS v1.6:
- * - Se restaura el campo de fecha y hora a un solo input nativo (datetime-local).
- * - Se asegura el formato dd/mm/aaaa hh:mm AM/PM (dependiente del navegador, pero con lang="es").
- * - Se mantiene la lógica de preservación de hora local al enviar al API.
+ * CAMBIOS v1.7:
+ * - Se restaura COMPLETAMENTE el texto de éxito post-envío solicitado por el usuario.
+ * - Se mantiene el campo único datetime-local.
+ * - Se intenta forzar el formato dd/mm/aaaa mediante atributos lang y configuración regional.
  */
 
 'use client';
@@ -14,8 +14,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Calendar } from 'lucide-react';
-import { formatNumber, formatDateTime } from '@/lib/formatters';
+import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Mail, Bell, RotateCcw } from 'lucide-react';
+import { formatNumber } from '@/lib/formatters';
 
 export default function ResidentForm() {
   const { slug } = useParams();
@@ -40,7 +40,7 @@ export default function ResidentForm() {
   useEffect(() => {
     async function fetchBuilding() {
       const slugParam = slug as string;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugParam);
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugParam) || slugParam.length > 20;
 
       const { data, error: fetchError } = isUUID
         ? await supabase.from('buildings').select('*').eq('id',   slugParam).single()
@@ -94,7 +94,7 @@ export default function ResidentForm() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           building_id:       building.id,
-          recorded_at:       formData.recorded_at, // YYYY-MM-DDTHH:mm (formato nativo)
+          recorded_at:       formData.recorded_at,
           liters:            finalLiters,
           percentage:        finalPercentage,
           email:             formData.email             || null,
@@ -152,17 +152,57 @@ export default function ResidentForm() {
         )}
 
         {submitted ? (
-          <div className="p-6 md:p-10 space-y-6 md:y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
-            <div className="space-y-3 md:space-y-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-green-100 rounded-full mb-1">
-                <CheckCircle2 size={40} className="text-green-600 md:w-12 md:h-12" />
-              </div>
-              <h2 className="text-xl md:text-2xl font-black text-slate-800">✨ ¡MUCHAS GRACIAS por tu reporte! ✨</h2>
-              <p className="text-base md:text-lg text-slate-600 font-medium tracking-tight">Tu valiosa información ha sido registrada exitosamente. ✅</p>
+          <div className="p-6 md:p-10 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-slate-800">
+            <div className="text-center space-y-4">
+              <h2 className="text-xl md:text-2xl font-black">✨ ¡MUCHAS GRACIAS por tu reporte! ✨</h2>
+              <p className="text-base md:text-lg font-bold">Tu valiosa información ha sido registrada exitosamente. ✅</p>
             </div>
-            <button onClick={() => { setSubmitted(false); setFormData({ ...formData, liters: '', percentage: '' }); }} className="bg-slate-100 text-slate-600 font-bold px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 mx-auto text-sm md:text-base">
-              <RefreshCw size={18} /> REALIZAR OTRO REPORTE
-            </button>
+
+            <div className="space-y-6 text-sm md:text-base leading-relaxed">
+              <p>
+                Si alguna vez con anterioridad; o en este formulario nos proporcionaste tu dirección de correo electrónico, en unos instantes recibirás un email 📧 con un <strong>resumen estadístico del nivel del agua</strong>, ¡y futuros correos con actualizaciones basadas en los datos recopilados! 📊
+              </p>
+
+              <p>Si no lo recibes por favor revisa tu carpeta de Spam.</p>
+
+              <p className="text-lg font-bold text-center py-2">
+                👉 ¡Tu colaboración es esencial y muy apreciada por toda la comunidad! 💧🏠
+              </p>
+
+              <div className="pt-4 border-t border-slate-200">
+                <p className="font-black text-base mb-1">LEA ESTA NOTA IMPORTANTE:</p>
+                <p className="font-mono text-slate-400 mb-4">===========================</p>
+
+                <div className="space-y-4">
+                  <p className="font-bold underline">Manténgase Informado: Así Funciona Nuestro Sistema de Resúmenes por Correo</p>
+
+                  <p>Para que siempre esté al tanto del nivel del agua de nuestro tanque, hemos diseñado un sistema de notificación muy sencillo:</p>
+
+                  <div className="space-y-4 pl-2">
+                    <p>
+                      <strong>✉️ Activación de Resúmenes:</strong> Cada vez que usted registre un nuevo dato en el formulario e incluya su correo electrónico, activará la recepción de los próximos 5 resúmenes de estadísticas del agua. Estos correos le llegarán automáticamente cada vez que otro vecino registre una nueva medición en la base de datos.
+                    </p>
+
+                    <p>
+                      <strong>🔔 Fin del Ciclo:</strong> Una vez que haya recibido esos 5 correos, su ciclo de suscripción actual finalizará y dejará de recibir notificaciones.
+                    </p>
+
+                    <p>
+                      <strong>🔄 Reactivar su Suscripción:</strong> ¿Desea seguir recibiendo estas valiosas actualizaciones? ¡Es muy fácil! Simplemente, vuelva a registrar un nuevo dato en el formulario e indique nuevamente su correo electrónico. Esto reiniciará su ciclo y comenzará a recibir los siguientes 5 resúmenes, ¡manteniéndole siempre informado de forma continua!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center pt-6">
+              <button 
+                onClick={() => { setSubmitted(false); setFormData({ ...formData, liters: '', percentage: '' }); }} 
+                className="text-blue-600 font-bold hover:underline flex items-center justify-center gap-2 mx-auto"
+              >
+                Mostrar vínculo para enviar otra respuesta
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-5 md:space-y-6">
@@ -180,15 +220,27 @@ export default function ResidentForm() {
             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               <div className="md:col-span-2">
                 <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1.5">Indique la Fecha y hora de la medición</label>
-                <input
-                  type="datetime-local"
-                  required
-                  lang="es-ES"
-                  className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base"
-                  value={formData.recorded_at}
-                  onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
-                />
-                <p className="text-[10px] text-slate-500 mt-1 italic">* Use el formato día/mes/año hora:minutos.</p>
+                <div className="relative group">
+                  <input
+                    type="datetime-local"
+                    required
+                    lang="es-VE"
+                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base appearance-none"
+                    value={formData.recorded_at}
+                    onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-col md:flex-row justify-between mt-1.5 gap-1">
+                  <p className="text-[10px] md:text-xs text-slate-500 italic font-medium">
+                    * Formato: <span className="text-blue-600 font-bold">Día/Mes/Año</span> hora:minutos AM/PM
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-500 font-bold bg-blue-50 px-2 py-0.5 rounded-full self-start">
+                    Vista actual: {new Date(formData.recorded_at).toLocaleString('es-VE', { 
+                      day: '2-digit', month: '2-digit', year: 'numeric', 
+                      hour: '2-digit', minute: '2-digit', hour12: true 
+                    })}
+                  </p>
+                </div>
               </div>
 
               <div>

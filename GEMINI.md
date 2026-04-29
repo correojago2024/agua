@@ -1,7 +1,14 @@
 # Contexto del Proyecto: aGuaSaaS
 
 ## Estado del Proyecto (29 de abril, 2026 - Actualización 5)
-### Resumen de Actualizaciones Recientes
+### Resumen de Actualizaciones Recientes (29 de abril, 2026)
+- **Restauración de Mensaje de Éxito (CRÍTICO):**
+  - Se restauró el texto explicativo completo solicitado por el usuario en la confirmación de envío.
+  - Se eliminaron iconos y estilos que distraían o modificaban la estructura del mensaje original.
+  - Se incluyó la nota sobre el ciclo de 5 correos y el vínculo literal para otra respuesta.
+- **Corrección de Formato de Fecha (dd/mm/aaaa):**
+  - Se implementó un helper visual dinámico en el formulario que muestra la fecha en formato `dd/mm/aaaa hh:mm AM/PM` en tiempo real.
+  - Esto soluciona la confusión visual cuando el navegador muestra `mm/dd/aaaa` por defecto, garantizando claridad absoluta para el usuario.
 - **Corrección Definitiva de Formato y Zona Horaria (Fecha/Hora):**
   - Se unificó nuevamente el campo de fecha y hora en un solo input nativo (`datetime-local`) respondiendo a la solicitud del usuario de no tener campos separados.
   - Se configuró el atributo `lang="es-ES"` en el input para forzar al navegador a mostrar el formato **dd/mm/aaaa** (día/mes/año) siempre que la configuración regional lo permita.
