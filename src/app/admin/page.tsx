@@ -13,7 +13,7 @@ import {
   Building, Users, BarChart3, Settings, LogOut, Trash2, Edit,
   RefreshCw, Eye, ChevronDown, ChevronUp, Plus, Save, X, Wrench,
   Mail, Send, Clock, CreditCard, ShieldCheck, Search, Filter,
-  FileJson, Database, Download,
+  FileJson, Database, Download, RotateCcw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { logAudit } from '@/lib/audit';
@@ -205,6 +205,35 @@ export default function AdminPage() {
     } catch (e: any) {
       setActionMsg('❌ Error: ' + e.message);
       setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
+  const restoreBackup = async (buildingId: string, fileName: string) => {
+    const confirm1 = window.confirm('⚠️ ATENCIÓN: Estás a punto de RESTAURAR datos.\\n\\nEsto sobreescribirá la configuración actual, suscriptores y mediciones con los datos de este respaldo.\\n\\n¿Deseas continuar?');
+    if (!confirm1) return;
+
+    const confirm2 = window.confirm('❗ ÚLTIMA CONFIRMACIÓN:\\n\\nEsta acción NO se puede deshacer de forma automática. El edificio volverá exactamente al estado en que estaba el día del respaldo.\\n\\n¿Confirmas la restauración definitiva?');
+    if (!confirm2) return;
+
+    setBackupsLoading(buildingId);
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building_id: buildingId, fileName, action: 'restore', created_by: 'ADMIN_PORTAL' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMsg('✅ Restauración completada con éxito');
+        loadBuildings(); // Recargar datos para ver cambios
+      } else {
+        setActionMsg('❌ Error en restauración: ' + (data.error || 'Desconocido'));
+      }
+    } catch (e: any) {
+      setActionMsg('❌ Error de conexión: ' + e.message);
+    } finally {
+      setBackupsLoading(null);
+      setTimeout(() => setActionMsg(''), 5000);
     }
   };
 
@@ -1150,6 +1179,11 @@ export default function AdminPage() {
                                             <button onClick={() => downloadBackup(b.id, file.name)} 
                                               className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors" title="Descargar JSON">
                                               <Download className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => restoreBackup(b.id, file.name)} 
+                                              disabled={backupsLoading === b.id}
+                                              className="p-2 text-amber-500 hover:bg-amber-500/20 rounded-lg transition-colors disabled:opacity-50" title="Restaurar este respaldo">
+                                              <RotateCcw className="w-4 h-4" />
                                             </button>
                                             <button onClick={() => deleteBackup(b.id, file.name)}
                                               className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Eliminar">

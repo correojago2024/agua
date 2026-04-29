@@ -3,13 +3,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!; // Necesaria para bypass RLS en respaldos
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!; 
 
 export async function POST(request: Request) {
   try {
     const { building_id, building_name, action, created_by } = await request.json();
 
-    if (!building_id) return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
+    if (!building_id && action !== 'list') return NextResponse.json({ error: 'building_id es requerido' }, { status: 400 });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -71,6 +71,52 @@ export async function POST(request: Request) {
       });
 
       return NextResponse.json({ success: true, fileName });
+    }
+
+    if (action === 'restore') {
+      const { fileName } = await request.json();
+
+      // 1. Descargar el archivo
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('backups')
+        .download(`${building_id}/${fileName}`);
+
+      if (downloadError) throw downloadError;
+
+      const backupText = await fileData.text();
+      const backup = JSON.parse(backupText);
+
+      if (!backup.data) throw new Error('Formato de respaldo inválido');
+
+      const { building, measurements, settings, ia_settings, whatsapp_settings, junta } = backup.data;
+
+      // 2. Ejecutar Upserts (Restauración)
+      const results = await Promise.allSettled([
+        building ? supabase.from('buildings').upsert(building) : Promise.resolve(),
+        settings ? supabase.from('building_settings').upsert(settings) : Promise.resolve(),
+        ia_settings ? supabase.from('building_ia_settings').upsert(ia_settings) : Promise.resolve(),
+        whatsapp_settings ? supabase.from('building_whatsapp_settings').upsert(whatsapp_settings) : Promise.resolve(),
+        junta && junta.length > 0 ? supabase.from('resident_subscriptions').upsert(junta) : Promise.resolve(),
+        measurements && measurements.length > 0 ? supabase.from('measurements').upsert(measurements) : Promise.resolve(),
+      ]);
+
+      const errors = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as any)?.error));
+      if (errors.length > 0) {
+        console.error('Restore errors:', errors);
+        return NextResponse.json({ error: 'Algunas tablas no pudieron restaurarse completamente', details: errors }, { status: 500 });
+      }
+
+      // 3. Registrar en bitácora
+      await supabase.from('audit_logs').insert({
+        building_id,
+        user_email: created_by || 'ADMIN',
+        operation: 'RESTORE',
+        entity_type: 'system',
+        entity_id: building_id,
+        data_after: { file: fileName }
+      });
+
+      return NextResponse.json({ success: true });
     }
 
     if (action === 'list') {
