@@ -201,6 +201,9 @@ export function buildReportEmailHtml(
     <!-- MAPA DE CALOR -->
     ${indicators.heatmapData ? renderHeatmapHtml(indicators.heatmapData) : ''}
 
+    <h3 style="color:#0f172a; margin-top:40px; font-size:18px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-bottom:20px;">📊 Galería de Gráficos</h3>
+    ${chartGalleryHtml}
+
     <h3 style="color:#0f172a; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:40px; margin-bottom:20px; font-size:18px;">📋 Detalle de las Últimas 10 Mediciones</h3>
     <div style="overflow-x:auto;">
       <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:center;">

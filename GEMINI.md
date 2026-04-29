@@ -1,12 +1,12 @@
 # Contexto del Proyecto: aGuaSaaS
 
-## Estado del Proyecto (28 de abril, 2026)
+## Estado del Proyecto (29 de abril, 2026)
 
 ### Resumen de Actualizaciones Recientes
-- **Estandarización Global de Formatos:** Se implementó `src/lib/formatters.ts` para asegurar que en TODA la plataforma los números usen punto para miles y coma para decimales (ej: 1.234,56) y las fechas usen el formato `dd/mm/aaaa`.
-- **Corrección en Emails:** Se corrigió el bug de la tabla de "Últimos 10 registros" que mostraba datos antiguos. Ahora se ordenan cronológicamente de forma descendente (más reciente primero).
-- **Optimización de Gráficos:** Se implementó un sistema de enriquecimiento de datos en `src/lib/charts.ts` que calcula variaciones y caudales faltantes en tiempo real, evitando que los gráficos aparezcan vacíos cuando no hay datos pre-calculados en la base de datos.
-- **Formulario de Residentes:** Se mejoró la claridad del campo de fecha/hora para indicar explícitamente el formato esperado `dd/mm/aaaa`.
+- **Restauración de Gráficos en Emails:** Se corrigió un error en `src/lib/server/email-templates.ts` donde la galería de 16 gráficos se generaba pero no se incluía en el HTML final. Ahora aparecen correctamente antes de las tablas de datos.
+- **Corrección Definitiva de Historial:** Se optimizó la consulta a Supabase en `src/app/api/measurements/route.ts` para obtener los últimos 2000 registros en orden descendente. Esto resuelve el problema de la tabla de "Últimas 10 mediciones" que mostraba datos antiguos (ej: marzo) debido al límite de filas de Supabase cuando se usaba orden ascendente.
+- **Sincronización de Datos para Gráficos:** Al asegurar que se obtienen los datos más recientes en la API, los gráficos de QuickChart ahora cuentan con la serie histórica necesaria, evitando que aparezcan vacíos o solo con los ejes.
+- **Estandarización Global de Formatos (28 de abr):** Se implementó `src/lib/formatters.ts` para asegurar que en TODA la plataforma los números usen punto para miles y coma para decimales (ej: 1.234,56) y las fechas usen el formato `dd/mm/aaaa`.
 
 ### Estrategia de Respaldos Supabase (Propuesta)
 1. **Respaldo Manual:** Implementar un botón en el Panel Admin que dispare un Edge Function de Supabase para generar un dump SQL y guardarlo en Storage.

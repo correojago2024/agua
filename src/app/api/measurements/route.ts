@@ -135,8 +135,15 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data: history } = await supabase.from('measurements').select('*').eq('building_id', building_id).order('recorded_at', { ascending: true });
-    const lastM = history && history.length > 0 ? history[history.length - 1] : null;
+    const { data: historyDesc } = await supabase
+      .from('measurements')
+      .select('*')
+      .eq('building_id', building_id)
+      .order('recorded_at', { ascending: false })
+      .limit(2000);
+    
+    const history = (historyDesc || []).reverse();
+    const lastM = history.length > 0 ? history[history.length - 1] : null;
 
     let isAnomaly = false;
     let variationPercentage = 0;
@@ -204,15 +211,16 @@ export async function POST(request: Request) {
     }
     // ----------------------------
 
-    // Volvemos a consultar el historial completo INCLUYENDO la recién creada
-    const { data: rawUpdHistory } = await supabase
+    // Volvemos a consultar el historial LATEST INCLUYENDO la recién creada
+    const { data: rawUpdHistoryDesc } = await supabase
       .from('measurements')
       .select('*')
       .eq('building_id', building_id)
-      .order('recorded_at', { ascending: true });
+      .order('recorded_at', { ascending: false })
+      .limit(2000);
 
-    // Si por algún retraso de replicación no viene en rawUpdHistory, la agregamos manualmente si tenemos meas
-    let updHistory = rawUpdHistory || [];
+    // Reversamos para que sea ascendente para las gráficas y cálculos
+    let updHistory = (rawUpdHistoryDesc || []).reverse();
     if (meas && !updHistory.find(m => m.id === meas.id)) {
       updHistory.push(meas);
       updHistory.sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime());
