@@ -3,6 +3,11 @@
 ## Estado del Proyecto (29 de abril, 2026 - Actualización 4)
 
 ### Resumen de Actualizaciones Recientes
+- **Gestión de Anomalías:**
+  - Se habilitó la posibilidad de que los administradores de edificios marquen mediciones detectadas como anomalías como "Normales" (y viceversa).
+  - Se añadió la función `toggleAnomaly` en el panel de edificio que permite alternar el estado de cualquier medición.
+  - La tabla de mediciones en el panel de administración ahora muestra indicadores claros y permite la corrección manual del estado.
+  - Los reportes por email ahora incluyen una columna de "Estado" que refleja si una medición es Normal o una Anomalía, respetando las correcciones manuales realizadas por la junta.
 - **Corrección de Descarga de Respaldos:** 
   - Se corrigió el error donde al intentar descargar un respaldo JSON se abría el contenido en una nueva ventana del navegador en lugar de descargarse.
   - **Cambio Técnico:** Se agregó la opción `{ download: true }` a la función `createSignedUrl` en `/api/backups` para forzar el encabezado `Content-Disposition: attachment`.

@@ -1348,11 +1348,24 @@ export default function EdificioAdminPage() {
     }
   };
 
+  const toggleAnomaly = async (id: string, currentStatus: boolean) => {
+    if (observerBlock()) return;
+    if (demoBlock()) return;
+    const newStatus = !currentStatus;
+    await supabase.from('measurements').update({ 
+      is_anomaly: newStatus,
+      anomaly_checked: true 
+    }).eq('id', id);
+    setMeasMsg(`✅ Medicion marcada como ${newStatus ? 'anomalía' : 'normal'}`);
+    setTimeout(() => setMeasMsg(''), 3000);
+    loadData();
+  };
+
   const markAnomalyReviewed = async (id: string) => {
     if (observerBlock()) return;
     if (demoBlock()) return;
     await supabase.from('measurements').update({ anomaly_checked: true, is_anomaly: false }).eq('id', id);
-    setMeasMsg('✅ Marcada como revisada');
+    setMeasMsg('✅ Marcada como normal');
     setTimeout(() => setMeasMsg(''), 3000);
     loadData();
   };
@@ -2663,7 +2676,7 @@ export default function EdificioAdminPage() {
                           <tr key={m.id} className={`hover:bg-slate-700/20 ${m.is_anomaly ? 'bg-red-500/5 border-l-2 border-red-500/50' : ''}`}>
                             <td className="px-3 py-2 text-slate-300 whitespace-nowrap">
                               {formatDateTime(m.recorded_at)}
-                              {m.is_anomaly && !m.anomaly_checked && (
+                              {m.is_anomaly && (
                                 <span className="ml-1 text-red-400 text-xs">⚠️ Anomalía</span>
                               )}
                             </td>
@@ -2710,11 +2723,15 @@ export default function EdificioAdminPage() {
                                       <button onClick={() => startEditMeasurement(m)} className="p-1 text-blue-400 hover:bg-blue-500/20 rounded" title="Editar">
                                         <Edit2 className="w-3.5 h-3.5" />
                                       </button>
-                                      {m.is_anomaly && !m.anomaly_checked && (
-                                        <button onClick={() => markAnomalyReviewed(m.id)} className="p-1 text-amber-400 hover:bg-amber-500/20 rounded" title="Marcar revisada">
-                                          <CheckCircle2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
+                                      
+                                      <button 
+                                        onClick={() => toggleAnomaly(m.id, !!m.is_anomaly)} 
+                                        className={`p-1 rounded ${m.is_anomaly ? 'text-green-400 hover:bg-green-500/20' : 'text-amber-400 hover:bg-amber-500/20'}`} 
+                                        title={m.is_anomaly ? "Marcar como Normal" : "Marcar como Anomalía"}
+                                      >
+                                        {m.is_anomaly ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                                      </button>
+
                                       <button onClick={() => deleteMeasurement(m.id)} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="Eliminar">
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>

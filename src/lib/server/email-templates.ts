@@ -103,6 +103,8 @@ export function buildReportEmailHtml(
     const tLlenado = (flow > 0.01) ? formatNumber(Math.abs((building.tank_capacity_liters - m.liters) / flow) / 1440, 2) + ' d' : '—';
     const tVaciado = (flow < -0.01) ? formatNumber(Math.abs(m.liters / flow) / 1440, 2) + ' d' : '—';
     
+    const statusText = m.is_anomaly ? '<span style="color:#dc2626; font-weight:bold;">Anomalía</span>' : '<span style="color:#16a34a;">Normal</span>';
+    
     return `
       <tr style="border-bottom:1px solid #e2e8f0;">
         <td style="padding:8px;text-align:left;">${formatDateTime(m.recorded_at)}</td>
@@ -113,6 +115,7 @@ export function buildReportEmailHtml(
         <td style="padding:8px;">${tLlenado}</td>
         <td style="padding:8px;">${tVaciado}</td>
         <td style="padding:8px;">${m.collaborator_name || 'Vecino'}</td>
+        <td style="padding:8px;">${statusText}</td>
       </tr>
     `;
   }).join('');
@@ -217,6 +220,7 @@ export function buildReportEmailHtml(
             <th style="padding:10px;">T. Llenado</th>
             <th style="padding:10px;">T. Vaciado</th>
             <th style="padding:10px;">👥 Reportado por</th>
+            <th style="padding:10px;">Estado</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
