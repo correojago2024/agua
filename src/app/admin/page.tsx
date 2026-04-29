@@ -13,7 +13,7 @@ import {
   Building, Users, BarChart3, Settings, LogOut, Trash2, Edit,
   RefreshCw, Eye, ChevronDown, ChevronUp, Plus, Save, X, Wrench,
   Mail, Send, Clock, CreditCard, ShieldCheck, Search, Filter,
-  FileJson,
+  FileJson, Database, Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { logAudit } from '@/lib/audit';
@@ -115,6 +115,99 @@ export default function AdminPage() {
   const [actionMsg, setActionMsg] = useState('');
   const [activeView, setActiveView] = useState<'buildings' | 'leads' | 'maintenance' | 'reports' | 'emails' | 'plans' | 'logs' | 'audit'>('buildings');
   
+  // Backups
+  const [backups, setBackups] = useState<Record<string, any[]>>({});
+  const [backupsLoading, setBackupsLoading] = useState<string | null>(null);
+
+  const loadBackups = async (buildingId: string) => {
+    setBackupsLoading(buildingId);
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building_id: buildingId, action: 'list' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBackups(prev => ({ ...prev, [buildingId]: data.backups || [] }));
+      }
+    } catch (e) {
+      console.error('Error loading backups:', e);
+    } finally {
+      setBackupsLoading(null);
+    }
+  };
+
+  const generateBackup = async (buildingId: string, buildingName: string) => {
+    setBackupsLoading(buildingId);
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          building_id: buildingId, 
+          building_name: buildingName, 
+          action: 'generate',
+          created_by: 'ADMIN_PORTAL'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMsg('✅ Respaldo generado correctamente');
+        loadBackups(buildingId);
+      } else {
+        setActionMsg('❌ Error: ' + data.error);
+      }
+    } catch (e: any) {
+      setActionMsg('❌ Error: ' + e.message);
+    } finally {
+      setBackupsLoading(null);
+      setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
+  const deleteBackup = async (buildingId: string, fileName: string) => {
+    if (!window.confirm('¿Eliminar este respaldo permanentemente?')) return;
+    setBackupsLoading(buildingId);
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building_id: buildingId, fileName, action: 'delete' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMsg('✅ Respaldo eliminado');
+        loadBackups(buildingId);
+      }
+    } catch (e: any) {
+      setActionMsg('❌ Error: ' + e.message);
+    } finally {
+      setBackupsLoading(null);
+      setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
+  const downloadBackup = async (buildingId: string, fileName: string) => {
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building_id: buildingId, fileName, action: 'get_url' })
+      });
+      const data = await res.json();
+      if (data.success && data.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      } else {
+        setActionMsg('❌ Error: ' + (data.error || 'No se pudo generar el enlace'));
+        setTimeout(() => setActionMsg(''), 3000);
+      }
+    } catch (e: any) {
+      setActionMsg('❌ Error: ' + e.message);
+      setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -883,7 +976,11 @@ export default function AdminPage() {
                         <td className="px-3 py-4 text-slate-300 font-medium text-center">{b.total_measurements ?? 0}</td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-1">
-                            <button onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}
+                            <button onClick={() => {
+                              const nextId = expandedId === b.id ? null : b.id;
+                              setExpandedId(nextId);
+                              if (nextId) loadBackups(nextId);
+                            }}
                               className="p-1.5 text-slate-400 hover:bg-slate-600 rounded-lg">
                               {expandedId === b.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </button>
@@ -926,82 +1023,177 @@ export default function AdminPage() {
                       </tr>
                       {expandedId === b.id && (
                         <tr key={`${b.id}-exp`} className="bg-slate-700/20">
-                          <td colSpan={8} className="px-6 py-4">
-                            <div className="space-y-3">
-                              {/*基本信息*/}
-                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">📅 Fecha Registro</p>
-                                  <p className="text-slate-300">{new Date(b.created_at).toLocaleDateString('es-ES')}</p>
-                                </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">💰 Plan</p>
-                                  <select value={b.subscription_plan || 'basico'} 
-                                    onChange={(e) => saveField(b.id, 'subscription_plan', e.target.value)}
-                                    className="w-full bg-slate-600 text-blue-400 px-2 py-1 rounded text-xs">
-                                    <option value="basico">Básico ($9)</option>
-                                    <option value="profesional">Profesional ($25)</option>
-                                    <option value="premium">Premium ($49)</option>
-                                    <option value="ia">IA Intelligence ($79)</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">💵 Tarifa ($/mes)</p>
-                                  <input type="number" value={b.custom_rate || 25} 
-                                    onChange={(e) => saveField(b.id, 'custom_rate', e.target.value)}
-                                    className="w-20 bg-slate-600 text-green-400 px-2 py-1 rounded text-xs" />
-                                </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">📅 Próximo Vencimiento</p>
-                                  <input type="date" value={b.next_expiry_date || ''} 
-                                    onChange={(e) => saveField(b.id, 'next_expiry_date', e.target.value)}
-                                    className="w-28 bg-slate-600 text-amber-400 px-2 py-1 rounded text-xs" />
-                                </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">📝 Notas</p>
-                                  <input type="text" value={b.notes || ''} 
-                                    onChange={(e) => saveField(b.id, 'notes', e.target.value)}
-                                    className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs" placeholder="Notas..." />
+                          <td colSpan={9} className="px-6 py-6">
+                            <div className="space-y-6">
+                              {/* Información Básica */}
+                              <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                                  <Building className="w-3 h-3" /> Información Básica
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">📅 Fecha Registro</p>
+                                    <p className="text-slate-300">{new Date(b.created_at).toLocaleDateString('es-ES')}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">💰 Plan</p>
+                                    <select value={b.subscription_plan || 'basico'} 
+                                      onChange={(e) => saveField(b.id, 'subscription_plan', e.target.value)}
+                                      className="w-full bg-slate-600 text-blue-400 px-2 py-1 rounded text-xs border border-slate-500">
+                                      <option value="basico">Básico ($9)</option>
+                                      <option value="profesional">Profesional ($25)</option>
+                                      <option value="premium">Premium ($49)</option>
+                                      <option value="ia">IA Intelligence ($79)</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">💵 Tarifa ($/mes)</p>
+                                    <input type="number" value={b.custom_rate || 25} 
+                                      onChange={(e) => saveField(b.id, 'custom_rate', e.target.value)}
+                                      className="w-20 bg-slate-600 text-green-400 px-2 py-1 rounded text-xs border border-slate-500" />
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">📅 Próximo Vencimiento</p>
+                                    <input type="date" value={b.next_expiry_date || ''} 
+                                      onChange={(e) => saveField(b.id, 'next_expiry_date', e.target.value)}
+                                      className="w-28 bg-slate-600 text-amber-400 px-2 py-1 rounded text-xs border border-slate-500" />
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">📝 Notas</p>
+                                    <input type="text" value={b.notes || ''} 
+                                      onChange={(e) => saveField(b.id, 'notes', e.target.value)}
+                                      className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs border border-slate-500" placeholder="Notas..." />
+                                  </div>
                                 </div>
                               </div>
                               
                               {/* Pagos */}
-                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm border-t border-slate-600 pt-3">
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">💰 Último Pago</p>
-                                  <input type="date" value={b.last_payment_date || ''} 
-                                    onChange={(e) => saveField(b.id, 'last_payment_date', e.target.value)}
-                                    className="w-full bg-slate-600 text-blue-400 px-2 py-1 rounded text-xs mb-1" />
+                              <div className="border-t border-slate-700 pt-4">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                                  <CreditCard className="w-3 h-3" /> Información de Pagos
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">💰 Último Pago</p>
+                                    <input type="date" value={b.last_payment_date || ''} 
+                                      onChange={(e) => saveField(b.id, 'last_payment_date', e.target.value)}
+                                      className="w-full bg-slate-600 text-blue-400 px-2 py-1 rounded text-xs border border-slate-500" />
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">💵 Monto Pagado</p>
+                                    <input type="number" value={b.last_payment_amount || ''} 
+                                      onChange={(e) => saveField(b.id, 'last_payment_amount', e.target.value)}
+                                      className="w-full bg-slate-600 text-green-400 px-2 py-1 rounded text-xs border border-slate-500" placeholder="0" />
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">🏦 Banco</p>
+                                    <input type="text" value={b.bank || ''} 
+                                      onChange={(e) => saveField(b.id, 'bank', e.target.value)}
+                                      className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs border border-slate-500" placeholder="Banco..." />
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">📋 Referencia</p>
+                                    <input type="text" value={b.reference_number || ''} 
+                                      onChange={(e) => saveField(b.id, 'reference_number', e.target.value)}
+                                      className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs border border-slate-500" placeholder="Nro ref..." />
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">📤 Forma Pago</p>
+                                    <select value={b.payment_method || ''} 
+                                      onChange={(e) => saveField(b.id, 'payment_method', e.target.value)}
+                                      className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs border border-slate-500">
+                                      <option value="">Seleccionar</option>
+                                      <option value="transferencia">Transferencia</option>
+                                      <option value="pago_movil">Pago Móvil</option>
+                                      <option value="efectivo">Efectivo</option>
+                                      <option value="zelle">Zelle</option>
+                                    </select>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">💵 Monto Pagado</p>
-                                  <input type="number" value={b.last_payment_amount || ''} 
-                                    onChange={(e) => saveField(b.id, 'last_payment_amount', e.target.value)}
-                                    className="w-full bg-slate-600 text-green-400 px-2 py-1 rounded text-xs" placeholder="0" />
+                              </div>
+
+                              {/* Respaldos de Base de Datos */}
+                              <div className="border-t border-slate-700 pt-4">
+                                <div className="flex justify-between items-center mb-4">
+                                  <h4 className="text-xs font-bold text-blue-400 uppercase flex items-center gap-2">
+                                    <Database className="w-3 h-3" /> Respaldos de Base de Datos
+                                  </h4>
+                                  <button 
+                                    onClick={() => generateBackup(b.id, b.name)}
+                                    disabled={backupsLoading === b.id}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50 transition-all active:scale-95 shadow-lg"
+                                  >
+                                    {backupsLoading === b.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    CREAR RESPALDO MANUAL AHORA
+                                  </button>
                                 </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">🏦 Banco</p>
-                                  <input type="text" value={b.bank || ''} 
-                                    onChange={(e) => saveField(b.id, 'bank', e.target.value)}
-                                    className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs" placeholder="Banco..." />
-                                </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">📋 Referencia</p>
-                                  <input type="text" value={b.reference_number || ''} 
-                                    onChange={(e) => saveField(b.id, 'reference_number', e.target.value)}
-                                    className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs" placeholder="Nro ref..." />
-                                </div>
-                                <div>
-                                  <p className="text-slate-500 text-xs mb-1">📤 Forma Pago</p>
-                                  <select value={b.payment_method || ''} 
-                                    onChange={(e) => saveField(b.id, 'payment_method', e.target.value)}
-                                    className="w-full bg-slate-600 text-white px-2 py-1 rounded text-xs">
-                                    <option value="">Seleccionar</option>
-                                    <option value="transferencia">Transferencia</option>
-                                    <option value="pago_movil">Pago Móvil</option>
-                                    <option value="efectivo">Efectivo</option>
-                                    <option value="zelle">Zelle</option>
-                                  </select>
+
+                                <div className="grid md:grid-cols-3 gap-6">
+                                  <div className="md:col-span-2 bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+                                    <p className="text-[10px] text-slate-500 uppercase font-bold mb-3 tracking-wider">Historial de Respaldos en Storage</p>
+                                    
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                      {(backups[b.id] || []).map((file: any) => (
+                                        <div key={file.name} className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700/50 hover:bg-slate-700/40 transition-all group">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                                              <FileJson className="w-4 h-4 text-amber-500" />
+                                            </div>
+                                            <div>
+                                              <p className="text-xs text-slate-200 font-mono font-bold">{file.name.split('_')[0]}</p>
+                                              <p className="text-[10px] text-slate-500">
+                                                {format(new Date(file.created_at), 'dd/MM/yyyy HH:mm')} • {(file.metadata?.size / 1024).toFixed(1)} KB
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <button onClick={() => downloadBackup(b.id, file.name)} 
+                                              className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors" title="Descargar JSON">
+                                              <Download className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => deleteBackup(b.id, file.name)}
+                                              className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Eliminar">
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {(!backups[b.id] || backups[b.id].length === 0) && !backupsLoading && (
+                                        <div className="flex flex-col items-center justify-center py-10 text-slate-600 italic">
+                                          <Database className="w-8 h-8 mb-2 opacity-20" />
+                                          <p className="text-xs">No hay respaldos disponibles para este edificio</p>
+                                        </div>
+                                      )}
+                                      {backupsLoading === b.id && !backups[b.id] && (
+                                        <div className="flex flex-col items-center justify-center py-10">
+                                          <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mb-2" />
+                                          <p className="text-xs text-slate-500">Consultando Storage...</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="bg-blue-500/5 rounded-xl p-5 border border-blue-500/10 h-fit">
+                                    <h5 className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                                      <ShieldCheck className="w-4 h-4" /> Seguridad de Datos
+                                    </h5>
+                                    <div className="space-y-4">
+                                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                                        Cada respaldo es un archivo <strong className="text-slate-300">JSON autocontenido</strong> que incluye:
+                                      </p>
+                                      <ul className="text-[10px] text-slate-500 space-y-2 list-disc pl-4">
+                                        <li>Configuración de planta y tanques</li>
+                                        <li>Historial completo de mediciones</li>
+                                        <li>Configuración de IA y WhatsApp</li>
+                                        <li>Base de datos de suscriptores</li>
+                                      </ul>
+                                      <div className="pt-2">
+                                        <p className="text-[10px] text-amber-500/80 italic leading-relaxed bg-amber-500/5 p-3 rounded-lg border border-amber-500/10">
+                                          💡 Los archivos se almacenan en el bucket "backups" de Supabase Storage de forma privada y segura.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>

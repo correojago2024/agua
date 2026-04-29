@@ -60,7 +60,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpi
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'alarmas_logs' | 'ia_analisis';
+type Tab = 'dashboard' | 'junta' | 'reportes' | 'mediciones' | 'configuracion' | 'alarmas_logs' | 'ia_analisis' | 'seguridad';
 
 // Helper: lee variation_lts o variacion_lts (ambos nombres posibles en BD)
 const getVariation = (m: Measurement): number =>
@@ -104,6 +104,12 @@ export default function EdificioAdminPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordChangeMsg, setPasswordChangeMsg] = useState('');
   const [tab, setTab] = useState<Tab>('dashboard');
+
+  // Backup State
+  const [backups, setBackups] = useState<any[]>([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [generatingBackup, setGeneratingBackup] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
 
   // IA Analysis State
   const [iaSettings, setIaSettings] = useState<any>({
@@ -453,6 +459,71 @@ export default function EdificioAdminPage() {
     setIaLoading(false);
   }, [building]);
 
+  const loadBackups = useCallback(async () => {
+    if (!building) return;
+    setLoadingBackups(true);
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building_id: building.id, action: 'list' })
+      });
+      const data = await res.json();
+      if (data.backups) setBackups(data.backups);
+    } catch (err) {
+      console.error('Error loading backups:', err);
+    }
+    setLoadingBackups(false);
+  }, [building]);
+
+  const generateBackup = async () => {
+    if (!building) return;
+    if (observerBlock()) return;
+    setGeneratingBackup(true);
+    setBackupMsg('');
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          building_id: building.id, 
+          building_name: building.name,
+          action: 'generate',
+          created_by: currentUser?.email || loginEmail || 'ADMIN'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBackupMsg('✅ Respaldo generado con éxito');
+        loadBackups();
+        setTimeout(() => setBackupMsg(''), 4000);
+      } else {
+        setBackupMsg('❌ Error: ' + data.error);
+      }
+    } catch (err: any) {
+      setBackupMsg('❌ Error: ' + err.message);
+    }
+    setGeneratingBackup(false);
+  };
+
+  const deleteBackup = async (fileName: string) => {
+    if (!building || !confirm('¿Estás seguro de eliminar este respaldo?')) return;
+    if (observerBlock()) return;
+    try {
+      const res = await fetch('/api/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building_id: building.id, action: 'delete', fileName })
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadBackups();
+      }
+    } catch (err) {
+      console.error('Error deleting backup:', err);
+    }
+  };
+
   const saveIaSettings = async () => {
     if (!building) return;
     if (observerBlock()) return;
@@ -729,7 +800,8 @@ export default function EdificioAdminPage() {
   useEffect(() => {
     if (tab === 'alarmas_logs') loadAuditLogs();
     if (tab === 'configuracion') loadWhatsAppSettings();
-  }, [tab, loadAuditLogs, loadWhatsAppSettings]);
+    if (tab === 'seguridad') loadBackups();
+  }, [tab, loadAuditLogs, loadWhatsAppSettings, loadBackups]);
 
   // Hook para generar gráficos cuando las mediciones cambian
   useEffect(() => {
@@ -1753,7 +1825,7 @@ export default function EdificioAdminPage() {
             { id: 'reportes',      label: 'Reportes',      Icon: FileText, color: 'green' },
             { id: 'ia_analisis',   label: 'Análisis IA',   Icon: Sparkles, color: 'blue' },
             isUserAdmin ? { id: 'alarmas_logs',  label: 'Logs',  Icon: ClipboardList, color: 'slate', desktopOnly: true } : null,
-
+            isUserAdmin ? { id: 'seguridad',     label: 'Seguridad', Icon: ShieldCheck, color: 'orange', desktopOnly: true } : null,
             { id: 'configuracion', label: 'Config.',       Icon: Settings,      color: 'cyan',   desktopOnly: true },
           ].filter(Boolean) as { id: Tab; label: string; Icon: any; color: string; desktopOnly?: boolean }[]).map(({ id, label, Icon, color, desktopOnly }) => (
             <button 

@@ -1,26 +1,25 @@
 # Contexto del Proyecto: aGuaSaaS
 
-## Estado del Proyecto (29 de abril, 2026 - Actualización 2)
+## Estado del Proyecto (29 de abril, 2026 - Actualización 3)
 
 ### Resumen de Actualizaciones Recientes
-- **Corrección Formulario Residente:** Se restauró la edición de fecha y hora en el formulario de reporte. Se eliminó el overlay que bloqueaba la interacción y se corrigió el manejo de zonas horarias para usar la hora local del navegador en lugar de forzar UTC-4.
-- **Mejoras en Análisis IA:**
-  - Se agregó una casilla de **Instrucciones Adicionales** para que el usuario pueda guiar el análisis de la IA.
-  - Se actualizaron los encabezados y pies de página del informe para usar "Sistema aGuaSaaS" y nombres dinámicos de edificios.
-  - Se implementó un **Aviso y Exención de Responsabilidad** obligatorio en todos los reportes generados.
-  - Se corrigió el problema de valores "$0" mediante limpieza en el servidor y mejores instrucciones en el prompt.
-  - Se estandarizó el formato visual de las fechas en los selectores de rango a `dd/mm/aaaa`.
-- **Restauración de Gráficos en Emails:** Se corrigió un error en `src/lib/server/email-templates.ts` donde la galería de 16 gráficos se generaba pero no se incluía en el HTML final. Ahora aparecen correctamente antes de las tablas de datos.
-- **Corrección Definitiva de Historial:** Se optimizó la consulta a Supabase en `src/app/api/measurements/route.ts` para obtener los últimos 2000 registros en orden descendente. Esto resuelve el problema de la tabla de "Últimas 10 mediciones" que mostraba datos antiguos.
+- **Implementación de Respaldo Manual:** Se completó la funcionalidad de respaldo manual en el Panel Admin (`/admin`). Ahora, al expandir un edificio, se muestra una sección de **Respaldos de Base de Datos** que permite:
+  - Generar un nuevo respaldo JSON en tiempo real (almacenado en el bucket `backups` de Supabase Storage).
+  - Listar todos los respaldos históricos del edificio.
+  - Descargar respaldos directamente al equipo local.
+  - Eliminar respaldos antiguos.
+  - Registro automático en la bitácora de auditoría para cada operación de backup.
+- **Corrección UI Admin:** Se tradujeron etiquetas que estaban en chino ("基本信息" → "Información Básica") y se mejoró la visualización de la tabla de edificios con ajustes de `colSpan` y espaciado.
+- **Integración de Auditoría:** Se vinculó el sistema de backups con `logAudit` para asegurar que cada descarga o generación sea rastreable.
 
-### Estrategia de Respaldos Supabase (Propuesta)
-1. **Respaldo Manual:** Implementar un botón en el Panel Admin que dispare un Edge Function de Supabase para generar un dump SQL y guardarlo en Storage.
-2. **Respaldo Automático:** Configurar un GitHub Action con Cron Job (frecuencia ajustable) que use la CLI de Supabase para realizar el dump y subirlo a un bucket externo o repositorio privado.
-3. **Restauración:** Procedimiento documentado usando `psql` o la CLI de Supabase para cargar los dumps generados.
-4. **Destinos Independientes:** Almacenamiento cruzado entre cuentas de Supabase o servicios externos (AWS S3/Google Cloud Storage) para mitigar riesgos de baneo de cuenta principal.
+### Estrategia de Respaldos Supabase (Implementada)
+1. **Respaldo Manual:** Botón "CREAR RESPALDO MANUAL AHORA" en el Panel Admin que invoca `/api/backups` (POST action: 'generate').
+2. **Almacenamiento:** Los archivos se guardan en la ruta `{building_id}/{timestamp}_backup.json` dentro del bucket privado `backups`.
+3. **Consolidación de Datos:** El backup incluye `buildings`, `measurements`, `building_settings`, `building_ia_settings`, `building_whatsapp_settings` y `resident_subscriptions`.
 
 ### Arquitectura de Frontend (Next.js 15)
-- **Rutas Principales:**
+... (resto igual)
+
   - `/edificio/[slug]`: Formulario público para que los residentes reporten niveles.
   - `/edificio-admin/[slug]`: Panel privado para la junta y administrador.
 - **Componentes:**
