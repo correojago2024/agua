@@ -126,6 +126,7 @@ export default function AdminPage() {
   const [visitorLogs, setVisitorLogs] = useState<any[]>([]);
   const [visitsLoading, setVisitsLoading] = useState(false);
   const [notificationThreshold, setNotificationThreshold] = useState(10);
+  const [visitsTimeRange, setVisitsTimeRange] = useState<'7d' | '30d' | 'all'>('7d');
 
   const loadVisitorLogs = async () => {
     setVisitsLoading(true);
@@ -1762,27 +1763,55 @@ export default function AdminPage() {
         )}
 
         {/* Visits View */}
-        {activeView === 'visits' && (
+        {activeView === 'visits' && (() => {
+          // Filtrar datos según el rango seleccionado
+          const now = new Date();
+          const filteredLogs = visitorLogs.filter(log => {
+            if (visitsTimeRange === 'all') return true;
+            const logDate = new Date(log.created_at);
+            const diffDays = (now.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24);
+            return visitsTimeRange === '7d' ? diffDays <= 7 : diffDays <= 30;
+          });
+
+          return (
           <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
-                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Total Visitas</p>
-                <p className="text-2xl font-bold text-white">{visitorLogs.length}</p>
+            {/* Range Selector & KPI Cards */}
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 w-full">
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                  <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Visitas ({visitsTimeRange === 'all' ? 'Total' : visitsTimeRange})</p>
+                  <p className="text-2xl font-bold text-white">{filteredLogs.length}</p>
+                </div>
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                  <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Hoy</p>
+                  <p className="text-2xl font-bold text-blue-400">
+                    {visitorLogs.filter(l => new Date(l.created_at).toDateString() === new Date().toDateString()).length}
+                  </p>
+                </div>
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                  <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Países</p>
+                  <p className="text-2xl font-bold text-purple-400">{new Set(filteredLogs.map(l => l.country)).size}</p>
+                </div>
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                  <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Pend. Email</p>
+                  <p className="text-2xl font-bold text-amber-400">{visitorLogs.filter(l => !l.notified).length}</p>
+                </div>
               </div>
-              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
-                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Hoy</p>
-                <p className="text-2xl font-bold text-blue-400">
-                  {visitorLogs.filter(l => new Date(l.created_at).toDateString() === new Date().toDateString()).length}
-                </p>
-              </div>
-              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
-                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Países</p>
-                <p className="text-2xl font-bold text-purple-400">{new Set(visitorLogs.map(l => l.country)).size}</p>
-              </div>
-              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
-                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Pend. Email</p>
-                <p className="text-2xl font-bold text-amber-400">{visitorLogs.filter(l => !l.notified).length}</p>
+
+              <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                {[
+                  { id: '7d', label: '7 días' },
+                  { id: '30d', label: '30 días' },
+                  { id: 'all', label: 'Todo' },
+                ].map(r => (
+                  <button key={r.id}
+                    onClick={() => setVisitsTimeRange(r.id as any)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                      visitsTimeRange === r.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}>
+                    {r.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -1796,9 +1825,9 @@ export default function AdminPage() {
                   <PieChart>
                     <Pie
                       data={[
-                        { name: 'Inicio', value: visitorLogs.filter(l => l.page_type === 'inicio').length },
-                        { name: 'Portal', value: visitorLogs.filter(l => l.page_type === 'portal').length },
-                        { name: 'Formulario', value: visitorLogs.filter(l => l.page_type === 'formulario').length },
+                        { name: 'Inicio', value: filteredLogs.filter(l => l.page_type === 'inicio').length },
+                        { name: 'Portal', value: filteredLogs.filter(l => l.page_type === 'portal').length },
+                        { name: 'Formulario', value: filteredLogs.filter(l => l.page_type === 'formulario').length },
                       ]}
                       innerRadius={60}
                       outerRadius={80}
@@ -1822,22 +1851,25 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Tendencia Temporal */}
+              {/* Tendencia Temporal Adaptativa */}
               <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
                 <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
-                  <Activity className="w-4 h-4" /> Tendencia (7 días)
+                  <Activity className="w-4 h-4" /> Tendencia ({visitsTimeRange === '7d' ? '7 días' : visitsTimeRange === '30d' ? '30 días' : 'Histórico'})
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <AreaChart data={
-                    Array.from({length: 7}, (_, i) => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - i);
-                      const dateStr = format(d, 'yyyy-MM-dd');
-                      return {
-                        date: format(d, 'dd/MM'),
-                        visitas: visitorLogs.filter(l => format(new Date(l.created_at), 'yyyy-MM-dd') === dateStr).length
-                      };
-                    }).reverse()
+                    (() => {
+                      const days = visitsTimeRange === '7d' ? 7 : visitsTimeRange === '30d' ? 30 : 60;
+                      return Array.from({length: days}, (_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        const dateStr = format(d, 'yyyy-MM-dd');
+                        return {
+                          date: format(d, days > 7 ? 'dd/MM' : 'EEE'),
+                          visitas: visitorLogs.filter(l => format(new Date(l.created_at), 'yyyy-MM-dd') === dateStr).length
+                        };
+                      }).reverse();
+                    })()
                   }>
                     <defs>
                       <linearGradient id="colorVisitas" x1="0" y1="0" x2="0" y2="1">
@@ -1846,7 +1878,7 @@ export default function AdminPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                     <Area type="monotone" dataKey="visitas" stroke="#3b82f6" fillOpacity={1} fill="url(#colorVisitas)" strokeWidth={3} />
@@ -1856,17 +1888,17 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Top Ciudades */}
+              {/* Top Ciudades Filtradas */}
               <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
                 <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
-                  <Globe className="w-4 h-4" /> Top Ciudades
+                  <Globe className="w-4 h-4" /> Top Ciudades ({visitsTimeRange})
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <BarChart data={
-                    Array.from(new Set(visitorLogs.map(l => l.city || 'Desconocida')))
+                    Array.from(new Set(filteredLogs.map(l => l.city || 'Desconocida')))
                       .map(city => ({
                         name: city,
-                        count: visitorLogs.filter(l => (l.city || 'Desconocida') === city).length
+                        count: filteredLogs.filter(l => (l.city || 'Desconocida') === city).length
                       }))
                       .sort((a, b) => b.count - a.count)
                       .slice(0, 5)
@@ -1880,17 +1912,17 @@ export default function AdminPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Top Países */}
+              {/* Top Países Filtrados */}
               <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
                 <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4" /> Top Países
+                  <ShieldCheck className="w-4 h-4" /> Top Países ({visitsTimeRange})
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <BarChart data={
-                    Array.from(new Set(visitorLogs.map(l => l.country || '??')))
+                    Array.from(new Set(filteredLogs.map(l => l.country || '??')))
                       .map(country => ({
                         name: country,
-                        count: visitorLogs.filter(l => (l.country || '??') === country).length
+                        count: filteredLogs.filter(l => (l.country || '??') === country).length
                       }))
                       .sort((a, b) => b.count - a.count)
                       .slice(0, 5)
@@ -1944,7 +1976,7 @@ export default function AdminPage() {
                   <Users className="w-5 h-5 text-blue-400" /> Registro de Visitantes
                 </h3>
                 <div className="flex items-center gap-3">
-                  <span className="text-slate-400 text-xs">{visitorLogs.length} visitas totales</span>
+                  <span className="text-slate-400 text-xs">{filteredLogs.length} visitas mostradas</span>
                   <button onClick={loadVisitorLogs} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg">
                     <RefreshCw className={`w-4 h-4 ${visitsLoading ? 'animate-spin' : ''}`} />
                   </button>
@@ -1963,7 +1995,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700">
-                    {visitorLogs.map((log) => (
+                    {filteredLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-slate-700/30 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <p className="text-white font-medium">{format(new Date(log.created_at), 'dd/MM/yyyy')}</p>
@@ -2004,7 +2036,7 @@ export default function AdminPage() {
                         </td>
                       </tr>
                     ))}
-                    {visitorLogs.length === 0 && (
+                    {filteredLogs.length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic">
                           No se han detectado visitas todavía.
@@ -2016,7 +2048,8 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
-        )}
+          )
+        })()}
 
         {/* Modal Detalle Audit Log */}
         {selectedLog && (
