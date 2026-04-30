@@ -2775,8 +2775,30 @@ export default function EdificioAdminPage() {
                             </td>
                             <td className="px-3 py-2 text-slate-300 whitespace-nowrap">
                               {isEditing 
-                                ? <input type="text" value={editDate} onChange={e => setEditDate(e.target.value)}
-                                    className="w-40 bg-slate-600 border border-slate-500 text-white rounded px-1 py-0.5 text-xs" />
+                                ? <div className="relative flex items-center">
+                                    <input type="text" value={editDate} onChange={e => setEditDate(e.target.value)}
+                                      className="w-40 bg-slate-600 border border-slate-500 text-white rounded px-1 py-0.5 text-xs pr-7" />
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        const picker = document.getElementById(`picker-${m.id}`);
+                                        if (picker) (picker as any).showPicker();
+                                      }}
+                                      className="absolute right-1 text-blue-400 hover:text-blue-300"
+                                    >
+                                      <Calendar className="w-3.5 h-3.5" />
+                                    </button>
+                                    <input 
+                                      id={`picker-${m.id}`}
+                                      type="datetime-local"
+                                      className="absolute opacity-0 pointer-events-none w-0 h-0"
+                                      onChange={(e) => {
+                                        if (e.target.value) {
+                                          setEditDate(formatDateTime(e.target.value));
+                                        }
+                                      }}
+                                    />
+                                  </div>
                                 : formatDateTime(m.recorded_at)}
                               {m.is_anomaly && !isEditing && (
                                 <span className="ml-1 text-red-400 text-xs">⚠️ Anomalía</span>

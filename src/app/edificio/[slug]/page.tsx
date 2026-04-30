@@ -231,14 +231,37 @@ export default function ResidentForm() {
             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               <div className="md:col-span-2">
                 <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1.5">Indique la Fecha y hora de la medición</label>
-                <div className="relative group">
+                <div className="relative group flex items-center">
                   <input
                     type="text"
                     required
-                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base"
+                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base pr-12"
                     value={formData.recorded_at}
                     onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
                   />
+                  <div className="absolute right-3 flex items-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const picker = document.getElementById('date-picker-trigger');
+                        if (picker) (picker as any).showPicker();
+                      }}
+                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Seleccionar fecha y hora"
+                    >
+                      <Calendar className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                    <input 
+                      id="date-picker-trigger"
+                      type="datetime-local"
+                      className="absolute opacity-0 pointer-events-none w-0 h-0"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setFormData({ ...formData, recorded_at: formatDateTime(e.target.value) });
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-col md:flex-row justify-between mt-1.5 gap-1">
                   <p className="text-[10px] md:text-xs text-slate-500 italic font-medium">
