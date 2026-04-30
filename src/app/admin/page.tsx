@@ -1822,10 +1822,44 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* Tendencia Temporal */}
+              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
+                <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
+                  <Activity className="w-4 h-4" /> Tendencia (7 días)
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <AreaChart data={
+                    Array.from({length: 7}, (_, i) => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - i);
+                      const dateStr = format(d, 'yyyy-MM-dd');
+                      return {
+                        date: format(d, 'dd/MM'),
+                        visitas: visitorLogs.filter(l => format(new Date(l.created_at), 'yyyy-MM-dd') === dateStr).length
+                      };
+                    }).reverse()
+                  }>
+                    <defs>
+                      <linearGradient id="colorVisitas" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                    <Area type="monotone" dataKey="visitas" stroke="#3b82f6" fillOpacity={1} fill="url(#colorVisitas)" strokeWidth={3} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Top Ciudades */}
               <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
                 <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" /> Top Ciudades
+                  <Globe className="w-4 h-4" /> Top Ciudades
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <BarChart data={
@@ -1841,11 +1875,36 @@ export default function AdminPage() {
                     <XAxis type="number" hide />
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={80} />
                     <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                    <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Top Países */}
+              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
+                <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" /> Top Países
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <BarChart data={
+                    Array.from(new Set(visitorLogs.map(l => l.country || '??')))
+                      .map(country => ({
+                        name: country,
+                        count: visitorLogs.filter(l => (l.country || '??') === country).length
+                      }))
+                      .sort((a, b) => b.count - a.count)
+                      .slice(0, 5)
+                  } layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={80} />
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                    <Bar dataKey="count" fill="#ec4899" radius={[0, 4, 4, 0]} barSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
+
 
             <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

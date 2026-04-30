@@ -31,7 +31,7 @@ export async function recordVisit(pageType: string, targetName: string, slug: st
     const region = headerList.get('x-vercel-ip-country-region') || 'unknown';
     const platform = headerList.get('sec-ch-ua-platform') || 'unknown';
     
-    // 1. Guardar en la tabla visitor_logs
+    // 1. Guardar la nueva visita
     const { error: insertError } = await supabaseAdmin.from('visitor_logs').insert({
       page_type: pageType,
       target_name: targetName,
@@ -51,37 +51,47 @@ export async function recordVisit(pageType: string, targetName: string, slug: st
       return { success: false };
     }
 
-    // 2. Verificar umbral
+    // 2. Obtener el umbral configurado
     const { data: thresholdData } = await supabaseAdmin
       .from('system_settings')
       .select('value')
       .eq('key', 'visitor_notification_threshold')
       .single();
     
-    // Parseo robusto del umbral
     let threshold = 10;
     if (thresholdData?.value) {
       const val = thresholdData.value;
       threshold = parseInt(typeof val === 'object' ? JSON.stringify(val).replace(/"/g, '') : String(val));
     }
 
-    // 3. Contar registros no notificados
-    const { count } = await supabaseAdmin
+    // 3. INTENTO ATÓMICO: Seleccionar IDs pendientes y tratar de marcarlos como 'notified'
+    // Primero vemos cuántos hay
+    const { data: pending } = await supabaseAdmin
       .from('visitor_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('notified', false);
+      .select('id')
+      .eq('notified', false)
+      .order('created_at', { ascending: true });
 
-    if (count && count >= threshold) {
-      // 4. Obtener todos los registros no notificados
-      const { data: unnotifiedLogs } = await supabaseAdmin
+    if (pending && pending.length >= threshold) {
+      const idsToMark = pending.map(p => p.id);
+      
+      // Intentamos actualizar estos registros específicos a notified=true
+      // Solo aquellos que sigan siendo false (evita doble envío si hay concurrencia)
+      const { data: marked, error: updateError } = await supabaseAdmin
         .from('visitor_logs')
-        .select('*')
+        .update({ notified: true })
+        .in('id', idsToMark)
         .eq('notified', false)
-        .order('created_at', { ascending: false });
+        .select();
 
-      if (unnotifiedLogs && unnotifiedLogs.length > 0) {
-        // 5. Formatear email
-        const visitDetails = unnotifiedLogs.map(v => `
+      if (updateError) {
+        console.error('Error al marcar visitas como notificadas:', updateError);
+        return { success: false };
+      }
+
+      // 4. SOLO si logramos marcar registros (evita duplicados), enviamos el email
+      if (marked && marked.length > 0) {
+        const visitDetails = marked.map(v => `
           <li style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; list-style: none;">
             <p style="margin: 0; font-weight: bold; color: #1e40af;">📍 ${v.page_type.toUpperCase()}: ${v.target_name}</p>
             <p style="margin: 2px 0; font-size: 13px; color: #475569;"><b>URL:</b> ${v.url}</p>
@@ -99,7 +109,7 @@ export async function recordVisit(pageType: string, targetName: string, slug: st
             </div>
             <div style="padding: 30px; background-color: white;">
               <p style="font-size: 16px;">Hola <b>correojago</b>,</p>
-              <p style="color: #64748b;">Se ha alcanzado el umbral de <b>${threshold}</b> visitas. Aquí tienes el resumen de actividad:</p>
+              <p style="color: #64748b;">Se han procesado <b>${marked.length}</b> nuevas visitas. Aquí tienes el resumen:</p>
               
               <div style="margin-top: 25px;">
                 ${visitDetails}
@@ -108,31 +118,21 @@ export async function recordVisit(pageType: string, targetName: string, slug: st
               <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin-top: 30px; text-align: center; border: 1px dashed #cbd5e1;">
                 <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
                   Este es un mensaje automático del sistema de monitoreo.<br>
-                  Los registros mostrados han sido marcados como procesados.
+                  Solo se incluyen las visitas detectadas desde el último reporte.
                 </p>
               </div>
             </div>
           </div>
         `;
 
-        // 6. Enviar email INMEDIATO
         const { sendEmailViaGmail } = await import('@/lib/server/email');
-        const emailResult = await sendEmailViaGmail(
+        await sendEmailViaGmail(
           ['correojago@gmail.com'],
-          `🔔 Resumen de ${unnotifiedLogs.length} visitas en aGuaSaaS`,
+          `🔔 Resumen de ${marked.length} visitas nuevas en aGuaSaaS`,
           emailHtml,
-          null, // building_id null para emails de sistema
+          null,
           'visitor_report'
         );
-
-        if (emailResult.success) {
-          // 7. Marcar como notificados SOLO si el email se envió con éxito
-          const ids = unnotifiedLogs.map(l => l.id);
-          await supabaseAdmin
-            .from('visitor_logs')
-            .update({ notified: true })
-            .in('id', ids);
-        }
       }
     }
 
