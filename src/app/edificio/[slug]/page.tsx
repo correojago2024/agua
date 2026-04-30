@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { formatDateTime, parseDateTime } from '@/lib/formatters';
-import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Mail, Bell, RotateCcw } from 'lucide-react';
+import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Mail, Bell, RotateCcw, Calendar } from 'lucide-react';
 
 export default function ResidentForm() {
   const params = useParams();
