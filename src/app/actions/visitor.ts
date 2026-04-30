@@ -106,10 +106,12 @@ export async function recordVisit(pageType: string, targetName: string, slug: st
         const visitDetails = marked.map(v => `
           <li style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; list-style: none;">
             <p style="margin: 0; font-weight: bold; color: #1e40af;">📍 ${v.page_type.toUpperCase()}: ${v.target_name}</p>
-            <p style="margin: 2px 0; font-size: 13px; color: #475569;"><b>URL:</b> ${v.url}</p>
-            <p style="margin: 2px 0; font-size: 13px;"><b>🌍 Ubicación:</b> ${v.city || '?'}, ${v.country || '?'} (${v.ip_address})</p>
-            <p style="margin: 2px 0; font-size: 13px;"><b>💻 Dispositivo:</b> ${v.platform} | ${v.language}</p>
-            <p style="margin: 2px 0; font-size: 13px; color: #94a3b8;"><b>⏰ Fecha:</b> ${new Date(v.created_at).toLocaleString('es-ES')}</p>
+            <p style="margin: 2px 0; font-size: 12px; color: #475569;"><b>🔗 URL:</b> <a href="${v.url}" style="color: #2563eb; text-decoration: none;">${v.url}</a></p>
+            <p style="margin: 2px 0; font-size: 12px;"><b>🌍 Ubicación:</b> ${v.city || '?'}, ${v.region || '?'}, ${v.country || '?'} (IP: ${v.ip_address})</p>
+            <p style="margin: 2px 0; font-size: 12px;"><b>💻 Dispositivo:</b> ${v.platform} | ${v.language}</p>
+            <p style="margin: 2px 0; font-size: 12px;"><b>🧭 Origen:</b> ${v.referrer || 'Directo'}</p>
+            <p style="margin: 2px 0; font-size: 11px; color: #94a3b8; font-family: monospace;"><b>🤖 UA:</b> ${v.user_agent}</p>
+            <p style="margin: 2px 0; font-size: 12px; color: #64748b;"><b>⏰ Fecha:</b> ${new Date(v.created_at).toLocaleString('es-ES', { timeZone: 'America/Caracas' })}</p>
           </li>
         `).join('');
 

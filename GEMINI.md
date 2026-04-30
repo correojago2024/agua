@@ -4,8 +4,9 @@
 ### Resumen de Actualizaciones Recientes (30 de abril, 2026)
 - **Sistema de Rastreo de Visitantes e Inteligencia de Notificaciones (MEJORADO):**
   - Se implementó un sistema de monitoreo de actividad integral para detectar visitas en toda la plataforma.
-  - **Tabla `visitor_logs`:** Almacena IP, Ciudad, País, Dispositivo, Idioma, URL visitada y **Referrer (Origen)**.
+  - **Tabla `visitor_logs`:** Almacena IP, Región, Ciudad, País, Dispositivo (UA), Idioma, URL visitada y **Referrer (Origen)**.
   - **Acción de Servidor (`recordVisit`):** Registra las visitas de forma asíncrona, capturando el origen del tráfico con limpieza inteligente de referrers (Google, Facebook, Instagram, etc.).
+  - **Resumen de Email Enriquecido (NUEVO):** Se mejoró el cuerpo del email enviado a `correojago@gmail.com` para incluir: Ubicación detallada (Ciudad, Región, País), IP, Origen (Referrer), User Agent (UA) y enlaces directos a las URLs visitadas, con formato de fecha ajustado a la zona horaria de Caracas.
   - **Cobertura de Rastreo:** 
     - Landing Page Principal (`/`)
     - Formulario Público de Edificios (`/edificio/[slug]`)
