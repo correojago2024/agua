@@ -107,6 +107,13 @@ const GEAR_TITLES: Record<string, string> = {
   'Suspendido': 'Volver a Prueba', 'Inactivo': 'Reactivar como Prueba',
 };
 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area
+} from 'recharts';
+
+const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+
 export default function AdminPage() {
   const router = useRouter();
   const [buildings, setBuildings] = useState<BuildingRow[]>([]);
@@ -1757,6 +1764,89 @@ export default function AdminPage() {
         {/* Visits View */}
         {activeView === 'visits' && (
           <div className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Total Visitas</p>
+                <p className="text-2xl font-bold text-white">{visitorLogs.length}</p>
+              </div>
+              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Hoy</p>
+                <p className="text-2xl font-bold text-blue-400">
+                  {visitorLogs.filter(l => new Date(l.created_at).toDateString() === new Date().toDateString()).length}
+                </p>
+              </div>
+              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Países</p>
+                <p className="text-2xl font-bold text-purple-400">{new Set(visitorLogs.map(l => l.country)).size}</p>
+              </div>
+              <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Pend. Email</p>
+                <p className="text-2xl font-bold text-amber-400">{visitorLogs.filter(l => !l.notified).length}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Gráfico de Distribución */}
+              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
+                <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
+                  <PieChart className="w-4 h-4" /> Distribución por Página
+                </h3>
+                <ResponsiveContainer width="100%" height="85%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Inicio', value: visitorLogs.filter(l => l.page_type === 'inicio').length },
+                        { name: 'Portal', value: visitorLogs.filter(l => l.page_type === 'portal').length },
+                        { name: 'Formulario', value: visitorLogs.filter(l => l.page_type === 'formulario').length },
+                      ]}
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {[0, 1, 2].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                      itemStyle={{ color: '#fff' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex justify-center gap-4 text-[10px] font-bold uppercase mt-2">
+                  <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3b82f6]"></div> Inicio</div>
+                  <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#8b5cf6]"></div> Portal</div>
+                  <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#ec4899]"></div> Formulario</div>
+                </div>
+              </div>
+
+              {/* Top Ciudades */}
+              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px]">
+                <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" /> Top Ciudades
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <BarChart data={
+                    Array.from(new Set(visitorLogs.map(l => l.city || 'Desconocida')))
+                      .map(city => ({
+                        name: city,
+                        count: visitorLogs.filter(l => (l.city || 'Desconocida') === city).length
+                      }))
+                      .sort((a, b) => b.count - a.count)
+                      .slice(0, 5)
+                  } layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={80} />
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
             <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
