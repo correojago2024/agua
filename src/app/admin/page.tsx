@@ -13,7 +13,7 @@ import {
   Building, Users, BarChart3, Settings, LogOut, Trash2, Edit,
   RefreshCw, Eye, ChevronDown, ChevronUp, Plus, Save, X, Wrench,
   Mail, Send, Clock, CreditCard, ShieldCheck, Search, Filter,
-  FileJson, Database, Download, RotateCcw,
+  FileJson, Database, Download, RotateCcw, CheckCircle2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { logAudit } from '@/lib/audit';
