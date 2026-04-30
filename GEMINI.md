@@ -1,5 +1,15 @@
 # Contexto del Proyecto: aGuaSaaS
 
+## Estado del Proyecto (30 de abril, 2026 - Actualización 6)
+### Resumen de Actualizaciones Recientes (30 de abril, 2026)
+- **Corrección de Campo de Fecha y Hora (Editable):**
+  - Se corrigió el problema en el formulario de entrada de datos (`src/app/edificio/[slug]/page.tsx`) donde el campo de fecha y hora no permitía modificaciones manuales fluidas.
+  - Se cambió el tipo de input de `datetime-local` a `text` para garantizar compatibilidad total y permitir la edición mediante teclado en cualquier dispositivo.
+  - Se implementó el formato exacto solicitado por el usuario: **dd/mm/aaaa hh:mm AM/PM**.
+  - Se añadió la lógica de parseo (`parseDateTime`) en `lib/formatters.ts` para validar y convertir la entrada manual a formato ISO antes de enviarla a la API, manteniendo la integridad de los datos.
+  - Se actualizó el panel de administración (`src/app/edificio-admin/[slug]/page.tsx`) para permitir también la corrección manual de la fecha y hora de las mediciones existentes directamente desde la tabla de historial, utilizando el mismo formato editable.
+  - Se mantuvo la coherencia visual conservando las instrucciones de formato y las previsualizaciones dinámicas sin eliminar textos existentes.
+
 ## Estado del Proyecto (29 de abril, 2026 - Actualización 5)
 ### Resumen de Actualizaciones Recientes (29 de abril, 2026)
 - **Restauración de Mensaje de Éxito (CRÍTICO):**

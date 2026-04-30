@@ -84,3 +84,40 @@ export function formatDateTime(date: Date | string | null | undefined): string {
 
   return `${day}/${month}/${year} ${hoursStr}:${minutes} ${ampm}`;
 }
+
+/**
+ * Parsea un string en formato "dd/mm/aaaa hh:mm AM/PM" a un objeto Date.
+ * Retorna null si el formato es inválido.
+ */
+export function parseDateTime(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  
+  try {
+    // Expresión regular para dd/mm/aaaa hh:mm AM/PM
+    const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s+(AM|PM)$/i;
+    const match = dateStr.match(regex);
+    
+    if (!match) return null;
+    
+    const [_, day, month, year, hours, minutes, ampm] = match;
+    let h = parseInt(hours);
+    const m = parseInt(minutes);
+    const d = parseInt(day);
+    const mo = parseInt(month) - 1; // Meses en JS son 0-11
+    const y = parseInt(year);
+    
+    if (ampm.toUpperCase() === 'PM' && h < 12) h += 12;
+    if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
+    
+    const date = new Date(y, mo, d, h, m);
+    
+    // Validar si la fecha es real (ej: no 31 de febrero)
+    if (date.getFullYear() !== y || date.getMonth() !== mo || date.getDate() !== d || date.getHours() !== h || date.getMinutes() !== m) {
+      return null;
+    }
+    
+    return date;
+  } catch (e) {
+    return null;
+  }
+}

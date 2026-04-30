@@ -9,6 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { formatDateTime, parseDateTime } from '@/lib/formatters';
 import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Mail, Bell, RotateCcw } from 'lucide-react';
 
 export default function ResidentForm() {
@@ -21,11 +22,7 @@ export default function ResidentForm() {
   const [error, setError]         = useState('');
 
   const [formData, setFormData] = useState({
-    recorded_at: (() => {
-      const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000;
-      return new Date(now.getTime() - offset).toISOString().slice(0, 16);
-    })(),
+    recorded_at: formatDateTime(new Date()),
     liters:            '',
     percentage:        '',
     email:             '',
@@ -87,6 +84,13 @@ export default function ResidentForm() {
 
     setLoading(true);
     try {
+      const parsedDate = parseDateTime(formData.recorded_at);
+      if (!parsedDate) {
+        setError('Formato de fecha inválido. Por favor use: dd/mm/aaaa hh:mm AM/PM');
+        setLoading(false);
+        return;
+      }
+
       let finalLiters     = lts;
       let finalPercentage = pct;
 
@@ -101,7 +105,7 @@ export default function ResidentForm() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           building_id:       building.id,
-          recorded_at:       formData.recorded_at,
+          recorded_at:       parsedDate.toISOString(),
           liters:            finalLiters,
           percentage:        finalPercentage,
           email:             formData.email             || null,
@@ -229,10 +233,9 @@ export default function ResidentForm() {
                 <label className="block text-xs md:text-sm font-bold text-slate-700 mb-1.5">Indique la Fecha y hora de la medición</label>
                 <div className="relative group">
                   <input
-                    type="datetime-local"
+                    type="text"
                     required
-                    lang="es-VE"
-                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base appearance-none"
+                    className="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-black font-medium text-sm md:text-base"
                     value={formData.recorded_at}
                     onChange={e => setFormData({ ...formData, recorded_at: e.target.value })}
                   />
@@ -242,10 +245,7 @@ export default function ResidentForm() {
                     * Formato: <span className="text-blue-600 font-bold">Día/Mes/Año</span> hora:minutos AM/PM
                   </p>
                   <p className="text-[10px] md:text-xs text-blue-500 font-bold bg-blue-50 px-2 py-0.5 rounded-full self-start">
-                    Vista actual: {new Date(formData.recorded_at).toLocaleString('es-VE', { 
-                      day: '2-digit', month: '2-digit', year: 'numeric', 
-                      hour: '2-digit', minute: '2-digit', hour12: true 
-                    })}
+                    Vista actual: {formData.recorded_at}
                   </p>
                 </div>
               </div>

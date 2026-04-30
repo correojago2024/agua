@@ -26,7 +26,7 @@ import {
 
 
 import { format } from 'date-fns';
-import { formatNumber, formatDateTime, formatDate } from '@/lib/formatters';
+import { formatNumber, formatDateTime, formatDate, parseDateTime } from '@/lib/formatters';
 import { getAllImprovedCharts } from '@/lib/charts';
 import { 
   CombinedTrendChart, 
@@ -150,6 +150,7 @@ export default function EdificioAdminPage() {
   const [editingMeasurement, setEditingMeasurement] = useState<any>(null);
   const [editLiters, setEditLiters] = useState('');
   const [editPct, setEditPct]       = useState('');
+  const [editDate, setEditDate]     = useState('');
   const [measMsg, setMeasMsg]       = useState('');
   const [showAnomaliesOnly, setShowAnomaliesOnly] = useState(false);
 
@@ -1284,6 +1285,7 @@ export default function EdificioAdminPage() {
     setEditingMeasurement(m);
     setEditLiters(String(Math.round(m.liters)));
     setEditPct(String(m.percentage.toFixed(1)));
+    setEditDate(formatDateTime(m.recorded_at));
   };
 
   const saveEditMeasurement = async () => {
@@ -1292,10 +1294,17 @@ export default function EdificioAdminPage() {
     if (demoBlock('⚠️ Modo Demo: las ediciones no se guardan en la base de datos.')) { setEditingMeasurement(null); return; }
     const newLiters = parseFloat(editLiters);
     const newPct    = parseFloat(editPct);
-    if (isNaN(newLiters) || isNaN(newPct)) return;
+    const parsedDate = parseDateTime(editDate);
+
+    if (isNaN(newLiters) || isNaN(newPct) || !parsedDate) {
+      if (!parsedDate) setMeasMsg('❌ Error: Formato de fecha inválido');
+      return;
+    }
+
     const { error } = await supabase
       .from('measurements')
       .update({
+        recorded_at:  parsedDate.toISOString(),
         liters:       newLiters,
         percentage:   newPct,
         is_anomaly:   false,
@@ -2765,8 +2774,11 @@ export default function EdificioAdminPage() {
                               />
                             </td>
                             <td className="px-3 py-2 text-slate-300 whitespace-nowrap">
-                              {formatDateTime(m.recorded_at)}
-                              {m.is_anomaly && (
+                              {isEditing 
+                                ? <input type="text" value={editDate} onChange={e => setEditDate(e.target.value)}
+                                    className="w-40 bg-slate-600 border border-slate-500 text-white rounded px-1 py-0.5 text-xs" />
+                                : formatDateTime(m.recorded_at)}
+                              {m.is_anomaly && !isEditing && (
                                 <span className="ml-1 text-red-400 text-xs">⚠️ Anomalía</span>
                               )}
                             </td>
