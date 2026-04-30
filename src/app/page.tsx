@@ -32,6 +32,7 @@ import PricingSection from '@/components/PricingSection';
 import FAQSection from '@/components/FAQSection';
 import HowItWorksSection from '@/components/HowItWorksSection';
 import Script from 'next/script';
+import { recordVisit } from '@/app/actions/visitor';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodnluaGhiZ3BpdHRpbXlvcHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMyOTM3NTYsImV4cCI6MjA1ODg2OTc1Nn0.sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
@@ -86,6 +87,9 @@ export default function HomePage() {
   const [plans, setPlans] = useState<any[]>([]);
 
   useEffect(() => {
+    // Registrar visita a la página principal
+    recordVisit('inicio', 'Landing Page', 'home').catch(console.error);
+
     const loadPlans = async () => {
       const { data } = await supabase.from('plan_precios').select('*').order('precio', { ascending: true });
       if (data) setPlans(data);

@@ -3,9 +3,13 @@
 ## Estado del Proyecto (30 de abril, 2026 - Actualización 7)
 ### Resumen de Actualizaciones Recientes (30 de abril, 2026)
 - **Sistema de Rastreo de Visitantes e Inteligencia de Notificaciones:**
-  - Se implementó un sistema de monitoreo de actividad para detectar visitas a las páginas de edificios y formularios.
+  - Se implementó un sistema de monitoreo de actividad integral para detectar visitas en toda la plataforma.
   - **Tabla `visitor_logs`:** Almacena IP, Ciudad, País, Dispositivo, Idioma y URL visitada.
   - **Acción de Servidor (`recordVisit`):** Registra las visitas de forma asíncrona sin afectar el tiempo de carga del usuario.
+  - **Cobertura de Rastreo:** 
+    - Landing Page Principal (`/`)
+    - Formulario Público de Edificios (`/edificio/[slug]`)
+    - Portal Administrativo de Edificios (`/edificio-admin/[slug]`)
   - **Notificaciones Inteligentes:** Se configuró un sistema que solo envía un email a `correojago@gmail.com` cuando se alcanza un umbral configurable de visitas acumuladas (ej. cada 10 o 20 visitas), optimizando la cuota de envío de Gmail.
   - **Integración Admin:** Se añadió la pestaña **"📈 Visitas"** en el panel administrativo (`/admin`) para visualizar estadísticas en tiempo real y ajustar el umbral de notificación.
 

@@ -55,6 +55,7 @@ import {
 } from '@/components/SystemStatsCharts';
 
 import { Measurement } from '@/lib/calculations';
+import { recordVisit } from '@/app/actions/visitor';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vhvynlhbgpittimyopue.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZINHGD4RZ1cPw2yIHcokxQ_MVlyMO-Z';
@@ -706,6 +707,9 @@ export default function EdificioAdminPage() {
         : await supabase.from('buildings').select('*').eq('slug', slugParam).single();
       setBuilding(data);
       if (data) {
+        // Registrar visita al portal
+        recordVisit('portal', data.name, slug as string).catch(console.error);
+
         setCfgName(data.name || '');
         setCfgCapacity(data.tank_capacity_liters?.toString() || '');
         setCfgAdminEmail(data.admin_email || '');
