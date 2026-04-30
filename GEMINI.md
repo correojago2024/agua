@@ -2,16 +2,20 @@
 
 ## Estado del Proyecto (30 de abril, 2026 - Actualización 7)
 ### Resumen de Actualizaciones Recientes (30 de abril, 2026)
-- **Sistema de Rastreo de Visitantes e Inteligencia de Notificaciones:**
+- **Sistema de Rastreo de Visitantes e Inteligencia de Notificaciones (MEJORADO):**
   - Se implementó un sistema de monitoreo de actividad integral para detectar visitas en toda la plataforma.
-  - **Tabla `visitor_logs`:** Almacena IP, Ciudad, País, Dispositivo, Idioma y URL visitada.
-  - **Acción de Servidor (`recordVisit`):** Registra las visitas de forma asíncrona sin afectar el tiempo de carga del usuario.
+  - **Tabla `visitor_logs`:** Almacena IP, Ciudad, País, Dispositivo, Idioma, URL visitada y **Referrer (Origen)**.
+  - **Acción de Servidor (`recordVisit`):** Registra las visitas de forma asíncrona, capturando el origen del tráfico con limpieza inteligente de referrers (Google, Facebook, Instagram, etc.).
   - **Cobertura de Rastreo:** 
     - Landing Page Principal (`/`)
     - Formulario Público de Edificios (`/edificio/[slug]`)
     - Portal Administrativo de Edificios (`/edificio-admin/[slug]`)
   - **Notificaciones Inteligentes:** Se configuró un sistema que solo envía un email a `correojago@gmail.com` cuando se alcanza un umbral configurable de visitas acumuladas (ej. cada 10 o 20 visitas), optimizando la cuota de envío de Gmail.
-  - **Integración Admin:** Se añadió la pestaña **"📈 Visitas"** en el panel administrativo (`/admin`) para visualizar estadísticas en tiempo real y ajustar el umbral de notificación.
+  - **Integración Admin (DISEÑO REFINADO):** Se optimizó la pestaña **"📈 Visitas"** en el panel administrativo (`/admin`):
+    - El gráfico de **Fuentes de Tráfico** ahora ocupa todo el ancho (`lg:col-span-2`) para mejor visualización.
+    - Se añadió iconografía contextual (`Link`) en la tabla de visitantes para identificar rápidamente el origen.
+    - Se incluyó limpieza de protocolos (`http/https`) en la visualización de la tabla para ahorrar espacio.
+  - **Documentación SQL:** Se creó el archivo `supabase-visitor-referrer.sql` con los comandos necesarios para preparar la base de datos.
 
 - **Corrección de Campo de Fecha y Hora (Editable):**
   - Se corrigió el problema en el formulario de entrada de datos (`src/app/edificio/[slug]/page.tsx`) donde el campo de fecha y hora no permitía modificaciones manuales fluidas.

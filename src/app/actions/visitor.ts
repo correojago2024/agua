@@ -30,6 +30,17 @@ export async function recordVisit(pageType: string, targetName: string, slug: st
     const city = headerList.get('x-vercel-ip-city') || 'unknown';
     const region = headerList.get('x-vercel-ip-country-region') || 'unknown';
     const platform = headerList.get('sec-ch-ua-platform') || 'unknown';
+    let referrer = headerList.get('referer') || 'Directo / Marcador';
+    
+    // Limpieza básica de referrer para visualización
+    if (referrer.includes('android-app://')) referrer = 'Android App';
+    if (referrer.includes('ios-app://')) referrer = 'iOS App';
+    if (referrer.includes('google.com')) referrer = 'Buscador Google';
+    if (referrer.includes('bing.com')) referrer = 'Buscador Bing';
+    if (referrer.includes('t.co') || referrer.includes('twitter.com')) referrer = 'Twitter / X';
+    if (referrer.includes('facebook.com')) referrer = 'Facebook';
+    if (referrer.includes('instagram.com')) referrer = 'Instagram';
+    if (referrer.includes('linkedin.com')) referrer = 'LinkedIn';
     
     // 1. Guardar la nueva visita
     const { error: insertError } = await supabaseAdmin.from('visitor_logs').insert({
@@ -43,6 +54,7 @@ export async function recordVisit(pageType: string, targetName: string, slug: st
       country: country,
       city: city,
       region: region,
+      referrer: referrer,
       notified: false
     });
 

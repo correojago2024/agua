@@ -13,7 +13,7 @@ import {
   Building, Users, BarChart3, Settings, LogOut, Trash2, Edit,
   RefreshCw, Eye, ChevronDown, ChevronUp, Plus, Save, X, Wrench,
   Mail, Send, Clock, CreditCard, ShieldCheck, Search, Filter,
-  FileJson, Database, Download, RotateCcw, CheckCircle2, Activity, Globe,
+  FileJson, Database, Download, RotateCcw, CheckCircle2, Activity, Globe, Link,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { logAudit } from '@/lib/audit';
@@ -1935,6 +1935,41 @@ export default function AdminPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+
+              {/* Fuentes de Tráfico (Referrer) */}
+              <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-[350px] lg:col-span-2">
+                <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
+                  <Link className="w-4 h-4 text-green-400" /> Fuentes de Tráfico / Origen de Visitas
+                </h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <BarChart data={
+                    Array.from(new Set(filteredLogs.map(l => {
+                      if (!l.referrer || l.referrer.includes('Directo')) return 'Directo';
+                      try {
+                        const url = new URL(l.referrer);
+                        return url.hostname.replace('www.', '');
+                      } catch {
+                        return 'Otro';
+                      }
+                    })))
+                      .map(ref => ({
+                        name: ref,
+                        count: filteredLogs.filter(l => {
+                          if (ref === 'Directo') return !l.referrer || l.referrer.includes('Directo');
+                          return l.referrer?.includes(ref);
+                        }).length
+                      }))
+                      .sort((a, b) => b.count - a.count)
+                      .slice(0, 5)
+                  } layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={120} />
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                    <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
 
@@ -1989,6 +2024,7 @@ export default function AdminPage() {
                     <tr>
                       <th className="px-6 py-4">Fecha / Hora</th>
                       <th className="px-6 py-4">Página / Edificio</th>
+                      <th className="px-6 py-4">Origen</th>
                       <th className="px-6 py-4">Ubicación (IP)</th>
                       <th className="px-6 py-4">Dispositivo / Idioma</th>
                       <th className="px-6 py-4">Estado Email</th>
@@ -2010,6 +2046,12 @@ export default function AdminPage() {
                             </span>
                           </div>
                           <p className="text-slate-300 font-medium mt-1">{log.target_name || 'General'}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-slate-400 text-xs truncate max-w-[150px] flex items-center gap-1" title={log.referrer}>
+                            <Link className="w-3 h-3 text-slate-500" />
+                            {log.referrer?.replace('https://', '').replace('http://', '') || 'Directo'}
+                          </p>
                         </td>
                         <td className="px-6 py-4">
                           <p className="text-white flex items-center gap-1">
