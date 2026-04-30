@@ -113,8 +113,35 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState('');
-  const [activeView, setActiveView] = useState<'buildings' | 'leads' | 'maintenance' | 'reports' | 'emails' | 'plans' | 'logs' | 'audit'>('buildings');
+  const [activeView, setActiveView] = useState<'buildings' | 'leads' | 'maintenance' | 'reports' | 'emails' | 'plans' | 'logs' | 'audit' | 'visits'>('buildings');
   
+  // Visitor Logs
+  const [visitorLogs, setVisitorLogs] = useState<any[]>([]);
+  const [visitsLoading, setVisitsLoading] = useState(false);
+  const [notificationThreshold, setNotificationThreshold] = useState(10);
+
+  const loadVisitorLogs = async () => {
+    setVisitsLoading(true);
+    const { data } = await supabase.from('visitor_logs').select('*').order('created_at', { ascending: false });
+    if (data) setVisitorLogs(data);
+    
+    // Cargar umbral actual
+    const { data: thresholdData } = await supabase.from('system_settings').select('value').eq('key', 'visitor_notification_threshold').single();
+    if (thresholdData) {
+      setNotificationThreshold(parseInt(typeof thresholdData.value === 'string' ? thresholdData.value : JSON.stringify(thresholdData.value)));
+    }
+    setVisitsLoading(false);
+  };
+
+  const updateThreshold = async (val: number) => {
+    const { error } = await supabase.from('system_settings').upsert({ key: 'visitor_notification_threshold', value: val.toString() });
+    if (!error) {
+      setNotificationThreshold(val);
+      setActionMsg('✅ Umbral actualizado');
+      setTimeout(() => setActionMsg(''), 2000);
+    }
+  };
+
   // Backups
   const [backups, setBackups] = useState<Record<string, any[]>>({});
   const [backupsLoading, setBackupsLoading] = useState<string | null>(null);
@@ -762,6 +789,7 @@ export default function AdminPage() {
               { id: 'reports', label: '📊 Reportes' },
               { id: 'emails', label: '✉️ Mensajes' },
               { id: 'plans', label: '💰 Planes' },
+              { id: 'visits', label: '📈 Visitas' },
               { id: 'maintenance', label: '🔧 Mantenimiento' },
               { id: 'logs', label: '📨 Logs' },
               { id: 'audit', label: '🛡️ Auditoría' },
@@ -772,6 +800,7 @@ export default function AdminPage() {
                   if (id === 'leads') loadLeads(); 
                   if (id === 'logs') loadNotificationLogs(); 
                   if (id === 'audit') fetchAuditLogs();
+                  if (id === 'visits') loadVisitorLogs();
                 }}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                   activeView === id 
@@ -1721,6 +1750,121 @@ export default function AdminPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Visits View */}
+        {activeView === 'visits' && (
+          <div className="space-y-6">
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <BarChart3 className="w-6 h-6 text-blue-400" /> Estadísticas de Visitas
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">Monitoreo de actividad en tiempo real de edificios y formularios.</p>
+                </div>
+                
+                <div className="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex items-center gap-4">
+                  <div>
+                    <p className="text-slate-400 text-xs font-bold uppercase mb-1">Umbral de Notificación</p>
+                    <p className="text-[10px] text-slate-500 mb-2">Enviar email cada N visitas acumuladas</p>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="number" 
+                        value={notificationThreshold}
+                        onChange={(e) => setNotificationThreshold(parseInt(e.target.value) || 1)}
+                        className="w-20 bg-slate-800 border border-slate-600 text-blue-400 px-3 py-1 rounded text-sm font-bold focus:outline-none focus:border-blue-500"
+                      />
+                      <button 
+                        onClick={() => updateThreshold(notificationThreshold)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+                      >
+                        Actualizar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-700/30">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-400" /> Registro de Visitantes
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-400 text-xs">{visitorLogs.length} visitas totales</span>
+                  <button onClick={loadVisitorLogs} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg">
+                    <RefreshCw className={`w-4 h-4 ${visitsLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-700/50 text-slate-400 text-xs uppercase">
+                    <tr>
+                      <th className="px-6 py-4">Fecha / Hora</th>
+                      <th className="px-6 py-4">Página / Edificio</th>
+                      <th className="px-6 py-4">Ubicación (IP)</th>
+                      <th className="px-6 py-4">Dispositivo / Idioma</th>
+                      <th className="px-6 py-4">Estado Email</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700">
+                    {visitorLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-700/30 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <p className="text-white font-medium">{format(new Date(log.created_at), 'dd/MM/yyyy')}</p>
+                          <p className="text-slate-500 text-xs">{format(new Date(log.created_at), 'HH:mm:ss')}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              log.page_type === 'formulario' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
+                            }`}>
+                              {log.page_type}
+                            </span>
+                          </div>
+                          <p className="text-slate-300 font-medium mt-1">{log.target_name || 'General'}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-white flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-green-400" /> {log.city || 'Desconocida'}, {log.country || '??'}
+                          </p>
+                          <p className="text-slate-500 text-xs font-mono">{log.ip_address}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-slate-300 truncate max-w-[200px]" title={log.user_agent}>
+                            {log.platform} - {log.user_agent?.split(') ')[0]?.split(' (')[1] || 'Browser'}
+                          </p>
+                          <p className="text-slate-500 text-xs">Idioma: {log.language}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          {log.notified ? (
+                            <span className="flex items-center gap-1 text-green-400 text-xs">
+                              <CheckCircle2 className="w-3 h-3" /> Notificado
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-amber-400 text-xs italic">
+                              <Clock className="w-3 h-3" /> Pendiente
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {visitorLogs.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic">
+                          No se han detectado visitas todavía.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

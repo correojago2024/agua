@@ -1,7 +1,14 @@
 # Contexto del Proyecto: aGuaSaaS
 
-## Estado del Proyecto (30 de abril, 2026 - Actualización 6)
+## Estado del Proyecto (30 de abril, 2026 - Actualización 7)
 ### Resumen de Actualizaciones Recientes (30 de abril, 2026)
+- **Sistema de Rastreo de Visitantes e Inteligencia de Notificaciones:**
+  - Se implementó un sistema de monitoreo de actividad para detectar visitas a las páginas de edificios y formularios.
+  - **Tabla `visitor_logs`:** Almacena IP, Ciudad, País, Dispositivo, Idioma y URL visitada.
+  - **Acción de Servidor (`recordVisit`):** Registra las visitas de forma asíncrona sin afectar el tiempo de carga del usuario.
+  - **Notificaciones Inteligentes:** Se configuró un sistema que solo envía un email a `correojago@gmail.com` cuando se alcanza un umbral configurable de visitas acumuladas (ej. cada 10 o 20 visitas), optimizando la cuota de envío de Gmail.
+  - **Integración Admin:** Se añadió la pestaña **"📈 Visitas"** en el panel administrativo (`/admin`) para visualizar estadísticas en tiempo real y ajustar el umbral de notificación.
+
 - **Corrección de Campo de Fecha y Hora (Editable):**
   - Se corrigió el problema en el formulario de entrada de datos (`src/app/edificio/[slug]/page.tsx`) donde el campo de fecha y hora no permitía modificaciones manuales fluidas.
   - Se cambió el tipo de input de `datetime-local` a `text` para garantizar compatibilidad total y permitir la edición mediante teclado en cualquier dispositivo.
@@ -42,14 +49,11 @@
   - La tabla de mediciones en el panel de administración ahora muestra indicadores claros y permite la corrección manual del estado.
   - Los reportes por email ahora incluyen una columna de "Estado" que refleja si una medición es Normal o una Anomalía, respetando las correcciones manuales realizadas por la junta.
 - **Corrección de Descarga de Respaldos:** 
-...
-
   - Se corrigió el error donde al intentar descargar un respaldo JSON se abría el contenido en una nueva ventana del navegador en lugar de descargarse.
   - **Cambio Técnico:** Se agregó la opción `{ download: true }` a la función `createSignedUrl` en `/api/backups` para forzar el encabezado `Content-Disposition: attachment`.
   - **Mejora UI:** Se actualizó la función `downloadBackup` en el Panel Admin (`/admin`) y se implementó en el Panel de Edificio (`/edificio-admin/[slug]`) utilizando un enlace oculto dinámico para asegurar la descarga del archivo.
   - **Consistencia:** Se añadió el botón de descarga en la tabla de historial de respaldos dentro de `/edificio-admin/[slug]`, que anteriormente solo permitía la eliminación.
-- **Implementación de Respaldo Manual:** (Anteriormente implementado) ...
-
+- **Implementación de Respaldo Manual:** Botón "CREAR RESPALDO MANUAL AHORA" en el Panel Admin que invoca `/api/backups` (POST action: 'generate').
 
 ### Estrategia de Respaldos Supabase (Implementada)
 1. **Respaldo Manual:** Botón "CREAR RESPALDO MANUAL AHORA" en el Panel Admin que invoca `/api/backups` (POST action: 'generate').
@@ -57,8 +61,7 @@
 3. **Consolidación de Datos:** El backup incluye `buildings`, `measurements`, `building_settings`, `building_ia_settings`, `building_whatsapp_settings` y `resident_subscriptions`.
 
 ### Arquitectura de Frontend (Next.js 15)
-... (resto igual)
-
+- **Rutas Públicas:**
   - `/edificio/[slug]`: Formulario público para que los residentes reporten niveles.
   - `/edificio-admin/[slug]`: Panel privado para la junta y administrador.
 - **Componentes:**

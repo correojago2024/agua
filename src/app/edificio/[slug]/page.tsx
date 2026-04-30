@@ -11,6 +11,7 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { formatDateTime, parseDateTime } from '@/lib/formatters';
 import { Droplets, Send, CheckCircle2, AlertTriangle, Info, RefreshCw, Mail, Bell, RotateCcw, Calendar } from 'lucide-react';
+import { recordVisit } from '@/app/actions/visitor';
 
 export default function ResidentForm() {
   const params = useParams();
@@ -45,12 +46,17 @@ export default function ResidentForm() {
         if (fetchError || !data) {
           console.error('Fetch error:', fetchError);
           setError('Edificio no encontrado');
-        } else if (data.status === 'Inactivo') {
-          setError('INACTIVO: Este edificio está desactivado y no acepta nuevas mediciones. Contacte al administrador del sistema.');
-        } else if (data.status === 'Suspendido') {
-          setError('SUSPENDIDO: La cuenta de este edificio está suspendida. No se pueden registrar nuevas mediciones. Por favor contacte al administrador del sistema para reactivar su cuenta.');
         } else {
           setBuilding(data);
+          
+          // Registrar visita (sin esperar para no bloquear el render)
+          recordVisit('formulario', data.name, slug).catch(console.error);
+
+          if (data.status === 'Inactivo') {
+            setError('INACTIVO: Este edificio está desactivado y no acepta nuevas mediciones. Contacte al administrador del sistema.');
+          } else if (data.status === 'Suspendido') {
+            setError('SUSPENDIDO: La cuenta de este edificio está suspendida. No se pueden registrar nuevas mediciones. Por favor contacte al administrador del sistema para reactivar su cuenta.');
+          }
         }
       } catch (err) {
         setError('Error de conexión');
