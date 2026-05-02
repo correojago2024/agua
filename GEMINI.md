@@ -1,5 +1,12 @@
 # Contexto del Proyecto: aGuaSaaS
 
+## Estado del Proyecto (2 de mayo, 2026 - Actualización 8)
+### Resumen de Actualizaciones Recientes (2 de mayo, 2026)
+- **Clarificación de Servicios de WhatsApp:**
+  - Se añadieron asteriscos (*) a todas las menciones de WhatsApp en la página principal (descripción, características, lista de planes y tabla comparativa).
+  - Se incluyó una nota legal/aclaratoria al pie de la tabla de planes especificando que el servicio de WhatsApp requiere la contratación previa de proveedores externos (Wapi, Green API o WhatsApp Business API).
+  - Se mejoró la transparencia sobre los requisitos técnicos para las notificaciones críticas.
+
 ## Estado del Proyecto (30 de abril, 2026 - Actualización 7)
 ### Resumen de Actualizaciones Recientes (30 de abril, 2026)
 - **Sistema de Rastreo de Visitantes e Inteligencia de Notificaciones (MEJORADO):**

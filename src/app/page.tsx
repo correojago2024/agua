@@ -1090,7 +1090,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-            aGuaSaaS te permite capturar datos de niveles de liquidos, generar estadisticas de consumo y enviar reportes graficos por correo electronico y por WhatsApp.
+            aGuaSaaS te permite capturar datos de niveles de liquidos, generar estadisticas de consumo y enviar reportes graficos por correo electronico y por WhatsApp*.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -1212,8 +1212,8 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-6">
                 <Mail className="w-6 h-6 text-purple-500" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-4">Reportes por Email y WhatsApp</h3>
-              <p className="text-gray-300">Recibe automáticamente reportes gráficos con análisis detallado directamente en tu correo electrónico y por WhatsApp.</p>
+              <h3 className="text-xl font-bold text-white mb-4">Reportes por Email y WhatsApp*</h3>
+              <p className="text-gray-300">Recibe automáticamente reportes gráficos con análisis detallado directamente en tu correo electrónico y por WhatsApp*.</p>
             </div>
 
           </div>
@@ -1310,7 +1310,7 @@ export default function HomePage() {
               <ul className="space-y-3 text-slate-300 text-sm flex-grow mb-8">
                 <li className="font-bold text-slate-200 mb-2">Todo lo del Plan Profesional, más:</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Configuración Avanzada: Control total sobre notificaciones y umbrales preventivos.</li>
-                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas vía WhatsApp: Integración crítica para umbrales mínimos (300 notificaciones/mes).</li>
+                <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Alertas vía WhatsApp*: Integración crítica para umbrales mínimos (300 notificaciones/mes).</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Boletín Diario Programado: El sistema envía automáticamente un resumen cada mañana.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Mapa de Calor de Consumo: Visualiza franjas horarias y días de mayor gasto.</li>
                 <li className="flex gap-2"><CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" /> Proyecciones de Vaciado: Cálculo de duración según el ritmo de consumo actual.</li>
@@ -1398,7 +1398,7 @@ export default function HomePage() {
                     <td className="py-4 px-6 text-blue-400 font-bold">Ilimitados</td>
                   </tr>
                   <tr className="hover:bg-slate-800/30 transition-colors">
-                    <td className="py-4 px-6 text-slate-300 font-medium">WhatsApp</td>
+                    <td className="py-4 px-6 text-slate-300 font-medium">WhatsApp*</td>
                     <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6"><div className="flex justify-start items-center"><X className="w-5 h-5 text-red-600 bg-white rounded-full p-0.5 shadow-sm" /></div></td>
                     <td className="py-4 px-6">
@@ -1528,6 +1528,9 @@ export default function HomePage() {
                 </tbody>
               </table>
             </div>
+            <p className="mt-4 text-[11px] text-slate-400 italic text-right">
+              Nota (*): Considere que para utilizar el servicio de envío de mensajes por WhatsApp el usuario debe contar con algún servicio de envío de mensajes contratado y disponible de alguno de estos posibles proveedores: Wapi, Green API o WhatsApp Business API.
+            </p>
             {billingCycle === 'yearly' && (
               <p className="p-4 text-[10px] text-slate-500 italic">* Tarifa con 20% de descuento incluido por pago anual.</p>
             )}
